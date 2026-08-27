@@ -858,4 +858,4 @@ ffmpeg -framerate 30 -i frames/%05d.png -c:v prores_ks -profile:v 3 out.mov
 | `references/charts.md` | 차트 17종 — 어떤 데이터에 어떤 차트, 색의 역할 |
 | `references/theming.md` | 테마·화면비·에너지·모션 토큰 |
 | `references/api.md` | CLI 와 산출물 구조, GSAP 관련 주의점 |
-| `assets/examples/` | 스타터 스펙 9종 |
+| `assets/examples/` | 스타터 스펙 12종 |

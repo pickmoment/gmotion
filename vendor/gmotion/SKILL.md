@@ -58,11 +58,11 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 
 보통은 `direction.md` 로 구성을 짜고 `spec.md` 로 스펙을 쓰면 끝난다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 55종이다:
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 79종이다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 (한글 이름 지원)
-node <skill>/assets/gm.js info decor       # 배경 15 · mark 12 · frame 8 · art 20
+node <skill>/assets/gm.js info decor       # 배경 20 · mark 15 · frame 12 · art 32
 node <skill>/assets/gm.js info fonts       # 폰트 10종 — 테마 기본을 덮어쓴다
 node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 ```
@@ -215,9 +215,9 @@ assets/
   runtime.js       산출물에 실리는 런타임 — IR 을 타임라인으로 조립, 플레이어, 검수 API
   gsap.bundle.js   GSAP 3.15 (core + CustomEase·CustomWiggle·DrawSVG·MorphSVG·SplitText·MotionPath·ScrambleText)
   icons.js         픽토그램 191종 (mojs · scriptviz · mindmap 과 같은 세트)
-  vectors.js       벡터 세트 55종 — 배경 15 · 강조 12 · 프레임 8 · 일러스트 20. 전부 코드로 그린다
+  vectors.js       벡터 세트 79종 — 배경 20 · 강조 15 · 프레임 12 · 일러스트 32. 전부 코드로 그린다
   charts.js        차트 17종 — 형태·색·마크 스펙. 애니메이션은 지시만 하고 방법은 엔진이 정한다
-  examples/        스타터 스펙 9종 + 자막 동기화용 샘플 SRT
+  examples/        스타터 스펙 12종 + 자막 동기화용 샘플 SRT
   selftest.js      엔진 회귀 검사 — 엔진을 고쳤으면 `gm test` 를 통과시킨다
 references/        direction · spec · theming · api · charts
 MANUAL.md          사람이 직접 CLI 를 쓸 때 보는 설명서 (사용자가 물으면 이 파일을 알려준다)

@@ -84,14 +84,14 @@
 `badge` 는 우상단 알약(`"NEW"`), `ribbon` 은 좌상단 띠(`"핵심"`), `art` 는 카드 우하단에 옅게 깔리는 일러스트,
 `spark` 는 카드 안 미니 추이선(`[3,5,4,8]`)이다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 55종이 있고 한글 이름도 따로 있다:
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 79종이 있고 한글 이름도 따로 있다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 — speech(메시지·채팅·댓글)
-node <skill>/assets/gm.js info decor       # 배경 15종
-node <skill>/assets/gm.js info mark        # 강조 12종
-node <skill>/assets/gm.js info frame       # 디바이스 8종
-node <skill>/assets/gm.js info art         # 일러스트 20종
+node <skill>/assets/gm.js info decor       # 배경 20종
+node <skill>/assets/gm.js info mark        # 강조 15종
+node <skill>/assets/gm.js info frame       # 디바이스 12종
+node <skill>/assets/gm.js info art         # 일러스트 32종
 node <skill>/assets/gm.js info chart       # 차트 17종
 ```
 
