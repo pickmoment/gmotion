@@ -157,6 +157,13 @@ var THEMES = {
     accent: '#58a6ff', accent2: '#7ee787', good: '#3fb950', warn: '#f0883e', bad: '#ff7b72',
     line: 'rgba(88,166,255,.24)', panel: 'rgba(13,40,71,.72)', panelLine: 'rgba(88,166,255,.3)',
     glow: 1, font: 'neo', grain: .05, vig: .35, decor: ['gridPaper', 'creases']
+  },
+  clay: {
+    label: '클레이 — 3D 점토 볼륨과 매트 파스텔. 클레이모피즘·스톱모션·친근한 설명',
+    bg: '#f0ece4', bg2: '#e2dccf', ink: '#26221d', ink2: '#524b42', dim: '#6b6357',
+    accent: '#a83c16', accent2: '#1a695d', good: '#287538', warn: '#944e00', bad: '#ab2424',
+    line: 'rgba(38,34,29,.14)', panel: '#fcfaf6', panelLine: 'rgba(255,255,255,.9)',
+    glow: 0, font: 'round', grain: .07, vig: .2, decor: ['clayBlobs', 'dots']
   }
 };
 /* ------------------------------------------------------------------ *
@@ -1992,6 +1999,8 @@ var TRANSITIONS = {
   pageFlip:  { label: '페이지 넘김 — 책장을 넘기듯 3D Y축 회전. 장·챕터 구분', out: { rotateY: -85, transformOrigin: '0% 50%', opacity: 0 }, inFrom: { rotateY: 85, transformOrigin: '100% 50%', opacity: 0 }, d: 1.0, overlap: .55 },
   paperPeel: { label: '종이 떼기 — 포스트잇이 떼어지듯 사선으로 들려 나감', out: { xPercent: 28, yPercent: -18, rotate: 6, opacity: 0 }, inFrom: { scale: .96, opacity: 0 }, d: .85 },
   curlWipe:  { label: '컬 와이프 — 종이 귀퉁이가 대각선으로 말려 올라가며 전환', out: { opacity: 0 }, inFrom: { clip: 'curl' }, d: 1.0 },
+  clayPop:   { label: '클레이 팝 — 통통 튀어 올라 찌그러지며 탄성 전환', out: { scaleX: 1.14, scaleY: 0.86, y: -45, opacity: 0, ease: 'back.in(1.6)' }, inFrom: { scaleX: 0.84, scaleY: 1.16, scale: 0.92, opacity: 0, ease: 'elastic.out(1.2, 0.45)' }, d: .9, overlap: .5 },
+  squish:    { label: '스쿼시 — 바닥으로 쿵 눌렸다가 튀어 오르는 탄성 전환', out: { scaleX: 1.22, scaleY: 0.72, opacity: 0 }, inFrom: { y: 50, scaleX: 0.88, scaleY: 1.15, opacity: 0 }, d: .85 },
 };
 
 /* ================================================================== *
@@ -2524,6 +2533,7 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-mk-ribbon{left:0;top:0;width:134px;height:134px;border-top-left-radius:22px;overflow:hidden}',
 '.gg-mk-tape{right:-24px;top:-18px;width:72px;height:24px;transform:rotate(5deg)}',
 '.gg-mk-stamp{right:-38px;top:-26px;width:104px;height:48px}',
+'.gg-mk-clayPin{right:-16px;top:-16px;width:38px;height:38px}',
 '.gg-mkStar{transform-origin:center;animation:ggTwinkle 3.4s ease-in-out infinite}',
 /* ---- 추상 일러스트 ---- */
 '.gg-artBox{position:relative}',
@@ -2633,6 +2643,9 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-panel,.gg-side{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:24px;' +
   'padding:38px 34px;display:flex;flex-direction:column;gap:18px;justify-content:center;backdrop-filter:blur(7px)}',
 '.gg-panelTag{font-size:23px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:700}',
+c.theme === 'clay' ? '.gg-card,.gg-panel,.gg-side,.gg-node,.gg-step,.gg-layer,.gg-detail{' +
+  'border-radius:32px!important;border:2.5px solid rgba(255,255,255,.9)!important;' +
+  'box-shadow:0 18px 40px rgba(45,35,25,.14),inset 0 6px 12px rgba(255,255,255,.9),inset 0 -6px 14px rgba(45,35,25,.08)!important}' : '',
 '.gg-panelVal{font-weight:800;color:var(--acc);letter-spacing:-.02em}',
 '.gg-af .gg-panelVal{color:var(--good)}',
 '.gg-panelList,.gg-sideList,.gg-detailL{list-style:none;display:flex;flex-direction:column;gap:13px}',

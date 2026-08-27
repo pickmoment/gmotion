@@ -44,7 +44,7 @@
 
 `title` 에 `\n` 을 쓰면 줄이 나뉘고 **줄 단위 마스크 리빌**이 걸린다.
 
-트랜지션: `cut` `fade` `pushLeft` `pushRight` `pushUp` `zoomIn` `zoomOut` `wipe` `match` `curve` `pageFlip` `paperPeel` `curlWipe`
+트랜지션: `cut` `fade` `pushLeft` `pushRight` `pushUp` `zoomIn` `zoomOut` `wipe` `match` `curve` `pageFlip` `paperPeel` `curlWipe` `clayPop` `squish`
 
 `notes` 는 일반 빌드 산출물에 들어가지 않는다 — 발표용(`--present`)에만 실린다.
 청중에게 보일 파일에 발표 대사가 남지 않는다.
@@ -342,7 +342,7 @@ waterfall slope dumbbell bullet heatmap sparkline`
 ```jsonc
 { "pattern": "deviceShow",
   "title": "한 곳에서 답이 나온다",
-  "frame": "browser",                    // browser window terminal phone tablet laptop card chat memo notepad clipboard
+  "frame": "browser",                    // browser window terminal phone tablet laptop card chat memo notepad clipboard clayBoard
   "screen": {                            // 프레임 안. 셋 중 필요한 것만
     "title": "검색 결과",
     "items": [ { "label": "결정 로그", "icon": "doc", "value": "12" } ],

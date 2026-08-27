@@ -340,6 +340,55 @@ DECOR.sheets = {
     return s.join('');
   }
 };
+DECOR.clayBlobs = {
+  label: '클레이 블롭 — 3D 점토 구슬이 둥둥 떠다니는 배경. 클레이모피즘·스톱모션',
+  build: function (W, H, T, lv) {
+    var o = [.18, .28, .42][lv], R = rng(67), n = 6;
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<defs>',
+      '<filter id="ggClayBlobSh" x="-20%" y="-20%" width="150%" height="150%">' +
+      '<feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="' + T.ink + '" flood-opacity="0.14"/>' +
+      '</filter>',
+      '<radialGradient id="ggClayGrad1" cx="35%" cy="30%" r="65%">' +
+      '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>' +
+      '<stop offset="45%" stop-color="' + T.accent + '"/>' +
+      '<stop offset="100%" stop-color="' + T.bg2 + '"/>' +
+      '</radialGradient>',
+      '<radialGradient id="ggClayGrad2" cx="35%" cy="30%" r="65%">' +
+      '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>' +
+      '<stop offset="45%" stop-color="' + T.accent2 + '"/>' +
+      '<stop offset="100%" stop-color="' + T.bg2 + '"/>' +
+      '</radialGradient>',
+      '</defs>'];
+    for (var i = 0; i < n; i++) {
+      var cx = W * (.12 + R() * .76), cy = H * (.15 + R() * .7);
+      var r = Math.min(W, H) * (.06 + R() * .055);
+      var grad = i % 2 === 0 ? 'url(#ggClayGrad1)' : 'url(#ggClayGrad2)';
+      s.push('<circle class="gg-drFloat" style="animation-delay:' + r2(-i * 4.2) + 's" ' +
+        'cx="' + r2(cx) + '" cy="' + r2(cy) + '" r="' + r2(r) + '" ' +
+        'fill="' + grad + '" opacity="' + r2(o) + '" filter="url(#ggClayBlobSh)"/>');
+    }
+    s.push('</svg>');
+    return s.join('');
+  }
+};
+DECOR.dough = {
+  label: '점토 층 — 찰흙 반죽을 빚어 겹쳐 놓은 유기적 물결. 따뜻함·공예·스토리',
+  build: function (W, H, T, lv) {
+    var o = [.16, .26, .38][lv], s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    var cols = [T.accent, T.accent2, T.panel];
+    for (var i = 0; i < 3; i++) {
+      var y = H * (.62 + i * .11), a = H * (.06 - i * .01);
+      var d = 'M0 ' + r2(y) + ' Q' + r2(W * .28) + ' ' + r2(y - a) + ' ' + r2(W * .52) + ' ' + r2(y + a * .5) +
+              ' T' + W + ' ' + r2(y) + ' L' + W + ' ' + H + ' L0 ' + H + ' Z';
+      s.push('<path class="gg-drSlide" style="animation-delay:' + r2(-i * 5.2) + 's" d="' + d + '" ' +
+        'fill="' + cols[i] + '" opacity="' + r2(o * (1 - i * .2)) + '"/>');
+    }
+    s.push('</svg>');
+    return s.join('');
+  }
+};
+
 
 
 
@@ -486,6 +535,25 @@ MARK.stamp = {
       '</svg>';
   }
 };
+MARK.clayPin = {
+  label: '점토 핀 — 둥근 찰흙 압정 구슬. 메모·카드 고정', stretch: false, where: 'corner', draw: false,
+  build: function (T) {
+    return '<svg class="gg-mark gg-mk-clayPin" viewBox="0 0 44 44" aria-hidden="true">' +
+      '<defs>' +
+      '<filter id="ggPinSh" x="-30%" y="-30%" width="160%" height="160%">' +
+      '<feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="' + T.ink + '" flood-opacity="0.25"/>' +
+      '</filter>' +
+      '<radialGradient id="ggPinGrad" cx="35%" cy="30%" r="65%">' +
+      '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>' +
+      '<stop offset="45%" stop-color="' + T.accent + '"/>' +
+      '<stop offset="100%" stop-color="' + T.ink + '"/>' +
+      '</radialGradient>' +
+      '</defs>' +
+      '<circle cx="22" cy="22" r="16" fill="url(#ggPinGrad)" filter="url(#ggPinSh)"/>' +
+      '</svg>';
+  }
+};
+
 
 
 
@@ -676,6 +744,34 @@ FRAME.clipboard = {
     };
   }
 };
+FRAME.clayBoard = {
+  label: '점토 보드 — 찰흙을 빚어 만든 두툼한 점토판. 아이디어·체크리스트·클레이', ratio: 4 / 3,
+  build: function (T, W, H) {
+    var pad = Math.round(Math.min(W, H) * .09);
+    var pinR = Math.round(Math.min(W, H) * .035);
+    var s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<defs>',
+      '<filter id="ggClayBoardSh" x="-10%" y="-10%" width="130%" height="130%">' +
+      '<feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="' + T.ink + '" flood-opacity="0.14"/>' +
+      '</filter>',
+      '<radialGradient id="ggBoardPinGrad" cx="35%" cy="30%" r="65%">' +
+      '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>' +
+      '<stop offset="50%" stop-color="' + T.accent + '"/>' +
+      '<stop offset="100%" stop-color="' + T.bg2 + '"/>' +
+      '</radialGradient>',
+      '</defs>',
+      '<rect x="10" y="10" width="' + (W - 20) + '" height="' + (H - 20) + '" rx="28" fill="' + T.panel + '" ' +
+      'stroke="' + T.panelLine + '" stroke-width="3" filter="url(#ggClayBoardSh)"/>',
+      '<circle cx="' + Math.round(W * .2) + '" cy="24" r="' + pinR + '" fill="url(#ggBoardPinGrad)"/>',
+      '<circle cx="' + Math.round(W * .8) + '" cy="24" r="' + pinR + '" fill="url(#ggBoardPinGrad)"/>',
+      '</svg>'];
+    return {
+      svg: s.join(''),
+      inner: { x: pad + 8, y: pad + 14, w: W - (pad + 8) * 2, h: H - (pad + 14) * 2 }
+    };
+  }
+};
+
 
 
 /* ================================================================== *

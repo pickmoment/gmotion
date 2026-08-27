@@ -1,0 +1,77 @@
+{
+  "title": "클레이 스토리",
+  "message": "손으로 빚은 듯한 따뜻한 볼륨감과 통통 튀는 클레이 애니메이션",
+  "theme": "clay",
+  "aspect": "16:9",
+  "energy": "E2",
+  "mode": "autoplay",
+  "decor": "clayBlobs",
+  "scenes": [
+    {
+      "id": "intro",
+      "pattern": "heroReveal",
+      "purpose": "클레이 오프닝",
+      "kicker": "Claymation & Volume",
+      "title": "손으로 직접 빚은\n클레이 모션그래픽",
+      "sub": "폭신한 3D 볼륨감과 통통 튀는 탄성의 조화",
+      "icon": "pencil",
+      "mark": "circle",
+      "hold": 2.2
+    },
+    {
+      "id": "features",
+      "pattern": "cardsCascade",
+      "purpose": "점토 질감의 3가지 특징",
+      "title": "클레이모피즘 3요소",
+      "sub": "점토의 물리적 질감을 화면에 구현합니다",
+      "transition": "clayPop",
+      "decor": ["clayBlobs", "dough"],
+      "items": [
+        { "label": "3D 볼륨", "note": "다중 인셋 음영과 둥근 모서리", "icon": "box", "mark": "clayPin" },
+        { "label": "말랑한 탄성", "note": "스쿼시 & 스트레치 바운스", "icon": "bolt" },
+        { "label": "아날로그 감성", "note": "12fps 스톱모션 리듬", "icon": "video", "badge": "인기" }
+      ]
+    },
+    {
+      "id": "board",
+      "pattern": "deviceShow",
+      "purpose": "점토 보드 체크리스트",
+      "title": "점토판에 새긴 프로젝트 목표",
+      "transition": "squish",
+      "frame": "clayBoard",
+      "screen": {
+        "title": "클레이 제작 파이프라인",
+        "items": [
+          { "label": "점토 캐릭터 모델링", "value": "완료", "icon": "check" },
+          { "label": "스톱모션 프레임 촬영", "value": "완료", "icon": "camera" },
+          { "label": "GSAP 탄성 트윈 합성", "value": "진행 중", "icon": "sparkle" }
+        ]
+      },
+      "caption": "두툼한 클레이 보드 프레임으로 입체감을 강조합니다"
+    },
+    {
+      "id": "steps",
+      "pattern": "processFlow",
+      "purpose": "점토 가공 과정",
+      "title": "찰흙이 영상이 되는 3단계",
+      "transition": "clayPop",
+      "decor": "dough",
+      "steps": [
+        { "label": "반죽 빚기", "note": "원하는 색상과 형태 배합", "icon": "sparkle" },
+        { "label": "모션 설계", "note": "탄성과 중력 타이밍 계산", "icon": "branch" },
+        { "label": "렌더 완성", "note": "클레이모픽 질감 합성", "icon": "trophy" }
+      ]
+    },
+    {
+      "id": "ending",
+      "pattern": "quote",
+      "purpose": "마무리 메시지",
+      "transition": "squish",
+      "text": "완벽한 직선보다\n손끝의 온기가 담긴 점토가\n더 깊은 울림을 줍니다",
+      "by": "클레이 스튜디오",
+      "role": "핸드메이드 감성",
+      "mark": "stamp:CLAY",
+      "hold": 2.5
+    }
+  ]
+}

@@ -225,6 +225,27 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
 
 **검증.** `node assets/selftest.js` 95건 전체 통과 · `npm run build` 통과.
 
+
+## 12. 클레이 애니메이션 (클레이모피즘·탄성 모션·점토 에셋) 추가 (2026-08-28)
+
+**왜.** 찰흙/점토를 손으로 직접 빚은 듯한 따뜻한 볼륨감과 통통 튀는 스쿼시 & 스트레치(Squash & Stretch) 탄성 모션그래픽 제작 지원.
+
+### `assets/gsapgraph.js`
+- `THEMES.clay` 테마 추가: 3D 점토 볼륨감과 매트 파스텔/어스 톤 팔레트 (`bg: #f0ece4`, `accent: #a83c16`, `font: round` 주아).
+- `TRANSITIONS.clayPop`, `TRANSITIONS.squish`: 점토가 납작하게 눌렸다가 통통 튀어오르는 탄성 바운스 씬 전환 트랜지션.
+- 클레이모픽 CSS 스타일: `theme === 'clay'` 시 카드/패널/노드에 다중 인셋 하이라이트 + 딥 드롭 섀도우 + 두터운 32px 라운딩 자동 적용.
+
+### `assets/vectors.js`
+- `DECOR.clayBlobs`: 3D 점토 구슬이 둥둥 떠다니는 배경 레이어.
+- `DECOR.dough`: 찰흙 반죽을 빚어 놓은 듯한 유기적 물결 배경.
+- `FRAME.clayBoard`: 두툼한 찰흙 점토판 프레임.
+- `MARK.clayPin`: 3D 볼륨 점토 압정 마크.
+
+### 예제 및 문서
+- `starter-clay.json` 쇼케이스 예제 추가 (19초 5씬).
+- `theming.md` · `direction.md` · `spec.md` · `SKILL.md` 업데이트.
+
+**검증.** `node assets/selftest.js` 96건 전체 통과 · `npm run build` 통과.
 **검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 5건 통과 · `npm run build` 통과.
 
 ## 10. Windows 환경 FFmpeg 자동 탐색 강화 (2026-08-27)
