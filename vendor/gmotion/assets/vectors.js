@@ -266,6 +266,81 @@ DECOR.horizon = {
     return s.join('') + '</svg>';
   }
 };
+DECOR.creases = {
+  label: '접힘선 — 종이를 접었다 편 듯한 십자 음영 선. 아날로그·페이퍼·크래프트',
+  build: function (W, H, T, lv) {
+    var o = [.14, .24, .38][lv];
+    var cx = W / 2, cy = H / 2;
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    s.push('<line x1="0" y1="' + (cy - 1) + '" x2="' + W + '" y2="' + (cy - 1) + '" stroke="' + T.ink + '" stroke-width="1.5" opacity="' + r2(o * .7) + '"/>');
+    s.push('<line x1="0" y1="' + cy + '" x2="' + W + '" y2="' + cy + '" stroke="' + T.bg + '" stroke-width="1.5" opacity="' + r2(o * .9) + '"/>');
+    s.push('<line x1="0" y1="' + (cy + 1) + '" x2="' + W + '" y2="' + (cy + 1) + '" stroke="' + T.accent + '" stroke-width="1.2" opacity="' + r2(o * .4) + '"/>');
+    s.push('<line x1="' + (cx - 1) + '" y1="0" x2="' + (cx - 1) + '" y2="' + H + '" stroke="' + T.ink + '" stroke-width="1.5" opacity="' + r2(o * .7) + '"/>');
+    s.push('<line x1="' + cx + '" y1="0" x2="' + cx + '" y2="' + H + '" stroke="' + T.bg + '" stroke-width="1.5" opacity="' + r2(o * .9) + '"/>');
+    s.push('<line x1="' + (cx + 1) + '" y1="0" x2="' + (cx + 1) + '" y2="' + H + '" stroke="' + T.accent + '" stroke-width="1.2" opacity="' + r2(o * .4) + '"/>');
+    s.push('<line x1="0" y1="0" x2="' + r2(W * .22) + '" y2="' + r2(H * .18) + '" stroke="' + T.ink + '" stroke-width="1" opacity="' + r2(o * .35) + '"/>');
+    s.push('<line x1="' + W + '" y1="' + H + '" x2="' + r2(W * .78) + '" y2="' + r2(H * .82) + '" stroke="' + T.ink + '" stroke-width="1" opacity="' + r2(o * .35) + '"/>');
+    s.push('</svg>');
+    return s.join('');
+  }
+};
+DECOR.gridPaper = {
+  label: '모눈종이 — 노트 방안지 격자. 기획·아이디어·설계',
+  build: function (W, H, T, lv) {
+    var o = [.08, .15, .25][lv];
+    var sm = Math.round(Math.min(W, H) / 28);
+    var lg = sm * 5;
+    return '<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+      '<defs>' +
+      '<pattern id="ggGridSmall" width="' + sm + '" height="' + sm + '" patternUnits="userSpaceOnUse">' +
+      '<path d="M' + sm + ' 0 L0 0 0 ' + sm + '" fill="none" stroke="' + T.accent + '" stroke-width="0.8" opacity="' + r2(o * .5) + '"/>' +
+      '</pattern>' +
+      '<pattern id="ggGridLarge" width="' + lg + '" height="' + lg + '" patternUnits="userSpaceOnUse">' +
+      '<rect width="' + lg + '" height="' + lg + '" fill="url(#ggGridSmall)"/>' +
+      '<path d="M' + lg + ' 0 L0 0 0 ' + lg + '" fill="none" stroke="' + T.accent + '" stroke-width="1.6" opacity="' + r2(o) + '"/>' +
+      '</pattern>' +
+      '</defs>' +
+      '<rect width="100%" height="100%" fill="url(#ggGridLarge)"/>' +
+      '</svg>';
+  }
+};
+DECOR.ruled = {
+  label: '줄노트 — 노트 괘선과 마진 라인. 메모·에디토리얼·기록',
+  build: function (W, H, T, lv) {
+    var o = [.1, .18, .28][lv];
+    var step = Math.round(H / 20);
+    var marginX = Math.round(W * .12);
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    for (var y = step * 2; y < H - step; y += step) {
+      s.push('<line x1="0" y1="' + y + '" x2="' + W + '" y2="' + y + '" stroke="' + T.accent + '" stroke-width="1.2" opacity="' + r2(o * .7) + '"/>');
+    }
+    s.push('<line x1="' + marginX + '" y1="0" x2="' + marginX + '" y2="' + H + '" stroke="' + (T.accent2 || T.warn || T.accent) + '" stroke-width="2" opacity="' + r2(o * 1.3) + '"/>');
+    s.push('</svg>');
+    return s.join('');
+  }
+};
+DECOR.sheets = {
+  label: '부유하는 종이 — 공중에 흩날리는 종이 조각 레이어. 공예·창작·아날로그',
+  build: function (W, H, T, lv) {
+    var o = [.12, .2, .32][lv], R = rng(43), n = 7;
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    for (var i = 0; i < n; i++) {
+      var cx = W * (.1 + R() * .8), cy = H * (.1 + R() * .8);
+      var pw = Math.min(W, H) * (.08 + R() * .06);
+      var ph = pw * (1.2 + R() * .3);
+      var ang = -25 + R() * 50;
+      var col = (i % 2 === 0 ? T.panel : (i % 3 === 0 ? T.accent2 : T.accent));
+      s.push('<g class="gg-drDrift" style="animation-delay:' + r2(-i * 3.7) + 's;transform-origin:' + r2(cx) + 'px ' + r2(cy) + 'px">' +
+        '<rect x="' + r2(cx - pw / 2) + '" y="' + r2(cy - ph / 2) + '" width="' + r2(pw) + '" height="' + r2(ph) + '" rx="4" ' +
+        'fill="' + col + '" stroke="' + T.line + '" stroke-width="1.5" opacity="' + r2(o) + '" ' +
+        'transform="rotate(' + r2(ang) + ' ' + r2(cx) + ' ' + r2(cy) + ')"/>' +
+        '</g>');
+    }
+    s.push('</svg>');
+    return s.join('');
+  }
+};
+
 
 
 /* ================================================================== *
@@ -390,6 +465,28 @@ MARK.ribbon = {
       'fill="' + T.bg + '" transform="rotate(-45 36 36)">' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</text></svg>';
   }
 };
+MARK.tape = {
+  label: '테이프 — 반투명 마스킹 테이프. 메모·인용 고정', stretch: true, where: 'corner', draw: false,
+  build: function (T) {
+    return '<svg class="gg-mark gg-mk-tape" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true">' +
+      '<polygon points="0,4 98,0 100,26 2,30" fill="' + T.accent + '" opacity=".45"/>' +
+      '</svg>';
+  }
+};
+MARK.stamp = {
+  label: '스탬프 — 도장 마크. 확정·인증·강조', stretch: false, where: 'corner', draw: false, text: true,
+  build: function (T, text) {
+    var t = String(text == null ? 'PASS' : text);
+    var fs = Math.max(12, Math.round(30 - t.length * 2.2));
+    return '<svg class="gg-mark gg-mk-stamp" viewBox="0 0 110 50" aria-hidden="true">' +
+      '<rect x="4" y="4" width="102" height="42" rx="6" fill="none" stroke="' + T.good + '" stroke-width="3" stroke-dasharray="1000" ' +
+      'transform="rotate(-8 55 25)"/>' +
+      '<text x="55" y="31" fill="' + T.good + '" font-size="' + fs + '" font-weight="900" text-anchor="middle" ' +
+      'letter-spacing="0.1em" font-family="inherit" transform="rotate(-8 55 25)">' + t.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</text>' +
+      '</svg>';
+  }
+};
+
 
 
 /* ================================================================== *
@@ -524,6 +621,62 @@ FRAME.chat = {
     };
   }
 };
+FRAME.memo = {
+  label: '메모지 — 상단 마스킹 테이프가 붙은 정사각 메모. 아이디어·노트', ratio: 1,
+  build: function (T, W, H) {
+    var pad = Math.round(Math.min(W, H) * .09);
+    var tw = Math.round(W * .32), th = Math.round(H * .09), tx = Math.round((W - tw) / 2);
+    var svg = '<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+      '<rect x="12" y="' + Math.round(th * .6) + '" width="' + (W - 24) + '" height="' + (H - th * .6 - 16) + '" rx="6" ' +
+      'fill="' + T.panel + '" stroke="' + T.panelLine + '" stroke-width="1.8"/>' +
+      '<rect x="' + tx + '" y="4" width="' + tw + '" height="' + th + '" rx="2" ' +
+      'fill="' + T.accent + '" opacity=".45" transform="rotate(-1.5 ' + (tx + tw / 2) + ' ' + (th / 2) + ')"/>' +
+      '</svg>';
+    return {
+      svg: svg,
+      inner: { x: pad + 8, y: Math.round(th * 1.3) + 10, w: W - (pad + 8) * 2, h: H - Math.round(th * 1.3) - pad - 18 }
+    };
+  }
+};
+FRAME.notepad = {
+  label: '스프링 노트 — 상단 바인더 링이 있는 노트 용지. 체크리스트·기록', ratio: 16 / 11,
+  build: function (T, W, H) {
+    var pad = Math.round(Math.min(W, H) * .08);
+    var topBar = Math.round(H * .12);
+    var rings = 10, rw = W - 48, step = rw / (rings - 1);
+    var s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<rect x="12" y="18" width="' + (W - 24) + '" height="' + (H - 28) + '" rx="10" fill="' + T.panel + '" stroke="' + T.panelLine + '" stroke-width="2"/>',
+      '<line x1="12" y1="' + topBar + '" x2="' + (W - 12) + '" y2="' + topBar + '" stroke="' + T.line + '" stroke-width="1.5" stroke-dasharray="6 4"/>'];
+    for (var i = 0; i < rings; i++) {
+      var rx = 24 + i * step;
+      s.push('<rect x="' + (rx - 4) + '" y="6" width="8" height="24" rx="4" fill="' + T.accent + '" opacity=".85"/>');
+      s.push('<circle cx="' + rx + '" cy="18" r="3.5" fill="' + T.bg + '"/>');
+    }
+    s.push('</svg>');
+    return {
+      svg: s.join(''),
+      inner: { x: pad + 12, y: topBar + 16, w: W - (pad + 12) * 2, h: H - topBar - pad - 24 }
+    };
+  }
+};
+FRAME.clipboard = {
+  label: '클립보드 — 상단 메탈 클립과 서류 보드. 현황·진단·리포트', ratio: 3 / 4,
+  build: function (T, W, H) {
+    var pad = Math.round(Math.min(W, H) * .09);
+    var clipW = Math.round(W * .38), clipH = Math.round(H * .09), clipX = Math.round((W - clipW) / 2);
+    var s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<rect x="6" y="8" width="' + (W - 12) + '" height="' + (H - 16) + '" rx="16" fill="' + (T.bg2 || T.panel) + '" stroke="' + T.line + '" stroke-width="2.5"/>',
+      '<rect x="22" y="' + Math.round(clipH * .7) + '" width="' + (W - 44) + '" height="' + (H - clipH * .7 - 24) + '" rx="8" fill="' + T.panel + '" stroke="' + T.panelLine + '" stroke-width="1.5"/>',
+      '<rect x="' + clipX + '" y="2" width="' + clipW + '" height="' + clipH + '" rx="6" fill="' + T.accent + '" opacity=".9"/>',
+      '<circle cx="' + (clipX + clipW / 2) + '" cy="' + (clipH / 2 + 2) + '" r="' + Math.round(clipH * .22) + '" fill="' + T.bg + '"/>',
+      '</svg>'];
+    return {
+      svg: s.join(''),
+      inner: { x: pad + 16, y: Math.round(clipH * 1.3) + 10, w: W - (pad + 16) * 2, h: H - Math.round(clipH * 1.3) - pad - 26 }
+    };
+  }
+};
+
 
 /* ================================================================== *
  * ART — 추상 일러스트

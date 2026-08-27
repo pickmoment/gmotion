@@ -86,6 +86,7 @@ node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 | `assets/examples/starter-effects.json` | **효과 쇼케이스** — 모프·곡선 경로·스크램블·롤·마퀴·스택·곡선 와이프 |
 | `assets/examples/starter-narrated.json` | **자막 동기화** — 씬·항목에 `say` 를 단 예 (5씬 62초). 옆의 `.srt` 와 함께 쓴다 |
 | `assets/examples/starter-fonts.json` | **폰트 비교** — `font` 를 바꿔 가며 빌드해 글자꼴을 고른다 |
+| `assets/examples/starter-paper.json` | **종이 모션 쇼케이스** — 크래프트 테마, 접힘선·줄노트·모눈 배경, 페이지 넘김·종이 떼기·컬 와이프 트랜지션, 메모·스프링노트 프레임 |
 
 ### 파일명 규칙 — 원본 파일과 동일한 이름(stem) 사용
 

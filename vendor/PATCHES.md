@@ -212,6 +212,19 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
 - `starter-charts.json` — 씬 7, 13의 `"decor": "spotlight"` $\rightarrow$ `"decor": "arcs"` 로 교체.
 - `SKILL.md` · `theming.md` · `direction.md` — `spotlight` 설명 및 예시 제거.
 
+## 10. 다중 라인(2줄) 자막 배경 겹침/계단 현상 수정 및 글래스 뱃지 통일 (2026-08-27)
+
+**원인.**
+1. 기존 `.gg-captions span`에 `display: inline` + `box-decoration-break: clone` + `border-radius: .28em .28em 0 0` (상단만 둥근 모서리)이 적용되어 있었다.
+2. 자막이 2줄로 줄바꿈될 때, 줄마다 `box-decoration-break: clone`으로 인해 독립된 인라인 박스가 생성되었다.
+3. 1번째 줄(긴 줄) 아래에 2번째 줄(짧은 줄)이 중앙 정렬될 때, 2번째 줄 상단의 둥근 모서리가 1번째 줄 하단에 파고들어 어색한 노치/음영 겹침을 발생시키고, 2번째 줄 하단 모서리는 각진 채로 노출되는 현상이 발생했다.
+
+### `assets/gsapgraph.js`
+- `.gg-captions`: `display: flex; justify-content: center; align-items: flex-end` 컨테이너로 개선하고, 화면비별 안전 높이(`bottom`) 자동 계산.
+- `.gg-captions span`: `display: inline-block; max-width: 88%`의 단일 통합 글래스 뱃지로 변경. 1줄/2줄 여부와 관계없이 전체 자막 텍스트를 감싸는 둥근 다크 반투명 글래스(`backdrop-filter: blur(10px)`, `border-radius: 15px`, 은은한 보더 및 섀도우)로 일관되게 렌더링.
+
+**검증.** `node assets/selftest.js` 95건 전체 통과 · `npm run build` 통과.
+
 **검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 5건 통과 · `npm run build` 통과.
 
 ## 10. Windows 환경 FFmpeg 자동 탐색 강화 (2026-08-27)

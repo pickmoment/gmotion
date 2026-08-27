@@ -212,9 +212,9 @@
     var t = TR[name]; if (!t || !t.inFrom) return;
     var lag = overlapDelay(name, dur), d = D(dur - lag);
     if (t.inFrom.clip) {
-      /* 곡선 와이프는 원호가 아래에서 올라와 덮는다. 직선 와이프보다 부드럽다. */
-      var from = t.inFrom.clip === 'curve' ? 'ellipse(0% 0% at 50% 108%)' : 'inset(0 100% 0 0)';
-      var to = t.inFrom.clip === 'curve' ? 'ellipse(160% 160% at 50% 108%)' : 'inset(0 0% 0 0)';
+      /* 곡선 와이프 & 컬 와이프 */
+      var from = t.inFrom.clip === 'curve' ? 'ellipse(0% 0% at 50% 108%)' : (t.inFrom.clip === 'curl' ? 'polygon(100% 100%, 100% 100%, 100% 100%, 100% 100%)' : 'inset(0 100% 0 0)');
+      var to = t.inFrom.clip === 'curve' ? 'ellipse(160% 160% at 50% 108%)' : (t.inFrom.clip === 'curl' ? 'polygon(-40% -40%, 140% -40%, 140% 140%, -40% 140%)' : 'inset(0 0% 0 0)');
       master.fromTo(el, { clipPath: from }, { clipPath: to, duration: D(dur), ease: 'power2.inOut' }, at);
       return;
     }

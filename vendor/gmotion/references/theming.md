@@ -4,13 +4,15 @@
 같은 스킬이 만든 산출물이 같은 사람 손처럼 보이는 이유이자, 매번 다시 뽑아도
 톤이 어긋나지 않는 이유다.
 
-## 테마 6종
+## 테마 14종
 
 | 테마 | 톤 | 어울리는 것 | 폰트 | 비네트 |
 |---|---|---|---|---|
 | `midnight` | 남색 배경 + 하늘색 accent | **기본값.** 발표 오프닝, 기술 explainer, 제품 소개 | Pretendard | 있음 |
 | `ink` | 먹색 + 금색 | 다큐·시리즈 오프닝, 무게 있는 서사 | 나눔명조 | 강함 |
 | `paper` | 밝은 크림 + 파란 accent | 지표 리포트, 사내 공유, 인쇄 전제 | Pretendard | **없음** |
+| `kraft` | 갈색 소포지 질감 + 따뜻한 잉크 **라이트** | 아날로그, 기획 노트, 아이디어 스케치, 공예 | 고운바탕 | 있음 |
+| `blueprint` | 청사진 남색 + 백색 도면선 | 설계, 아키텍처, 기획, 구조도 | IBM Plex Sans KR | 있음 |
 | `mono` | 흑백 | 타이포 중심, 절제된 톤, 브랜드 무채색 | Pretendard | 약함 |
 | `neon` | 고채도 시안·핑크 + 글로우 | 쇼츠·릴스, 런칭, 하이에너지 | Pretendard | 있음 |
 | `warm` | 크림·테라코타 | 브랜드 캠페인, 감성 메시지 | 나눔명조 | 있음 |
@@ -21,9 +23,8 @@
 | `ocean` | 심해 청록 + 시안 accent | 데이터, 인프라, 신뢰 | Pretendard | 있음 |
 | `plum` | 자주 + 연보라 accent | 문화, 예술, 프리미엄 | 나눔명조 | 강함 |
 
-**라이트 넷 · 다크 여덟.** 발표장 조명이 밝거나 인쇄를 전제하면 라이트를,
+**라이트 다섯 · 다크 아홉.** 발표장 조명이 밝거나 인쇄를 전제하면 라이트를,
 영상으로 재생하거나 몰입이 필요하면 다크를 쓴다.
-
 ## 대비 — 색은 예쁘기 전에 읽혀야 한다
 
 12종 전부 **WCAG AA** 를 지킨다. `gm test` 가 매번 잰다.
@@ -80,10 +81,9 @@
 "decorLevel": 2               // 0 약 · 1 기본 · 2 강
 ```
 
-14종: `blob` `wave` `grid` `dots` `rays` `rings` `mesh` `topo` `beams`
-`constellation` `arcs` `hexes` `stripes` `horizon`
+18종: `blob` `wave` `grid` `dots` `rays` `rings` `mesh` `topo` `beams`
+`constellation` `arcs` `hexes` `stripes` `horizon` `creases` `gridPaper` `ruled` `sheets`
 (`gm info decor` 로 각각의 용도를 본다)
-
 배경은 CSS 애니메이션으로 느리게 움직인다 — 마스터 타임라인과 무관하므로 시킹·프레임
 캡처에 영향이 없고, 감소 모션에서는 멈춘다.
 

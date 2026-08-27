@@ -1,0 +1,77 @@
+{
+  "title": "생각의 스케치",
+  "message": "종이 위에 적힌 생각은 손을 거쳐 더 단단한 형태가 된다",
+  "theme": "kraft",
+  "aspect": "16:9",
+  "energy": "E1",
+  "mode": "autoplay",
+  "decor": "creases",
+  "scenes": [
+    {
+      "id": "cover",
+      "pattern": "heroReveal",
+      "purpose": "주제 선언",
+      "kicker": "Paper & Sketch",
+      "title": "생각을 종이 위에\n기록하는 순간",
+      "sub": "아날로그 질감과 자연스러운 종이 모션의 조화",
+      "mark": "highlight",
+      "icon": "pencil",
+      "hold": 2.2
+    },
+    {
+      "id": "notes",
+      "pattern": "cardsCascade",
+      "purpose": "아이디어 메모 나열",
+      "title": "포스트잇에 모인 단상들",
+      "sub": "가벼운 메모가 모여 구조를 만든다",
+      "transition": "pageFlip",
+      "decor": ["creases", "ruled"],
+      "items": [
+        { "label": "관찰", "note": "사용자의 일상을 면밀히 기록", "icon": "search" },
+        { "label": "발상", "note": "제약 없이 자유롭게 발산", "icon": "bulb" },
+        { "label": "정리", "note": "핵심 질문 3가지로 압축", "icon": "doc", "badge": "중요" }
+      ]
+    },
+    {
+      "id": "notepad",
+      "pattern": "deviceShow",
+      "purpose": "스프링 노트 서식",
+      "title": "스프링 노트에 정리한 체크리스트",
+      "transition": "paperPeel",
+      "frame": "notepad",
+      "screen": {
+        "title": "기획 점검 목록",
+        "items": [
+          { "label": "핵심 문제 정의", "value": "완료", "icon": "check" },
+          { "label": "사용자 여정 맵", "value": "검토 중", "icon": "map" },
+          { "label": "화면 와이어프레임", "value": "진행 중", "icon": "brush" }
+        ]
+      },
+      "caption": "노트 프레임으로 실제 업무 기록의 느낌을 전달한다"
+    },
+    {
+      "id": "blueprint",
+      "pattern": "processFlow",
+      "purpose": "설계 단계로 전환",
+      "title": "설계도로 구체화되는 과정",
+      "transition": "curlWipe",
+      "decor": ["gridPaper", "sheets"],
+      "steps": [
+        { "label": "아이디어 스케치", "note": "종이와 펜으로 윤곽 설정", "icon": "pencil" },
+        { "label": "구조 다이어그램", "note": "정보 계층과 흐름 연결", "icon": "branch" },
+        { "label": "최종 프로토타입", "note": "동작하는 모션으로 검증", "icon": "bolt", "mark": "circle" }
+      ]
+    },
+    {
+      "id": "approved",
+      "pattern": "quote",
+      "purpose": "마무리 확정",
+      "transition": "pageFlip",
+      "text": "단단한 설계는\n종이 위의 스케치에서 시작된다",
+      "by": "기획 노트의 마지막 장",
+      "role": "검증 완료",
+      "mark": "stamp:PASS",
+      "hold": 2.5
+    }
+  ]
+}

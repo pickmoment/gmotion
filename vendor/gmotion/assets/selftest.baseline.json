@@ -164,6 +164,27 @@
       5.4
     ]
   },
+  "starter-paper": {
+    "scenes": 5,
+    "total": 24.58,
+    "tweens": 27,
+    "icons": 8,
+    "errors": 0,
+    "ats": [
+      0,
+      4.12,
+      7.68,
+      15.22,
+      20.28
+    ],
+    "durs": [
+      4.67,
+      4.24,
+      8.34,
+      5.61,
+      4.3
+    ]
+  },
   "starter-report": {
     "scenes": 6,
     "total": 26.19,

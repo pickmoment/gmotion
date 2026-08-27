@@ -143,6 +143,20 @@ var THEMES = {
     accent: '#e0a3f5', accent2: '#f0abfc', good: '#6ee7b7', warn: '#fcd34d', bad: '#fda4af',
     line: 'rgba(224,163,245,.2)', panel: 'rgba(246,236,247,.05)', panelLine: 'rgba(224,163,245,.16)',
     glow: 1, font: 'serif', grain: .05, vig: .5, decor: ['blob', 'arcs']
+  },
+  kraft: {
+    label: '크래프트 — 갈색 소포지 질감과 따뜻한 잉크. 공예·아날로그·스케치',
+    bg: '#e8dcce', bg2: '#dbcaba', ink: '#201812', ink2: '#4a3b2c', dim: '#624f3c',
+    accent: '#8b3d18', accent2: '#1b5e50', good: '#246b32', warn: '#8c4a00', bad: '#9c241b',
+    line: 'rgba(32,24,18,.16)', panel: 'rgba(255,252,246,.78)', panelLine: 'rgba(32,24,18,.12)',
+    glow: 0, font: 'soft', grain: .12, vig: .12, decor: ['creases', 'gridPaper']
+  },
+  blueprint: {
+    label: '블루프린트 — 청사진 종이 배경 + 백색 도면선. 설계·기획·구조도',
+    bg: '#0d2847', bg2: '#081c33', ink: '#f0f6fc', ink2: '#9ec5e8', dim: '#6fa0cc',
+    accent: '#58a6ff', accent2: '#7ee787', good: '#3fb950', warn: '#f0883e', bad: '#ff7b72',
+    line: 'rgba(88,166,255,.24)', panel: 'rgba(13,40,71,.72)', panelLine: 'rgba(88,166,255,.3)',
+    glow: 1, font: 'neo', grain: .05, vig: .35, decor: ['gridPaper', 'creases']
   }
 };
 /* ------------------------------------------------------------------ *
@@ -1974,7 +1988,10 @@ var TRANSITIONS = {
   zoomOut:   { label: '줌 아웃 — 부분에서 전체로', out: { scale: .78, opacity: 0 }, inFrom: { scale: 1.3, opacity: 0 }, d: .9 },
   wipe:      { label: '와이프 — 화면을 닦아 교체. 장 구분', out: { opacity: 0 }, inFrom: { clip: 1, opacity: 1 }, d: .85 },
   match:     { label: '매치 — 겹쳐 넘긴다. 같은 형태가 이어질 때', out: { scale: 1.08, opacity: 0 }, inFrom: { scale: .96, opacity: 0 }, d: 1.0, overlap: .55 },
-  curve:     { label: '곡선 와이프 — 아래에서 원호가 올라와 화면을 덮는다. 장 전환', out: { opacity: 0 }, inFrom: { clip: 'curve' }, d: 1.0 }
+  curve:     { label: '곡선 와이프 — 아래에서 원호가 올라와 화면을 덮는다. 장 전환', out: { opacity: 0 }, inFrom: { clip: 'curve' }, d: 1.0 },
+  pageFlip:  { label: '페이지 넘김 — 책장을 넘기듯 3D Y축 회전. 장·챕터 구분', out: { rotateY: -85, transformOrigin: '0% 50%', opacity: 0 }, inFrom: { rotateY: 85, transformOrigin: '100% 50%', opacity: 0 }, d: 1.0, overlap: .55 },
+  paperPeel: { label: '종이 떼기 — 포스트잇이 떼어지듯 사선으로 들려 나감', out: { xPercent: 28, yPercent: -18, rotate: 6, opacity: 0 }, inFrom: { scale: .96, opacity: 0 }, d: .85 },
+  curlWipe:  { label: '컬 와이프 — 종이 귀퉁이가 대각선으로 말려 올라가며 전환', out: { opacity: 0 }, inFrom: { clip: 'curl' }, d: 1.0 },
 };
 
 /* ================================================================== *
@@ -2456,12 +2473,12 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-scale{position:absolute;left:50%;top:50%;width:' + A.w + 'px;height:' + A.h + 'px;transform-origin:center center;' +
   'transform:translate(-50%,-50%)}',
 '.gg-stage{position:relative;width:100%;height:100%;overflow:hidden;transform-origin:center center;' +
-  'background:radial-gradient(120% 90% at 50% 0%,' + T.bg2 + ' 0%,' + T.bg + ' 62%);isolation:isolate}',
+  'background:radial-gradient(120% 90% at 50% 0%,' + T.bg2 + ' 0%,' + T.bg + ' 62%);isolation:isolate;perspective:1600px}',
 '.gg-grain{position:absolute;inset:0;pointer-events:none;opacity:' + T.grain + ';z-index:60;mix-blend-mode:overlay}',
 '.gg-vig{position:absolute;inset:0;pointer-events:none;z-index:59;' +
   'background:radial-gradient(110% 80% at 50% 45%,transparent 55%,rgba(0,0,0,' + num(T.vig, .42) + ') 100%)}',
 '.gg-flash{position:absolute;inset:0;pointer-events:none;z-index:58;background:var(--ink);opacity:0;mix-blend-mode:soft-light}',
-'.gg-scene{position:absolute;inset:0;visibility:hidden}',
+'.gg-scene{position:absolute;inset:0;visibility:hidden;transform-style:preserve-3d;backface-visibility:hidden}',
 '.gg-world{position:absolute;inset:0;transform-origin:center center;will-change:transform}',
 '.gg-fixed{position:absolute;inset:0;z-index:40;pointer-events:none}',
 '.gg-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;color:var(--acc)}',
@@ -2505,6 +2522,8 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-mk-corner{right:-52px;top:-30px;width:60px;height:40px}',
 '.gg-mk-badge{right:-14px;top:-16px;height:34px;width:auto}',
 '.gg-mk-ribbon{left:0;top:0;width:134px;height:134px;border-top-left-radius:22px;overflow:hidden}',
+'.gg-mk-tape{right:-24px;top:-18px;width:72px;height:24px;transform:rotate(5deg)}',
+'.gg-mk-stamp{right:-38px;top:-26px;width:104px;height:48px}',
 '.gg-mkStar{transform-origin:center;animation:ggTwinkle 3.4s ease-in-out infinite}',
 /* ---- 추상 일러스트 ---- */
 '.gg-artBox{position:relative}',
@@ -2566,12 +2585,16 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
    숨기기는 hidden 속성으로 한다 — 전역 [hidden] 규칙이 display 를 확실히 끈다. */
 /* padding-bottom 은 여백이 아니라 클리핑 여유다 — 강조 박스는 글자 아래로 조금 더
    내려오는데 스테이지가 overflow:hidden 이라 그만큼 잘린다. em 이라 화면비를 따라간다. */
-'.gg-captions{position:absolute;left:6%;right:6%;bottom:0;padding-bottom:.22em;text-align:center;' +
-  'z-index:200;pointer-events:none;' +
-  'font-size:' + Math.round(A.h * .033) + 'px;font-weight:600;line-height:1.3;letter-spacing:-.01em}',
-'.gg-captions span{display:inline;color:#fff;background:rgba(0,0,0,.68);border-radius:.28em .28em 0 0;' +
-  'padding:.14em .48em .18em;box-decoration-break:clone;-webkit-box-decoration-break:clone;' +
-  'text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.95)}',
+'.gg-captions{position:absolute;left:4%;right:4%;bottom:' + Math.round(A.h * (A.w < A.h ? .065 : .036)) + 'px;' +
+  'display:flex;justify-content:center;align-items:flex-end;z-index:200;pointer-events:none}',
+'.gg-captions span{display:inline-block;max-width:88%;color:#fff;background:rgba(10,14,24,.84);' +
+  'border:1.5px solid rgba(255,255,255,.16);border-radius:' + Math.round(Math.min(A.w, A.h) * .014) + 'px;' +
+  'padding:.28em .75em .32em;' +
+  'font-size:' + Math.round(Math.min(A.w, A.h) * .032) + 'px;font-weight:600;line-height:1.42;' +
+  'letter-spacing:-.01em;text-align:center;word-break:keep-all;overflow-wrap:break-word;' +
+  'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' +
+  'box-shadow:0 8px 24px rgba(0,0,0,.45);' +
+  'text-shadow:0 1px 3px rgba(0,0,0,.8)}',
 /* 자막 켜기/끄기 버튼 — 꺼진 상태를 눈으로 구분할 수 있어야 한다 */
 '.gg-ccBtn{font-size:11px;font-weight:700;letter-spacing:.02em;width:34px}',
 '.gg-ccBtn[aria-pressed="false"]{opacity:.4;text-decoration:line-through}',
