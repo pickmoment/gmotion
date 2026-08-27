@@ -10,12 +10,12 @@
 
 use serde_json::json;
 use std::io::Write;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::cdp::{b64_decode, find_ffmpeg, Browser};
+use crate::cdp::{b64_decode, find_ffmpeg, new_command, Browser};
 
 #[derive(serde::Deserialize)]
 pub struct RenderOpts {
@@ -109,7 +109,7 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
     /* 처음부터 재생시킨다. 음성이 있으면 음성이 시계를 잡는다. */
     b.eval("GGM.replay(); 1")?;
 
-    let mut cmd = Command::new(&ffmpeg);
+    let mut cmd = new_command(&ffmpeg);
     cmd.args(["-hide_banner", "-loglevel", "error", "-y"])
         .args(["-f", "image2pipe", "-vcodec", "mjpeg"])
         .args(["-framerate", &fps.to_string(), "-i", "-"]);

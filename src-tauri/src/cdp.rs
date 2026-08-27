@@ -8,9 +8,20 @@ use serde_json::{json, Value};
 use std::io::{BufRead, BufReader};
 use std::net::TcpStream;
 use std::path::PathBuf;
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 use tungstenite::{stream::MaybeTlsStream, Message, WebSocket};
+
+/// Windows 에서 자식 프로세스(ffmpeg, chrome, where.exe) 실행 시 콘솔 창이 깜빡이거나
+/// 뜨지 않도록 CREATE_NO_WINDOW 플래그를 설정한 Command 를 만든다.
+pub fn new_command<S: AsRef<std::ffi::OsStr>>(program: S) -> Command {
+    let mut cmd = Command::new(program);
+    #[cfg(target_os = "windows")]
+    cmd.creation_flags(0x0800_0000);
+    cmd
+}
 
 pub type Ws = WebSocket<MaybeTlsStream<TcpStream>>;
 
@@ -74,7 +85,7 @@ pub fn find_chrome() -> Result<PathBuf, String> {
 
         // 5. where.exe 확인
         for exe in ["chrome.exe", "msedge.exe", "brave.exe"] {
-            if let Ok(out) = Command::new("where.exe").arg(exe).output() {
+            if let Ok(out) = new_command("where.exe").arg(exe).output() {
                 for line in String::from_utf8_lossy(&out.stdout).lines() {
                     let s = line.trim();
                     if !s.is_empty() {
@@ -237,7 +248,7 @@ pub fn find_ffmpeg() -> Result<PathBuf, String> {
             cands.push(pf86_p.join(r"ffmpeg\ffmpeg.exe"));
         }
 
-        if let Ok(out) = Command::new("where.exe").arg("ffmpeg.exe").output() {
+        if let Ok(out) = new_command("where.exe").arg("ffmpeg.exe").output() {
             for line in String::from_utf8_lossy(&out.stdout).lines() {
                 let s = line.trim();
                 if !s.is_empty() {
@@ -256,7 +267,7 @@ pub fn find_ffmpeg() -> Result<PathBuf, String> {
             PathBuf::from("/opt/local/bin/ffmpeg"),
             PathBuf::from("/snap/bin/ffmpeg"),
         ]);
-        if let Ok(out) = Command::new("which").arg("ffmpeg").output() {
+        if let Ok(out) = new_command("which").arg("ffmpeg").output() {
             let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
             if !s.is_empty() && PathBuf::from(&s).is_file() {
                 cands.push(PathBuf::from(s));
@@ -306,7 +317,7 @@ impl Browser {
         let _ = std::fs::remove_dir_all(&profile);
         std::fs::create_dir_all(&profile).map_err(|e| e.to_string())?;
 
-        let child = Command::new(&chrome)
+        let child = new_command(&chrome)
             .args([
                 "--headless=new",
                 "--remote-debugging-port=0",
