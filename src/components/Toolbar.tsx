@@ -9,7 +9,7 @@ export interface ExportKind {
 
 export const EXPORTS: ExportKind[] = [
   { key: "html", label: "HTML — 일반 재생", hint: "플레이어 포함. 그대로 열어 재생·공유" },
-  { key: "present", label: "HTML — 발표용", hint: "씬 단위로 넘김. P 로 발표자 창" },
+  { key: "present", label: "HTML — 발표용", hint: "씬 단위로 넘김. P 로 발표자 창. 화면 자막은 빠진다" },
   { key: "clean", label: "HTML — 클린", hint: "플레이어 UI 없이. 녹화·캡처용" },
   { key: "csv", label: "타임코드 CSV", hint: "편집기에 넣을 씬별 시작·끝 프레임" },
   { key: "mp4", label: "MP4 — 영상", hint: "1080p 30fps · 음성까지 담는다. 실시간이라 영상 길이만큼 걸린다" },
@@ -146,7 +146,8 @@ export function Toolbar({
             <label className="inline-check">
               <input type="checkbox" checked={captions} disabled={!subsPath}
                      onChange={(e) => onToggleCaptions(e.target.checked)} />
-              화면 자막 얹기 — 화면 맨 아래에 붙는다. 보는 쪽에서 <code>C</code> 키로 끌 수 있다
+              화면 자막 얹기 — 화면 맨 아래에 붙는다. 보는 쪽에서 <code>C</code> 키로 끌 수 있다.
+              발표용 산출물에는 실리지 않는다 (말은 발표자가 한다)
             </label>
             <div className="menu-row end">
               <button type="button" className="ghost danger" disabled={!subsPath && !audioPath}

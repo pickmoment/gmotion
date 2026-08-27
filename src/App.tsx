@@ -139,11 +139,12 @@ export default function App() {
   /* ── 내보내기 ───────────────────────────────────────────────── */
 
   /** 산출물에 실제로 무엇이 실렸는지 — 내보낸 뒤 이걸 그대로 알려준다. */
-  const embedded = (csv: boolean): string => {
-    if (csv) return sync.cues ? `자막 타이밍 ${sync.cues.length}cue 기준` : "추정 타이밍";
+  const embedded = (kind: ExportKind["key"]): string => {
+    if (kind === "csv") return sync.cues ? `자막 타이밍 ${sync.cues.length}cue 기준` : "추정 타이밍";
     const parts: string[] = [];
     if (sync.cues) parts.push(`자막 정렬 ${sync.cues.length}cue`);
-    if (sync.captions && sync.cues) parts.push("화면 자막");
+    /* 발표용에는 화면 자막이 빠진다 — 실리지 않은 것을 실렸다고 적으면 안 된다. */
+    if (sync.captions && sync.cues) parts.push(kind === "present" ? "화면 자막 제외(발표용)" : "화면 자막");
     if (sync.audioSrc) parts.push(`음성 ${(sync.audioSrc.length * 0.75 / 1048576).toFixed(1)}MB`);
     return parts.length ? parts.join(" · ") : "자막·음성 없음";
   };
@@ -163,7 +164,7 @@ export default function App() {
         ? timingCsv(spec, 30, sync)
         : build(spec, sync, { present: kind === "present", clean: kind === "clean" });
       await api.writeText(p, text);
-      const saved = `${p.split("/").pop()} (${Math.round(text.length / 1024)}KB) — ${embedded(csv)}`;
+      const saved = `${p.split("/").pop()} (${Math.round(text.length / 1024)}KB) — ${embedded(kind)}`;
       /* 열기 실패는 저장 실패가 아니다. 한 try 로 묶으면 저장 성공 메시지가
          열기 오류에 덮여, 무엇이 실렸는지 확인할 길이 사라진다. */
       if (csv) return say(saved);

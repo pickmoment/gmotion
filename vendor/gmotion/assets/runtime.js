@@ -550,7 +550,6 @@
         else if (k === 'b' || k === 'B') { if (black) { black.hidden = !black.hidden; } }
         else if (k === 'o' || k === 'O') { if (toc) { toc.hidden = !toc.hidden; paint(); } }
         else if (k === 'p' || k === 'P') { openPresenter(); }
-        else if ((k === 'c' || k === 'C') && CC) { setCaptions(!ccOn); }
         else if (k === 'f' || k === 'F') {
           document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
         }

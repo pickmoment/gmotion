@@ -16,8 +16,9 @@
  *   --audio <f>  음성을 산출물에 심는다. 재생하면 목소리가 시계를 잡는다
  *   --captions   화면 자막을 얹는다 (--subs 와 함께). 화면 맨 아래에 붙는다 —
  *                보는 쪽에서 C 키·플레이어 CC 버튼·?cc=0 으로 끌 수 있다
+ *                (--present 산출물에는 실리지 않는다 — 말은 발표자가 한다)
  *   --no-inline-audio  음성을 파일 안에 넣지 않고 경로로 참조한다 (HTML 옆에 둔다)
- *   --present    발표용으로 출력 — 씬 단위 진행 + 발표자 창(?presenter=1)
+ *   --present    발표용으로 출력 — 씬 단위 진행 + 발표자 창(?presenter=1). 화면 자막은 빠진다
  *   --clean      플레이어 UI 없이 출력 (녹화·캡처용)
  *   --cdn        GSAP 을 인라인하지 않고 CDN 으로 건다 (파일이 146KB 가벼워진다)
  *   --no-fonts   폰트 CDN 을 걸지 않는다 (완전 오프라인)
@@ -97,6 +98,9 @@ if (cmd === 'build') {
   var cues = readCues(flags.subs);
   if (!cues && (flags.audio || flags.captions)) {
     console.error('  ! --audio · --captions 는 --subs 와 함께 쓴다 — 소리는 실측인데 화면이 추정이면 어긋난다.');
+  }
+  if (flags.present && flags.captions) {
+    console.error('  ! --present 산출물에는 화면 자막이 실리지 않는다 — 말은 발표자가 한다. 타이밍 정렬만 적용된다.');
   }
   var v = G.validate(spec, { cues: cues, captions: flags.captions && cues ? cues : null });
   if (!report(v)) { console.error('  → 오류를 고치고 다시 빌드한다.'); process.exit(1); }

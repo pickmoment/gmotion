@@ -2806,7 +2806,10 @@ function toHTML(spec, opts) {
     var au = spec.audio && typeof spec.audio === 'object' ? spec.audio : {};
     ir.audio = { offset: num(au.offset, 0), volume: au.volume != null ? au.volume : null };
   }
-  if (opts.captions && opts.captions.length) {
+  /* 발표용 산출물에는 화면 자막을 싣지 않는다 — 말은 발표자가 하고, 청중 화면에
+     같은 문장이 또 뜨면 방해가 된다. 자막으로 맞춘 타이밍(cues)은 그대로 쓴다. */
+  var wantCC = !!(opts.captions && opts.captions.length) && !opts.present;
+  if (wantCC) {
     ir.captions = opts.captions.map(function (x) { return { s: r2(x.start), e: r2(x.end), t: esc(x.text) }; });
   }
   var trans = {};
@@ -2860,7 +2863,7 @@ function toHTML(spec, opts) {
     '<footer>← → 이동 · B 검은 화면 · O 씬 목록 · 이 창에서 조작하면 발표 화면도 함께 움직입니다</footer>' +
     '</div>';
 
-  var hasCC = !!(opts.captions && opts.captions.length);
+  var hasCC = wantCC;
   var player = (opts.clean || opts.present) ? '' :
     '<div class="gg-player" role="group" aria-label="재생 조작">' +
     '<button class="gg-btn" data-a="toggle" aria-label="재생/일시정지">❚❚</button>' +
