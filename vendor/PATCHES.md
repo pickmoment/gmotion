@@ -228,3 +228,16 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
   - `where.exe ffmpeg.exe` 및 `PATH` 환경변수 전체 탐색.
 
 **검증.** `cargo test` 6건 통과 (`find_ffmpeg_finds_binary` 통과) · WinGet 및 Vrew FFmpeg 자동 감지 확인.
+
+## 11. 화면 영역 넘침(Overflow) 방지 안전장치 강화 (2026-08-27)
+
+**왜.** 긴 제목, 공백 없는 초장문 텍스트, 9:16 세로 화면에서의 과도한 열 수 설정 등으로 인해 화면 하단 안전 마진이 침범되거나 텍스트가 박스 밖으로 튀어나가는 예외 상황을 원천 방어.
+
+### `assets/gsapgraph.js`
+- **루트 CSS**: `word-break: keep-all; overflow-wrap: break-word;` 적용으로 공백 없는 긴 영문/URL/식별자가 컨테이너 폭을 찢고 나가는 문제 방지.
+- `head()`: 제목이 3줄 이상일 때 타이틀 폰트 크기 자동 축소 (3줄 0.85배, 4줄 이상 0.72배)로 헤더가 본문을 짓누르는 현상 방지.
+- `bodyCy()`: 헤더 높이가 과도하게 커지더라도 본문의 수직 중심점이 하단 안전 영역(safe)을 침범하지 않도록 최대 헤더 높이(화면 높이의 28~32%) 캡 적용.
+- `cardsCascade`: 9:16 쇼츠 세로 모드에서 수동 `cols` 지정 시 최대 2열로 자동 클램핑하여 극단적으로 좁은 카드 생성 방지.
+- `validate()`: 4줄 이상 제목 및 9:16 쇼츠 3열 이상 설정 시 사전 경고 추가.
+
+**검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 6건 통과 · `npm run build` 통과.

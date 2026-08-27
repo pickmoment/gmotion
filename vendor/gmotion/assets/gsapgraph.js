@@ -431,6 +431,9 @@ function head(sc, ctx, tw, at, pos, size) {
   var tSize = num(sz.title, fs.title), sSize = num(sz.sub, fs.sub);
   /* 세로 포맷은 폭이 좁아 패턴들이 타이틀을 줄여 넘기지만, 그대로 두면 쇼츠에서 안 읽힌다 */
   if (!ctx.wide && sz.title) tSize = Math.min(fs.title, Math.round(tSize * 1.18));
+  var titleLines = sc.title ? splitLines(sc.title) : [];
+  if (titleLines.length >= 4) tSize = Math.round(tSize * 0.72);
+  else if (titleLines.length === 3) tSize = Math.round(tSize * 0.85);
   var h = [], t = at;
   h.push('<div class="gg-head' + (pos.align === 'center' ? ' gg-c' : '') + '" style="left:' + pos.x + 'px;top:' + pos.y +
     'px;width:' + pos.w + 'px' + (pos.align === 'center' ? ';text-align:center' : '') + '">');
@@ -478,7 +481,9 @@ function head(sc, ctx, tw, at, pos, size) {
  * 화면의 수직 균형이 무너지는 가장 흔한 원인이라 전 패턴이 이걸 쓴다.
  */
 function bodyCy(ctx, topY, headH) {
-  return (topY + headH + (ctx.wide ? 54 : 46) + (ctx.H - ctx.safe)) / 2;
+  var maxHeadH = Math.round(ctx.H * (ctx.wide ? 0.32 : 0.28));
+  var clampedHeadH = Math.min(headH, maxHeadH);
+  return (topY + clampedHeadH + (ctx.wide ? 54 : 46) + (ctx.H - ctx.safe)) / 2;
 }
 /** 카드 한 장. i 는 스태거 순서용 인덱스. */
 function card(it, g, ctx, o) {
@@ -910,7 +915,8 @@ PATTERNS.cardsCascade = {
       H.push(hd.html);
       t = hd.end;
     }
-    var cols = num(sc.cols, colsFor(n, ctx.wide));
+    var maxCols = ctx.wide ? 5 : (ctx.aspect === '9:16' ? 2 : 3);
+    var cols = Math.min(maxCols, Math.max(1, num(sc.cols, colsFor(n, ctx.wide))));
     var gapX = ctx.wide ? 36 : 28, gapY = ctx.wide ? 34 : 26;
     var availW = ctx.W - ctx.safe * 2;
     var itemW = Math.floor((availW - (cols - 1) * gapX) / cols);
@@ -2287,7 +2293,12 @@ function validate(spec, opts) {
         }
       });
     }
-
+    if (sc.title && splitLines(sc.title).length >= 4) {
+      warnings.push(tag + 'title 이 ' + splitLines(sc.title).length + '줄이다 — 타이틀을 1~2줄로 줄이고 나머지는 서브나 본문으로 내린다.');
+    }
+    if (spec.aspect === '9:16' && sc.cols && sc.cols > 2) {
+      warnings.push(tag + '쇼츠(9:16)에서 cols 가 ' + sc.cols + '개다 — 화면 폭이 좁아 2열 이하가 권장된다.');
+    }
     /* 밀도 */
     var pool = allItemsOf(sc);
     var cap = MAXITEMS[sc.pattern];
@@ -2426,7 +2437,7 @@ function css(c) {
   var T = THEMES[c.theme], A = ASPECTS[c.aspect], F = FONTS[c.font] || FONTS[T.font];
   var glow = T.glow ? 'filter:drop-shadow(0 0 ' + (T.glow * 10) + 'px var(--acc));' : '';
   return [
-'*{margin:0;padding:0;box-sizing:border-box}',
+'*{margin:0;padding:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:break-word}',
 /* HTML 의 hidden 속성은 UA 스타일의 display:none 으로 동작한다 — 작성자 CSS 의
    display:grid/flex 가 그걸 덮어써서 숨긴 요소가 그대로 보인다. 명시적으로 막는다. */
 '[hidden]{display:none!important}',
