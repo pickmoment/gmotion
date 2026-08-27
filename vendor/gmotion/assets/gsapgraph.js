@@ -2015,7 +2015,8 @@ function animEndOf(tw) {
   var e = 0;
   arr(tw).forEach(function (o) {
     var d = num(o.dur, 0) || (o.v && num(o.v.duration, 0)) || (o.v2 && num(o.v2.duration, 0)) || 0;
-    e = Math.max(e, o.at + d + num(o.st, 0) * 3);
+    var st = num(o.st, 0);
+    e = Math.max(e, o.at + d + (st ? st * 5 : 0));
   });
   return r2(e);
 }
@@ -2230,7 +2231,8 @@ function compile(spec, opts) {
     var ce = ctx.animEnd != null ? ctx.animEnd : 0;
     built.tw.list.forEach(function (o) {
       var d = num(o.dur, 0) || num(o.v && o.v.duration, 0) || num(o.v2 && o.v2.duration, 0);
-      ce = Math.max(ce, o.at + d);
+      var st = num(o.st, 0);
+      ce = Math.max(ce, o.at + d + (st ? st * 5 : 0));
     });
     out.push({
       id: sc.id || slug(sc.title || sc.pattern, i),

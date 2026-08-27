@@ -241,6 +241,7 @@
 
   /* --- 조립 --- */
   var master = gsap.timeline({ paused: true });
+  var sceneAnimEnds = [];
   function build() {
     SPEC.scenes.forEach(function (s, i) {
       var el = document.getElementById(s.sid);
@@ -248,10 +249,17 @@
       var stl = gsap.timeline();
       stl.addLabel('enter', 0);
       s.tw.forEach(function (o) { apply(stl, o, el); });
-      /* 대사가 연출보다 짧으면 씬 타임라인을 그만큼 빠르게 돌린다 (자막 동기화) */
+      /* 씬 내부의 모든 실제 애니메이션 자식 트윈 끝 시각을 실측 */
+      var maxEnd = 0;
+      var children = stl.getChildren(false, true, true);
+      children.forEach(function (child) {
+        if (typeof child.endTime === 'function') {
+          maxEnd = Math.max(maxEnd, child.endTime());
+        }
+      });
       if (s.ts && s.ts !== 1) stl.timeScale(s.ts);
-      /* 씬 타임라인의 총 길이를 hold 까지 확보한다 — 마지막 트윈 뒤 정적 구간이 hold 다 */
-      stl.set({}, {}, s.dur * (s.ts && s.ts !== 1 ? s.ts : 1));
+      var effectiveScale = s.ts && s.ts !== 1 ? s.ts : 1;
+      stl.set({}, {}, s.dur * effectiveScale);
       master.add(stl, s.at);
       master.set(el, { visibility: 'visible' }, s.at);
       if (i > 0) transIn(master, el, s.trans, s.tdur, s.at);
@@ -260,6 +268,8 @@
         transOut(master, el, next.trans, next.tdur, next.at);
         master.set(el, { visibility: 'hidden' }, next.at + next.tdur);
       }
+      var realAnimDuration = maxEnd > 0 ? (maxEnd / effectiveScale) : (s.ce != null ? s.ce : s.dur * .92);
+      sceneAnimEnds[i] = realAnimDuration;
     });
     master.set({}, {}, SPEC.total);
     if (SPEC.mode === 'loop') { master.repeat(-1); master.repeatDelay(.4); }
@@ -274,7 +284,8 @@
      */
     if (SPEC.present) {
       SPEC.scenes.forEach(function (s, i) {
-        var at = s.at + (s.ce != null ? s.ce : s.dur * .9) + .08;
+        var animDur = sceneAnimEnds[i] != null ? sceneAnimEnds[i] : (s.ce != null ? s.ce : s.dur * .92);
+        var at = s.at + animDur + .08;
         if (SPEC.scenes[i + 1]) at = Math.min(at, SPEC.scenes[i + 1].at - .001);
         master.addPause(Math.max(s.at + .01, Math.min(at, SPEC.total)));
       });
@@ -684,8 +695,9 @@
   var GGM = window.GGM = {
     master: master, spec: SPEC, total: SPEC.total, scenes: SPEC.scenes.map(function (s, i) {
       var next = SPEC.scenes[i + 1];
+      var animDur = sceneAnimEnds[i] != null ? sceneAnimEnds[i] : (s.ce != null ? s.ce : s.dur * .92);
       return { id: s.id, pattern: s.pattern, at: s.at, dur: s.dur,
-               shot: +Math.min(s.at + (s.ce != null ? s.ce : s.dur * .92) + .12,
+               shot: +Math.min(s.at + animDur + .12,
                                next ? next.at - .03 : SPEC.total).toFixed(2) };
     }),
     reducedMotion: RM, ready: ready,
@@ -703,7 +715,8 @@
     goto: function (i) {
       i = Math.max(0, Math.min(SPEC.scenes.length - 1, i));
       var s = SPEC.scenes[i], next = SPEC.scenes[i + 1];
-      var t = s.at + (s.ce != null ? s.ce : s.dur * .92) + .12;
+      var animDur = sceneAnimEnds[i] != null ? sceneAnimEnds[i] : (s.ce != null ? s.ce : s.dur * .92);
+      var t = s.at + animDur + .12;
       var cap = next ? next.at - .03 : SPEC.total;
       return GGM.seek(Math.min(Math.max(t, s.at + .05), cap));
     },
