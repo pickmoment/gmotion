@@ -483,7 +483,8 @@ function bodyCy(ctx, topY, headH) {
 /** 카드 한 장. i 는 스태거 순서용 인덱스. */
 function card(it, g, ctx, o) {
   o = o || {};
-  var ic = it.icon ? ctx.icon(it.icon, num(o.iconSize, 52), 'gg-cardIc') : '';
+  var icSize = num(o.iconSize, (g && g.w && g.w > 340) ? 80 : 56);
+  var ic = it.icon ? ctx.icon(it.icon, icSize, 'gg-cardIc') : '';
   var deco = '';
   if (it.badge) deco += markOf({ type: 'badge', text: it.badge }, ctx.T).svg;
   if (it.ribbon) deco += markOf({ type: 'ribbon', text: it.ribbon }, ctx.T).svg;
@@ -493,13 +494,15 @@ function card(it, g, ctx, o) {
     var sp = CH.CHARTS.sparkline.build(CH.normData({ items: arr(it.spark) }), { tone: 'auto' }, ctx.T, 160, 54, 1);
     deco += '<div class="gg-cardSpark"><svg viewBox="0 0 160 54">' + sp.svg + '</svg></div>';
   }
+  var lbStyle = o.labelSize ? ' style="font-size:' + o.labelSize + 'px"' : '';
+  var ntStyle = o.noteSize ? ' style="font-size:' + o.noteSize + 'px"' : '';
   return '<div class="gg-card' + (it.tone ? ' gg-t-' + it.tone : '') + (o.cls ? ' ' + o.cls : '') +
     '"' + (o.idx != null ? ' data-i="' + o.idx + '"' : '') + ' style="left:' + Math.round(g.x) + 'px;top:' + Math.round(g.y) + 'px;width:' + Math.round(g.w) + 'px' +
     (g.h ? ';min-height:' + Math.round(g.h) + 'px' : '') + '">' +
     deco + ic +
     (it.value != null ? '<div class="gg-cardVal">' + esc(it.value) + '</div>' : '') +
-    '<div class="gg-cardLb" style="font-size:' + num(o.labelSize, ctx.fs.body) + 'px">' + esc(it.label) + '</div>' +
-    (it.note ? '<div class="gg-cardNote">' + esc(it.note) + '</div>' : '') +
+    '<div class="gg-cardLb"' + lbStyle + '>' + esc(it.label) + '</div>' +
+    (it.note ? '<div class="gg-cardNote"' + ntStyle + '>' + esc(it.note) + '</div>' : '') +
     '</div>';
 }
 /** 두 점을 잇는 곡선 path d. bow 는 휘는 정도. */
@@ -913,11 +916,23 @@ PATTERNS.cardsCascade = {
     var itemW = Math.floor((availW - (cols - 1) * gapX) / cols);
     /* 한 줄이면 세로를 넉넉히 쓴다 — 넓고 납작한 카드는 화면이 비어 보인다 */
     var rows = Math.ceil(n / cols);
-    var itemH = Math.round(itemW * (rows === 1 ? (ctx.wide ? .84 : .92) : (ctx.wide ? .7 : .78)));
-    if (itemH > 380) itemH = 380;
+    var itemH = Math.round(itemW * (rows === 1 ? (ctx.wide ? .78 : .88) : (ctx.wide ? .68 : .75)));
+    if (itemH > 400) itemH = 400;
     var blockCy = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
     var g = gridOf(n, cols, ctx.W, itemW, itemH, gapX, gapY, blockCy);
-    it.forEach(function (x, i) { H.push(card(x, g[i], ctx, { cls: 'gg-cc', idx: i, iconSize: Math.round(Math.min(68, itemW * .2)) })); });
+    var isBig = rows === 1 && cols <= 4;
+    var iconSize = Math.round(Math.min(96, Math.max(64, itemW * (isBig ? 0.22 : 0.18))));
+    var lbSize = isBig ? (cols <= 3 ? Math.round(ctx.fs.body * 1.22) : Math.round(ctx.fs.body * 1.1)) : ctx.fs.body;
+    var ntSize = isBig ? (cols <= 3 ? 27 : 25) : 23;
+    it.forEach(function (x, i) {
+      H.push(card(x, g[i], ctx, {
+        cls: 'gg-cascadeCard',
+        idx: i,
+        iconSize: iconSize,
+        labelSize: lbSize,
+        noteSize: ntSize
+      }));
+    });
 
     var dir = sc.dir || 'up';
     var appear;
@@ -926,7 +941,7 @@ PATTERNS.cardsCascade = {
       var stTime = ctx.st(n > 6 ? 'tight' : 'normal');
       it.forEach(function (x, i) {
         var g2 = g[i], rot = (i - (n - 1) / 2) * 4;
-        tw.fromTo(q('.gg-cc:nth-of-type(' + (i + 1) + ')'), t + i * stTime,
+        tw.fromTo(q('.gg-cascadeCard:nth-of-type(' + (i + 1) + ')'), t + i * stTime,
           { x: r2(ctx.cx - g2.cx), y: r2(blockCy - g2.cy), scale: .82, rotate: rot, opacity: 0 },
           { x: 0, y: 0, scale: 1, rotate: 0, opacity: 1, duration: ctx.d('normal') * 1.2, ease: TOKENS.e.overshoot });
       });
@@ -937,10 +952,10 @@ PATTERNS.cardsCascade = {
             : { y: ctx.px(44), opacity: 0, skewY: ctx.skew() };
       v.duration = ctx.d('fast') * 1.25; v.ease = ctx.ei;
       var stC = ctx.st(n > 6 ? 'tight' : 'normal');
-      enterItems(tw, ctx, it, '.gg-cc', t, stC, v);
+      enterItems(tw, ctx, it, '.gg-cascadeCard', t, stC, v);
       appear = ctx.d('fast') * 1.25 + stC * (n - 1);
     }
-    enterItems(tw, ctx, it, '.gg-cc', t, ctx.st('tight'),
+    enterItems(tw, ctx, it, '.gg-cascadeCard', t, ctx.st('tight'),
       { scale: .6, opacity: 0, duration: ctx.d('fast'), ease: TOKENS.e.overshoot },
       { inner: ' .gg-ic', lead: ctx.d('micro') });
     t += appear;
@@ -2540,24 +2555,24 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
    숨기기는 hidden 속성으로 한다 — 전역 [hidden] 규칙이 display 를 확실히 끈다. */
 /* padding-bottom 은 여백이 아니라 클리핑 여유다 — 강조 박스는 글자 아래로 조금 더
    내려오는데 스테이지가 overflow:hidden 이라 그만큼 잘린다. em 이라 화면비를 따라간다. */
-'.gg-cc{position:absolute;left:6%;right:6%;bottom:0;padding-bottom:.18em;text-align:center;' +
-  'z-index:60;pointer-events:none;' +
+'.gg-captions{position:absolute;left:6%;right:6%;bottom:0;padding-bottom:.22em;text-align:center;' +
+  'z-index:200;pointer-events:none;' +
   'font-size:' + Math.round(A.h * .033) + 'px;font-weight:600;line-height:1.3;letter-spacing:-.01em}',
-'.gg-cc span{display:inline;color:#fff;background:rgba(0,0,0,.42);border-radius:.28em .28em 0 0;' +
-  'padding:.12em .42em .16em;box-decoration-break:clone;-webkit-box-decoration-break:clone;' +
-  'text-shadow:0 2px 10px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}',
+'.gg-captions span{display:inline;color:#fff;background:rgba(0,0,0,.68);border-radius:.28em .28em 0 0;' +
+  'padding:.14em .48em .18em;box-decoration-break:clone;-webkit-box-decoration-break:clone;' +
+  'text-shadow:0 2px 10px rgba(0,0,0,.95),0 0 2px rgba(0,0,0,.95)}',
 /* 자막 켜기/끄기 버튼 — 꺼진 상태를 눈으로 구분할 수 있어야 한다 */
 '.gg-ccBtn{font-size:11px;font-weight:700;letter-spacing:.02em;width:34px}',
 '.gg-ccBtn[aria-pressed="false"]{opacity:.4;text-decoration:line-through}',
 '.gg-ic{color:var(--acc);' + glow + '}',
 '.gg-heroIc{position:absolute}',
 /* 카드 */
-'.gg-card{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:22px;' +
-  'padding:32px 28px;display:flex;flex-direction:column;gap:15px;justify-content:center;backdrop-filter:blur(7px)}',
-'.gg-cardIc{margin-bottom:2px}',
-'.gg-cardVal{font-size:46px;font-weight:800;color:var(--acc);letter-spacing:-.02em}',
-'.gg-cardLb{font-weight:700;line-height:1.32;color:var(--ink)}',
-'.gg-cardNote{font-size:23px;color:var(--dim);line-height:1.45}',
+'.gg-card{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:24px;' +
+  'padding:36px 30px;display:flex;flex-direction:column;gap:16px;justify-content:center;backdrop-filter:blur(7px)}',
+'.gg-cardIc{margin-bottom:4px}',
+'.gg-cardVal{font-size:48px;font-weight:800;color:var(--acc);letter-spacing:-.02em}',
+'.gg-cardLb{font-size:34px;font-weight:700;line-height:1.32;color:var(--ink);letter-spacing:var(--tight)}',
+'.gg-cardNote{font-size:24px;color:var(--dim);line-height:1.45}',
 '.gg-focus{border-color:var(--pline)}',
 '.gg-t-good{border-color:' + T.good + '55}.gg-t-good .gg-ic{color:' + T.good + '}',
 '.gg-t-bad{border-color:' + T.bad + '55}.gg-t-bad .gg-ic{color:' + T.bad + '}',
@@ -2892,7 +2907,7 @@ css(c),
 '<main class="gg-stage" role="img" aria-label="' + esc(title) + (c.message ? ' — ' + esc(c.message) : '') + '">',
 scenesHTML,
 '<div class="gg-flash" aria-hidden="true"></div>',
-hasCC ? '<div class="gg-cc" id="gg-cc" aria-live="off"></div>' : '',
+hasCC ? '<div class="gg-captions" id="gg-cc" aria-live="off"></div>' : '',
 T.vig ? '<div class="gg-vig" aria-hidden="true"></div>' : '',
 T.grain ? grainSVG() : '',
 '</main>',
