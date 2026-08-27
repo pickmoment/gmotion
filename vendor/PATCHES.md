@@ -241,3 +241,19 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
 - `validate()`: 4줄 이상 제목 및 9:16 쇼츠 3열 이상 설정 시 사전 경고 추가.
 
 **검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 6건 통과 · `npm run build` 통과.
+
+## 12. `.agents/skills` 스킬 설치 경로 지원 (2026-08-27)
+
+**왜.** Claude Code(`~/.claude/skills`) 외에도 Codex, Cursor, Oh My Pi, Antigravity 등 다양한 범용 AI Agent 생태계에서 표준으로 사용하는 `~/.agents/skills` (및 `<project>/.agents/skills`) 디렉토리를 지원하여 스킬 활용성을 확장.
+
+### `src-tauri/src/skill.rs`
+- `skills_root()` 개선: `user-agents` / `agents` (`~/.agents/skills`) 및 `agents:<dir>` (`<dir>/.agents/skills`) 경로 라우팅 지원.
+
+### `src/components/SkillPanel.tsx`
+- 설치 위치 셀렉트 옵션 추가:
+  - 사용자 전역 (Claude Code) — `~/.claude/skills`
+  - 사용자 전역 (AI Agents) — `~/.agents/skills`
+  - 프로젝트 (Claude Code) — `<선택 폴더>/.claude/skills`
+  - 프로젝트 (AI Agents) — `<선택 폴더>/.agents/skills`
+
+**검증.** `cargo test` 7건 통과 (`install_agents_roundtrip` 통과) · `npm run build` 통과.

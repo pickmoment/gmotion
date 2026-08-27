@@ -83,13 +83,39 @@ fn bundled_version() -> String {
         .unwrap_or_else(|| "unknown".into())
 }
 
-/// 설치 루트를 정한다. `root` 를 주면 `<root>/.claude/skills`, 없으면 `~/.claude/skills`.
+/// 설치 루트를 정한다.
+/// - None / "user-claude" / "claude" -> ~/.claude/skills
+/// - "user-agents" / "agents" -> ~/.agents/skills
+/// - "claude:<path>" -> <path>/.claude/skills
+/// - "agents:<path>" -> <path>/.agents/skills
+/// - 기타 직접 경로 -> <path>/.claude/skills 또는 지정된 경로
 pub fn skills_root(root: Option<&str>) -> Result<PathBuf, String> {
+    let home = dirs::home_dir().ok_or_else(|| "홈 디렉토리를 찾지 못했다".to_string())?;
     match root {
-        Some(r) if !r.is_empty() => Ok(PathBuf::from(r).join(".claude").join("skills")),
-        _ => dirs::home_dir()
-            .map(|h| h.join(".claude").join("skills"))
-            .ok_or_else(|| "홈 디렉토리를 찾지 못했다".to_string()),
+        None | Some("user-claude") | Some("claude") | Some("") => {
+            Ok(home.join(".claude").join("skills"))
+        }
+        Some("user-agents") | Some("agents") => {
+            Ok(home.join(".agents").join("skills"))
+        }
+        Some(s) if s.starts_with("claude:") => {
+            let path_part = &s["claude:".len()..];
+            Ok(PathBuf::from(path_part).join(".claude").join("skills"))
+        }
+        Some(s) if s.starts_with("agents:") => {
+            let path_part = &s["agents:".len()..];
+            Ok(PathBuf::from(path_part).join(".agents").join("skills"))
+        }
+        Some(custom) => {
+            let p = PathBuf::from(custom);
+            if p.ends_with("skills") {
+                Ok(p)
+            } else if p.ends_with(".claude") || p.ends_with(".agents") {
+                Ok(p.join("skills"))
+            } else {
+                Ok(p.join(".claude").join("skills"))
+            }
+        }
     }
 }
 
@@ -221,6 +247,29 @@ mod tests {
         let fixed = install(rs).unwrap();
         assert!(fixed.up_to_date, "재설치가 변조를 되돌려야 한다");
         assert!(target.join("MEMO.txt").is_file(), "번들 밖 파일은 남아야 한다");
+
+        let gone = remove(rs).unwrap();
+        assert!(!gone.installed);
+        assert!(!target.exists());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn install_agents_roundtrip() {
+        let root = std::env::temp_dir().join(format!("gmotion-agents-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let req = format!("agents:{}", root.to_string_lossy());
+        let rs = Some(req.as_str());
+
+        let before = status(rs).unwrap();
+        assert!(!before.installed);
+        assert!(before.target.contains(".agents"));
+
+        let after = install(rs).unwrap();
+        assert!(after.installed && after.up_to_date);
+        let target = root.join(".agents/skills/gmotion");
+        assert!(target.join("SKILL.md").is_file());
 
         let gone = remove(rs).unwrap();
         assert!(!gone.installed);
