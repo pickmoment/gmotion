@@ -1379,6 +1379,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
  "tungstenite",
+ "url",
 ]
 
 [[package]]

@@ -83,7 +83,7 @@ src-tauri/
 | 스킬 설치 | `~/.claude/skills` 또는 프로젝트 `.claude/skills` 로. 파일 단위 차이 표시 |
 | 문서 | 번들 안의 direction·spec·charts·theming·api·MANUAL 을 앱에서 읽는다 |
 
-단축키: `⌘S` 저장 · `⌘O` 열기 · `⌘Z` / `⇧⌘Z` 실행 취소·다시 실행
+단축키: `Ctrl+S` / `⌘S` 저장 · `Ctrl+O` / `⌘O` 열기 · `Ctrl+Z` / `⌘Z` 실행 취소 · `Ctrl+Y` / `Ctrl+Shift+Z` / `⇧⌘Z` 다시 실행
 
 미리보기 트랜스포트: **씬 다시**(이 씬을 처음부터) · 재생(씬 경계를 넘어 계속) · 정지 ·
 전체(0초부터) · `CC`(자막을 얹었을 때만)
@@ -109,9 +109,9 @@ MJPEG 입력은 full range 라 그대로 두면 플레이어마다 대비가 달
 실시간이라 **영상 길이만큼 걸린다** — 8분짜리면 8분이다. 진행률과 멈추기를 제공하고,
 멈추면 만들다 만 파일도 지운다.
 
-필요한 것: **Google Chrome** 과 **ffmpeg**. 앱이 흔한 설치 위치를 직접 훑고
+필요한 것: **Google Chrome** 또는 **Microsoft Edge**, 그리고 **ffmpeg**. 앱이 흔한 설치 위치를 직접 훑고
 (`GMOTION_CHROME` · `GMOTION_FFMPEG` 로 지정할 수도 있다), **시작 전에 둘 다 확인**하므로
-없으면 렌더를 시작조차 하지 않는다.
+없으면 렌더를 시작조차 하지 않는다. Windows 에서는 `winget install Gyan.FFmpeg` 또는 `scoop install ffmpeg` 로 쉽게 설치할 수 있다.
 
 ```bash
 # GUI 없이 렌더를 확인할 때
@@ -122,8 +122,8 @@ GMOTION_RENDER_DEBUG=1 cargo run --example rendercheck -- …   # 프레임 인�
 
 ## 개발
 
-필요한 것: Node 20+ · Rust 1.8x+ · Xcode Command Line Tools (macOS).
-MP4 렌더에만 Chrome·ffmpeg 이 더 필요하고, 나머지 기능은 외부 의존성이 없다.
+필요한 것: Node 20+ · Rust 1.8x+ · C++ 빌드 도구 (Windows: Visual Studio Build Tools, macOS: Xcode CLT).
+MP4 렌더에만 Chrome/Edge·ffmpeg 이 더 필요하고, 나머지 기능은 외부 의존성이 없다.
 
 ```bash
 npm install

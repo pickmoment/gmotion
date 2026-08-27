@@ -7,15 +7,16 @@
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader};
 use std::net::TcpStream;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 use tungstenite::{stream::MaybeTlsStream, Message, WebSocket};
 
 pub type Ws = WebSocket<MaybeTlsStream<TcpStream>>;
 
-/// Chrome 실행 파일을 찾는다. 앱이 Finder 에서 실행되면 PATH 가 빈약하므로
-/// 흔한 설치 위치를 직접 훑는다.
+/// Chrome / Chromium / Edge 실행 파일을 찾는다.
+/// 앱이 Finder 또는 시작 메뉴에서 실행되면 PATH 가 빈약하므로
+/// 플랫폼별 흔한 설치 위치를 직접 훑는다.
 pub fn find_chrome() -> Result<PathBuf, String> {
     if let Ok(p) = std::env::var("GMOTION_CHROME") {
         let p = PathBuf::from(p);
@@ -23,35 +24,150 @@ pub fn find_chrome() -> Result<PathBuf, String> {
             return Ok(p);
         }
     }
-    let mut cands: Vec<PathBuf> = vec![
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome".into(),
-        "/Applications/Chromium.app/Contents/MacOS/Chromium".into(),
-        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge".into(),
-        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser".into(),
-    ];
-    /* playwright 가 받아 둔 것도 쓴다 — 개발 머신에는 대개 있다 */
-    if let Some(home) = dirs::home_dir() {
-        let pw = home.join("Library/Caches/ms-playwright");
-        if let Ok(rd) = std::fs::read_dir(&pw) {
-            for e in rd.flatten() {
-                let d = e.path();
-                for tail in [
-                    "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-                    "chrome-mac-arm64/headless_shell",
-                    "chrome-mac-arm64/chrome-headless-shell",
-                ] {
-                    cands.push(d.join(tail));
+    let mut cands: Vec<PathBuf> = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        let pf = std::env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".into());
+        let pf86 = std::env::var("ProgramFiles(x86)").unwrap_or_else(|_| r"C:\Program Files (x86)".into());
+        let local_appdata = std::env::var("LOCALAPPDATA").ok();
+
+        // 1. Google Chrome
+        cands.push(PathBuf::from(&pf).join(r"Google\Chrome\Application\chrome.exe"));
+        cands.push(PathBuf::from(&pf86).join(r"Google\Chrome\Application\chrome.exe"));
+        if let Some(lad) = &local_appdata {
+            cands.push(PathBuf::from(lad).join(r"Google\Chrome\Application\chrome.exe"));
+        }
+
+        // 2. Microsoft Edge (Windows 10/11 기본 내장 Chromium 브라우저)
+        cands.push(PathBuf::from(&pf86).join(r"Microsoft\Edge\Application\msedge.exe"));
+        cands.push(PathBuf::from(&pf).join(r"Microsoft\Edge\Application\msedge.exe"));
+        if let Some(lad) = &local_appdata {
+            cands.push(PathBuf::from(lad).join(r"Microsoft\Edge\Application\msedge.exe"));
+        }
+
+        // 3. Brave Browser
+        cands.push(PathBuf::from(&pf).join(r"BraveSoftware\Brave-Browser\Application\brave.exe"));
+        cands.push(PathBuf::from(&pf86).join(r"BraveSoftware\Brave-Browser\Application\brave.exe"));
+        if let Some(lad) = &local_appdata {
+            cands.push(PathBuf::from(lad).join(r"BraveSoftware\Brave-Browser\Application\brave.exe"));
+        }
+
+        // 4. Playwright 캐시
+        if let Some(lad) = &local_appdata {
+            let pw = PathBuf::from(lad).join("ms-playwright");
+            if let Ok(rd) = std::fs::read_dir(&pw) {
+                for e in rd.flatten() {
+                    let d = e.path();
+                    for tail in [
+                        r"chrome-win64\chrome.exe",
+                        r"chrome-win\chrome.exe",
+                        r"chrome-win-arm64\chrome.exe",
+                        r"chrome-headless-shell-win64\chrome-headless-shell.exe",
+                        r"chrome-headless-shell-win\chrome-headless-shell.exe",
+                    ] {
+                        cands.push(d.join(tail));
+                    }
+                }
+            }
+        }
+
+        // 5. where.exe 확인
+        for exe in ["chrome.exe", "msedge.exe", "brave.exe"] {
+            if let Ok(out) = Command::new("where.exe").arg(exe).output() {
+                for line in String::from_utf8_lossy(&out.stdout).lines() {
+                    let s = line.trim();
+                    if !s.is_empty() {
+                        cands.push(PathBuf::from(s));
+                    }
                 }
             }
         }
     }
+
+    #[cfg(target_os = "macos")]
+    {
+        cands.extend([
+            PathBuf::from("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+            PathBuf::from("/Applications/Chromium.app/Contents/MacOS/Chromium"),
+            PathBuf::from("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+            PathBuf::from("/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"),
+        ]);
+        if let Some(home) = dirs::home_dir() {
+            let pw = home.join("Library/Caches/ms-playwright");
+            if let Ok(rd) = std::fs::read_dir(&pw) {
+                for e in rd.flatten() {
+                    let d = e.path();
+                    for tail in [
+                        "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+                        "chrome-mac-arm64/headless_shell",
+                        "chrome-mac-arm64/chrome-headless-shell",
+                        "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+                        "chrome-mac-x64/headless_shell",
+                        "chrome-mac-x64/chrome-headless-shell",
+                    ] {
+                        cands.push(d.join(tail));
+                    }
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        cands.extend([
+            PathBuf::from("/usr/bin/google-chrome"),
+            PathBuf::from("/usr/bin/google-chrome-stable"),
+            PathBuf::from("/usr/bin/chromium"),
+            PathBuf::from("/usr/bin/chromium-browser"),
+            PathBuf::from("/usr/bin/microsoft-edge"),
+            PathBuf::from("/usr/bin/brave-browser"),
+            PathBuf::from("/snap/bin/chromium"),
+        ]);
+        if let Some(home) = dirs::home_dir() {
+            let pw = home.join(".cache/ms-playwright");
+            if let Ok(rd) = std::fs::read_dir(&pw) {
+                for e in rd.flatten() {
+                    let d = e.path();
+                    cands.push(d.join("chrome-linux/chrome"));
+                    cands.push(d.join("chrome-linux-arm64/chrome"));
+                }
+            }
+        }
+    }
+
+    // 6. PATH 환경변수 검사
+    if let Ok(path_var) = std::env::var("PATH") {
+        let separator = if cfg!(windows) { ';' } else { ':' };
+        for dir in path_var.split(separator) {
+            let d = PathBuf::from(dir.trim());
+            #[cfg(windows)]
+            for name in ["chrome.exe", "msedge.exe", "brave.exe", "chromium.exe"] {
+                cands.push(d.join(name));
+            }
+            #[cfg(not(windows))]
+            for name in ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "msedge"] {
+                cands.push(d.join(name));
+            }
+        }
+    }
+
     cands
         .into_iter()
         .find(|p| p.is_file())
-        .ok_or_else(|| "Chrome 을 찾지 못했다 — Google Chrome 을 설치하거나 GMOTION_CHROME 에 경로를 준다".into())
+        .ok_or_else(|| {
+            #[cfg(windows)]
+            {
+                "Chrome 또는 Edge 브라우저를 찾지 못했다 — Google Chrome 또는 Microsoft Edge 를 설치하거나 GMOTION_CHROME 환경변수에 경로를 지정한다".into()
+            }
+            #[cfg(not(windows))]
+            {
+                "Chrome 을 찾지 못했다 — Google Chrome 을 설치하거나 GMOTION_CHROME 에 경로를 준다".into()
+            }
+        })
 }
 
-/// ffmpeg 을 찾는다. 이유는 Chrome 과 같다.
+/// ffmpeg 을 찾는다.
 pub fn find_ffmpeg() -> Result<PathBuf, String> {
     if let Ok(p) = std::env::var("GMOTION_FFMPEG") {
         let p = PathBuf::from(p);
@@ -59,25 +175,95 @@ pub fn find_ffmpeg() -> Result<PathBuf, String> {
             return Ok(p);
         }
     }
-    for p in [
-        "/opt/homebrew/bin/ffmpeg",
-        "/usr/local/bin/ffmpeg",
-        "/usr/bin/ffmpeg",
-        "/opt/local/bin/ffmpeg",
-    ] {
-        let p = PathBuf::from(p);
-        if p.is_file() {
-            return Ok(p);
+    let mut cands: Vec<PathBuf> = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        // Scoop / WinGet / Chocolatey / 표준 설치 위치
+        if let Some(home) = dirs::home_dir() {
+            cands.push(home.join(r"scoop\shims\ffmpeg.exe"));
+            cands.push(home.join(r"scoop\apps\ffmpeg\current\bin\ffmpeg.exe"));
+        }
+        if let Ok(lad) = std::env::var("LOCALAPPDATA") {
+            cands.push(PathBuf::from(&lad).join(r"Microsoft\WinGet\Links\ffmpeg.exe"));
+            let winget_pkg = PathBuf::from(&lad).join(r"Microsoft\WinGet\Packages");
+            if let Ok(rd) = std::fs::read_dir(&winget_pkg) {
+                for e in rd.flatten() {
+                    let d = e.path();
+                    let name = d.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+                    if name.contains("ffmpeg") {
+                        cands.push(d.join("ffmpeg.exe"));
+                        cands.push(d.join(r"bin\ffmpeg.exe"));
+                        if let Ok(sub_rd) = std::fs::read_dir(&d) {
+                            for sub_e in sub_rd.flatten() {
+                                cands.push(sub_e.path().join(r"bin\ffmpeg.exe"));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Ok(pd) = std::env::var("ProgramData") {
+            cands.push(PathBuf::from(pd).join(r"chocolatey\bin\ffmpeg.exe"));
+        }
+        cands.push(PathBuf::from(r"C:\ffmpeg\bin\ffmpeg.exe"));
+        cands.push(PathBuf::from(r"C:\ffmpeg\ffmpeg.exe"));
+        if let Ok(pf) = std::env::var("ProgramFiles") {
+            cands.push(PathBuf::from(&pf).join(r"ffmpeg\bin\ffmpeg.exe"));
+            cands.push(PathBuf::from(&pf).join(r"ffmpeg\ffmpeg.exe"));
+        }
+
+        if let Ok(out) = Command::new("where.exe").arg("ffmpeg.exe").output() {
+            for line in String::from_utf8_lossy(&out.stdout).lines() {
+                let s = line.trim();
+                if !s.is_empty() {
+                    cands.push(PathBuf::from(s));
+                }
+            }
         }
     }
-    /* 마지막으로 PATH */
-    if let Ok(out) = Command::new("/usr/bin/which").arg("ffmpeg").output() {
-        let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
-        if !s.is_empty() && Path::new(&s).is_file() {
-            return Ok(PathBuf::from(s));
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        cands.extend([
+            PathBuf::from("/opt/homebrew/bin/ffmpeg"),
+            PathBuf::from("/usr/local/bin/ffmpeg"),
+            PathBuf::from("/usr/bin/ffmpeg"),
+            PathBuf::from("/opt/local/bin/ffmpeg"),
+            PathBuf::from("/snap/bin/ffmpeg"),
+        ]);
+        if let Ok(out) = Command::new("which").arg("ffmpeg").output() {
+            let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
+            if !s.is_empty() && Path::new(&s).is_file() {
+                cands.push(PathBuf::from(s));
+            }
         }
     }
-    Err("ffmpeg 을 찾지 못했다 — `brew install ffmpeg` 하거나 GMOTION_FFMPEG 에 경로를 준다".into())
+
+    if let Ok(path_var) = std::env::var("PATH") {
+        let separator = if cfg!(windows) { ';' } else { ':' };
+        for dir in path_var.split(separator) {
+            let d = PathBuf::from(dir.trim());
+            #[cfg(windows)]
+            cands.push(d.join("ffmpeg.exe"));
+            #[cfg(not(windows))]
+            cands.push(d.join("ffmpeg"));
+        }
+    }
+
+    cands
+        .into_iter()
+        .find(|p| p.is_file())
+        .ok_or_else(|| {
+            #[cfg(windows)]
+            {
+                "ffmpeg 을 찾지 못했다 — winget (`winget install Gyan.FFmpeg`) 또는 scoop (`scoop install ffmpeg`) 또는 choco (`choco install ffmpeg`) 로 설치하거나 GMOTION_FFMPEG 환경변수에 경로를 지정한다".into()
+            }
+            #[cfg(not(windows))]
+            {
+                "ffmpeg 을 찾지 못했다 — `brew install ffmpeg` 하거나 GMOTION_FFMPEG 에 경로를 준다".into()
+            }
+        })
 }
 
 pub struct Browser {
@@ -253,5 +439,12 @@ mod tests {
         }
         let all: Vec<u8> = (0u8..=255).collect();
         assert_eq!(super::b64_decode(&crate::b64(&all)).unwrap(), all);
+    }
+
+    #[test]
+    fn find_chrome_finds_browser() {
+        let res = super::find_chrome();
+        println!("find_chrome result: {:?}", res);
+        assert!(res.is_ok(), "Chrome/Edge should be found on development/CI machine: {:?}", res.err());
     }
 }

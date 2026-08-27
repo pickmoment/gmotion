@@ -65,7 +65,7 @@ export default function App() {
       reset(parsed);
       setFilePath(p);
       setSelected(0);
-      say(`열었다 — ${p.split("/").pop()}`);
+      say(`열었다 — ${p.split(/[/\\]/).pop()}`);
     } catch (e) {
       fail(e);
     }
@@ -77,7 +77,7 @@ export default function App() {
       await api.writeText(path, JSON.stringify(spec, null, 2));
       setFilePath(path);
       store.markSaved();
-      say(`저장했다 — ${path.split("/").pop()}`);
+      say(`저장했다 — ${path.split(/[/\\]/).pop()}`);
     } catch (e) {
       fail(e);
     } finally {
@@ -92,7 +92,8 @@ export default function App() {
 
   const doSaveAs = async () => {
     const home = (await api.homeDir()) ?? "";
-    const p = await dialogs.saveAs(filePath ?? `${home}/${slug(spec.title)}.json`, "스펙 JSON", "json");
+    const defaultPath = filePath ?? (home ? `${home}/${slug(spec.title)}.json` : `${slug(spec.title)}.json`);
+    const p = await dialogs.saveAs(defaultPath, "스펙 JSON", "json");
     if (p) await writeSpec(p);
   };
 
@@ -156,7 +157,8 @@ export default function App() {
     const base = slug(spec.title);
     const csv = kind === "csv";
     const name = csv ? `${base}-타임코드.csv` : kind === "present" ? `${base}-발표.html` : `${base}.html`;
-    const p = await dialogs.saveAs(`${home}/${name}`, csv ? "CSV" : "HTML", csv ? "csv" : "html");
+    const defaultPath = home ? `${home}/${name}` : name;
+    const p = await dialogs.saveAs(defaultPath, csv ? "CSV" : "HTML", csv ? "csv" : "html");
     if (!p) return;
     setBusy(true);
     try {
@@ -164,7 +166,7 @@ export default function App() {
         ? timingCsv(spec, 30, sync)
         : build(spec, sync, { present: kind === "present", clean: kind === "clean" });
       await api.writeText(p, text);
-      const saved = `${p.split("/").pop()} (${Math.round(text.length / 1024)}KB) — ${embedded(kind)}`;
+      const saved = `${p.split(/[/\\]/).pop()} (${Math.round(text.length / 1024)}KB) — ${embedded(kind)}`;
       /* 열기 실패는 저장 실패가 아니다. 한 try 로 묶으면 저장 성공 메시지가
          열기 오류에 덮여, 무엇이 실렸는지 확인할 길이 사라진다. */
       if (csv) return say(saved);
@@ -198,7 +200,8 @@ export default function App() {
       return say(String(e));
     }
     const home = (await api.homeDir()) ?? "";
-    const out = await dialogs.saveAs(`${home}/${slug(spec.title)}.mp4`, "MP4", "mp4");
+    const defaultPath = home ? `${home}/${slug(spec.title)}.mp4` : `${slug(spec.title)}.mp4`;
+    const out = await dialogs.saveAs(defaultPath, "MP4", "mp4");
     if (!out) return;
 
     const tmp = await api.tempPath(`gmotion-render-${Date.now()}.html`);
@@ -221,7 +224,7 @@ export default function App() {
         total_sec: total,
         quality: 92,
       });
-      say(`${out.split("/").pop()} — ${w}×${h} 30fps · ${total.toFixed(1)}초${audioPath ? " · 음성 포함" : ""}`);
+      say(`${out.split(/[/\\]/).pop()} — ${w}×${h} 30fps · ${total.toFixed(1)}초${audioPath ? " · 음성 포함" : ""}`);
       await shell.revealItemInDir(out);
     } catch (e) {
       say(`렌더 실패: ${String(e)}`);
@@ -251,6 +254,9 @@ export default function App() {
       if (k === "z") {
         e.preventDefault();
         e.shiftKey ? store.redo() : store.undo();
+      } else if (k === "y") {
+        e.preventDefault();
+        store.redo();
       } else if (k === "s") {
         e.preventDefault();
         void doSave();

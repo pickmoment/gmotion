@@ -273,9 +273,10 @@
      * 발표에서 씬에 머무는 시간은 hold 가 아니라 발표자가 정한다.
      */
     if (SPEC.present) {
-      SPEC.scenes.forEach(function (s) {
-        var at = s.at + (s.ce != null ? s.ce : s.dur * .9) + .06;
-        master.addPause(Math.min(at, SPEC.total));
+      SPEC.scenes.forEach(function (s, i) {
+        var at = s.at + (s.ce != null ? s.ce : s.dur * .9) + .08;
+        if (SPEC.scenes[i + 1]) at = Math.min(at, SPEC.scenes[i + 1].at - .001);
+        master.addPause(Math.max(s.at + .01, Math.min(at, SPEC.total)));
       });
     }
   }

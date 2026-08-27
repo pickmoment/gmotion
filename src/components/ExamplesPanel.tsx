@@ -22,7 +22,7 @@ const NOTES: Record<string, string> = {
 
 const LIST = Object.entries(raw)
   .map(([path, text]) => {
-    const name = path.split("/").pop()!.replace(/\.json$/, "");
+    const name = path.split(/[/\\]/).pop()!.replace(/\.json$/, "");
     return { name, text, note: NOTES[name] ?? "" };
   })
   .sort((a, b) => a.name.localeCompare(b.name));

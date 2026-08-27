@@ -204,7 +204,6 @@ function ItemsTable({
         <span>라벨</span>
         <span>값</span>
         {bullet && <span>목표</span>}
-        <span>대사(say)</span>
         <span />
       </div>
       {items.map((it, i) => {
@@ -218,7 +217,6 @@ function ItemsTable({
               <input type="number" step="any" value={o.target === undefined ? "" : String(o.target)}
                      onChange={(e) => patch(i, "target", e.target.value === "" ? undefined : Number(e.target.value))} />
             )}
-            <input value={(o.say as string) ?? ""} onChange={(e) => patch(i, "say", e.target.value)} />
             <button type="button" className="ghost danger"
                     onClick={() => onChange(items.filter((_, j) => j !== i))}>×</button>
           </div>

@@ -555,6 +555,7 @@ function itemListOf(sc) {
  */
 function sceneDur(sc, ctx, t, hint, o) {
   o = o || {};
+  if (ctx) ctx.animEnd = r2(t);
   var g = typeof hint === 'number' ? hint : readSec(hint || '', ctx.energy);
   if (o.scale) g *= o.scale;
   if (o.min != null) g = Math.max(o.min, g);
@@ -2104,7 +2105,7 @@ function syncScenes(out, spec, cues, warnings) {
       var still = r2(Math.max(0, s.dur - lastMove));
       if (still > 12) {
         warnings.push('씬 ' + (i + 1) + ' (' + s.pattern + '): 마지막 움직임 뒤 ' + still +
-          's 정지. 대사 ' + s.dur + 's 를 씬 하나가 덮는다 — 씬을 쪼개거나 항목에 say 를 단다.');
+          's 정지. 대사 ' + s.dur + 's 를 씬 하나가 덮는다 — 씬을 2~3개로 쪼개어 리듬을 만든다.');
       }
     } else {
       s.ts = r2(ae / s.dur);
@@ -2115,7 +2116,7 @@ function syncScenes(out, spec, cues, warnings) {
     }
     /* 검수 프레임은 마지막 움직임 뒤로 — 항목이 다 나온 화면을 잡아야 한다 */
     s.contentEnd = r2(Math.min(s.dur, Math.max(s.contentEnd,
-      s.itemSpread != null ? s.itemSpread + 1 : 0)));
+      s.itemSpread != null ? s.itemSpread + 1 : 0, ae)));
   });
 
   /* 5) 못 맞춘 씬은 앞 씬 끝에 이어 붙인다 — 자연 길이를 그대로 쓴다 */
@@ -2178,14 +2179,12 @@ function compile(spec, opts) {
       else errors.push('씬 ' + (i + 1) + ': decor "' + dn + '" 는 없다 (' + Object.keys(VEC.DECOR).join(' ') + ').');
     });
 
-    /* 씬의 내용이 다 나온 시각 — 씬별 스크린샷의 기준 프레임이 된다.
-       요점이 잠깐 나타났다 사라지는 패턴(수렴 등)은 build 가 shot 으로 직접 지정한다. */
-    var ce = 0;
+    /* 씬의 내용이 다 나온 시각 — 씬별 스크린샷 및 발표 모드 정지 시점의 기준이 된다. */
+    var ce = ctx.animEnd != null ? ctx.animEnd : 0;
     built.tw.list.forEach(function (o) {
       var d = num(o.dur, 0) || num(o.v && o.v.duration, 0) || num(o.v2 && o.v2.duration, 0);
-      ce = Math.max(ce, o.at + d + num(o.st, 0) * 3);
+      ce = Math.max(ce, o.at + d);
     });
-    if (built.shot != null) ce = built.shot;
     out.push({
       id: sc.id || slug(sc.title || sc.pattern, i),
       sid: ctx.sid, pattern: sc.pattern, purpose: sc.purpose || '',

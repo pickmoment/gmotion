@@ -33,7 +33,7 @@ export interface PatternSchema {
 }
 
 /* 항목 편집기에서 늘 접혀 있는 공통 장식 필드 — spec.md 의 "객체 공통 필드" */
-const DECOR_FIELDS: ItemFieldKey[] = ["note", "tone", "badge", "ribbon", "art", "spark", "say"];
+const DECOR_FIELDS: ItemFieldKey[] = ["note", "tone", "badge", "ribbon", "art", "spark"];
 
 const opt = {
   tone: () => ({ good: "good — 긍정", bad: "bad — 부정", warn: "warn — 주의", dim: "dim — 흐리게" }),
@@ -76,7 +76,6 @@ function side(key: string, label: string, hint: string): Field {
       { k: "icon", key: "icon", label: "아이콘" },
       { k: "select", key: "tone", label: "톤", opts: opt.tone },
       { k: "strings", key: "items", label: "항목", ph: "한 줄에 하나" },
-      { k: "text", key: "say", label: "대사(say)", hint: "이 쪽을 말하는 구간. --subs 빌드에서 쓰인다" },
     ],
   };
 }
@@ -93,7 +92,6 @@ function single(key: string, label: string, hint: string, req = true): Field {
       { k: "text", key: "label", label: "라벨", req: true },
       { k: "icon", key: "icon", label: "아이콘" },
       { k: "text", key: "note", label: "노트" },
-      { k: "text", key: "say", label: "대사(say)" },
     ],
   };
 }
@@ -116,7 +114,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     use: "글자가 주인공. 헤더 대신 lines 를 쓴다",
     max: 6,
     fields: [
-      { k: "items", key: "lines", label: "줄", req: true, primary: "text", fields: ["emphasis", "scale", "say"], hint: "6줄까지. 강조는 accent 색 + 글자 단위 등장" },
+      { k: "items", key: "lines", label: "줄", req: true, primary: "text", fields: ["emphasis", "scale"], hint: "6줄까지. 강조는 accent 색 + 글자 단위 등장" },
       { k: "select", key: "mode", label: "모드", opts: opt.kineticMode },
       { k: "select", key: "by", label: "스태거 단위", opts: opt.kineticBy },
     ],
@@ -200,7 +198,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
       { k: "text", key: "sub", label: "서브" },
       {
         k: "items", key: "stats", label: "지표", req: true, primary: "label",
-        fields: ["value", "unit", "prefix", "dec", "icon", "note", "say"],
+        fields: ["value", "unit", "prefix", "dec", "icon", "note"],
       },
     ],
   },
@@ -210,7 +208,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
-      { k: "items", key: "events", label: "사건", req: true, primary: "when", fields: ["label", "note", "icon", "tone", "say"] },
+      { k: "items", key: "events", label: "사건", req: true, primary: "when", fields: ["label", "note", "icon", "tone"] },
       { k: "bool", key: "vertical", label: "세로 배치" },
     ],
   },

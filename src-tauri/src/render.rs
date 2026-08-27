@@ -68,7 +68,20 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
     )?;
 
     /* clean=1 로 열어 플레이어 UI 를 화면에서 뺀다 — 녹화본에 조작부가 찍히면 안 된다 */
-    let url = format!("file://{}?clean=1", o.html_path);
+    let url = match url::Url::from_file_path(std::path::Path::new(&o.html_path)) {
+        Ok(mut u) => {
+            u.set_query(Some("clean=1"));
+            u.to_string()
+        }
+        Err(_) => {
+            let clean_p = o.html_path.replace('\\', "/");
+            if clean_p.starts_with('/') {
+                format!("file://{clean_p}?clean=1")
+            } else {
+                format!("file:///{clean_p}?clean=1")
+            }
+        }
+    };
     b.page("Page.navigate", json!({ "url": url }))?;
 
     /* 런타임이 폰트를 받고 타임라인을 다 조립할 때까지 기다린다 */

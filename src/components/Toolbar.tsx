@@ -99,7 +99,7 @@ export function Toolbar({
       <div className="brand">
         <img className="brand-mark" src="/icon.svg" alt="" aria-hidden="true" />
         <strong>gmotion</strong>
-        <span className="dim">{filePath ? filePath.split("/").pop() : docTitle || "제목 없음"}{dirty ? " •" : ""}</span>
+        <span className="dim">{filePath ? filePath.split(/[/\\]/).pop() : docTitle || "제목 없음"}{dirty ? " •" : ""}</span>
       </div>
 
       <div className="tb-group">
@@ -111,8 +111,8 @@ export function Toolbar({
       </div>
 
       <div className="tb-group">
-        <button type="button" onClick={onUndo} disabled={!canUndo} title="실행 취소 ⌘Z">↶</button>
-        <button type="button" onClick={onRedo} disabled={!canRedo} title="다시 실행 ⇧⌘Z">↷</button>
+        <button type="button" onClick={onUndo} disabled={!canUndo} title="실행 취소 (Ctrl+Z / ⌘Z)">↶</button>
+        <button type="button" onClick={onRedo} disabled={!canRedo} title="다시 실행 (Ctrl+Y / ⇧⌘Z)">↷</button>
       </div>
 
       <div className="tb-group menu-host">

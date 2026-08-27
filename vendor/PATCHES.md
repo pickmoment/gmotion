@@ -136,3 +136,38 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
 `?presenter=1` 로 발표자 창 정상(다음 씬 미리보기 · 지금·다음 씬 노트 · 타이머 · 씬 목록).
 일반 재생(회귀 확인): `?t=30` 에서 자막 "그래서 세 가지를 바꿨습니다." 표시, `CC` 버튼 1개,
 `C` 키로 `captionsOn` true→false·요소 `hidden` 전환. 세 세션 모두 콘솔 로그·페이지 오류 0.
+
+## 5. 발표용(`--present`) 산출물에서 마지막 비트/항목이 잘리던 문제 (2026-08-27)
+
+**증상.** 발표용(`--present` / PT)으로 내보낸 뒤 재생하면, 씬의 마지막 항목/단계/숫자 카운터/줄바꿈 텍스트 등 마지막 비트가 채 끝나기 전에 씬이 멈추고, 다음 씬으로 넘길 때(`API.next()`) 찰나의 순간에 튀어나온 뒤 다음 씬으로 넘어갔다.
+
+**원인.**
+1. `gsapgraph.js` 의 `compile()` 에서 씬의 애니메이션 완료 시점(`ce` / `contentEnd`)을 계산할 때 `tw.list` 를 돌며 `num(o.st, 0) * 3` 으로 스태거 시간을 어림잡고 있었다. 항목이 4개 이상이거나 kineticType, processFlow, dataCounter, timeline 등 다단계 비트가 있는 패턴에서 실제 애니메이션 종료 시점보다 `ce` 가 앞당겨져 계산되었다.
+2. `runtime.js` 의 발표 모드 일시정지(`SPEC.present`)는 `s.at + s.ce + .06` 시점에 `master.addPause` 를 걸도록 되어 있었는데, 과소계산된 `ce` 때문에 마지막 비트가 등장하기 직전에 타임라인이 일시정지되었다.
+3. 발표자가 `→` / `Space` 로 다음 슬라이드를 넘기면 `API.next()` 가 `master.time(nx.at)` 로 다음 씬으로 점프하면서 중간 구간(미완료된 마지막 비트 트윈)이 순간적으로 평가되어 반짝이고 지나갔다.
+
+### `assets/gsapgraph.js`
+- `sceneDur(sc, ctx, t, hint, o)` — 패턴 빌더 20종이 계산한 정확한 애니메이션 종료 시점 `t` 를 `ctx.animEnd = r2(t)` 에 저장.
+- `compile()` — `ce` 기준값을 `ctx.animEnd` 로 잡고, 트윈 목록의 실제 종료 시점을 함께 반영하여 항목 수나 비트 수와 상관없이 씬 내의 모든 애니메이션이 온전히 끝나는 시점으로 `contentEnd` 를 정확히 산출.
+- `syncScenes()` — `s.contentEnd` 갱신 시 `ae`(실제 트윈 최대 종료 시점)를 온전히 반영.
+
+### `assets/runtime.js`
+- `SPEC.present` 정지 시점 계산: `s.at + s.ce + .08` 로 안정적인 정착 여유를 두고, 다음 씬 시작 시각(`SPEC.scenes[i + 1].at - .001`)을 넘지 않도록 보정.
+
+**검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 5건 통과 · `npm run build` 통과 · 다중 항목 패턴(processFlow 5단계, cardsCascade 6개, dataCounter 4개, kineticType 4줄, timeline 4개) 실측: `contentEnd` >= 모든 트윈 종료 시점 확인 · 발표 모드에서 마지막 비트까지 온전히 재생 후 정지 확인.
+
+## 6. 자막 동기화를 씬 단위 `say` 중심으로 일원화 (2026-08-27)
+
+**왜.** 씬 내부의 세부 항목(카드, 단계, 지표, 사건 등)마다 개별적으로 `say`를 쪼개어 달면, 자막 큐와 단어 매칭이 어긋나기 쉽고 발화 순서가 조금만 바뀌어도 탐색 커서가 꼬이는 문제가 있었다. 씬 단위 `scene.say`에 씬 전체 대사를 적는 것만으로 씬의 시작·길이를 실측에 맞추고, 내부는 패턴 고유의 완성도 높은 코레오그래피(스태거 및 모션 리듬)로 자연스럽게 재생되도록 가이드와 스키마를 정비했다.
+
+### `assets/gsapgraph.js`
+- `syncScenes()` — 12초 이상 정지 시 출력되던 경고 메시지를 "항목에 say를 단다" 대신 "씬을 2~3개로 쪼개어 리듬을 만든다"로 변경.
+
+### UI & 스키마 (`src/engine/schema.ts`, `ChartEditor.tsx`)
+- `DECOR_FIELDS` 및 `side`, `single`, `lines`, `stats`, `events` 스키마에서 번잡한 하위 `say` 필드를 제거하고 씬 공통 필드(`scene.say`)에 집중.
+- `ChartEditor`의 항목 테이블에서 `대사(say)` 컬럼 제거.
+
+### 스킬 지침 및 문서
+- `SKILL.md` · `spec.md` · `direction.md` · `api.md` — 자막 동기화 시 씬 단위 `say`에 자막 원문을 복사해 넣고, 긴 대사는 항목별 `say`로 쪼개는 대신 씬을 분할하도록 일관되게 개정.
+
+**검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 5건 통과 · `npm run build` 통과.

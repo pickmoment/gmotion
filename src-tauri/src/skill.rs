@@ -55,8 +55,8 @@ fn walk_disk(root: &Path, base: &Path, out: &mut Vec<String>) {
     for e in rd.flatten() {
         let p = e.path();
         let name = e.file_name();
-        // macOS 부산물은 비교 대상이 아니다
-        if name == ".DS_Store" {
+        // OS 별 부가 파일은 비교 대상이 아니다
+        if name == ".DS_Store" || name == "Thumbs.db" || name == "desktop.ini" || name == "ehthumbs.db" {
             continue;
         }
         if p.is_dir() {
