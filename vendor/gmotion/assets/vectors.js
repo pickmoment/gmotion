@@ -235,23 +235,6 @@ DECOR.hexes = {
   }
 };
 
-DECOR.spotlight = {
-  label: '스포트라이트 — 위에서 떨어지는 빛 원뿔. 무대·집중·인용',
-  build: function (W, H, T, lv) {
-    var o = [.1, .18, .3][lv];
-    return '<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>' +
-      '<linearGradient id="ggSpot" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' + T.accent + '" stop-opacity="' + r2(o) + '"/>' +
-      '<stop offset="100%" stop-color="' + T.accent + '" stop-opacity="0"/></linearGradient></defs>' +
-      '<path class="gg-drDrift" d="M' + r2(W * .38) + ' 0 L' + r2(W * .62) + ' 0 L' + r2(W * .86) + ' ' + H +
-      ' L' + r2(W * .14) + ' ' + H + 'Z" fill="url(#ggSpot)"/>' +
-      '<ellipse cx="' + r2(W / 2) + '" cy="' + r2(H * .52) + '" rx="' + r2(W * .3) + '" ry="' + r2(H * .16) +
-      '" fill="' + T.accent + '" opacity="' + r2(o * .5) + '" filter="url(#ggBlur2)"/>' +
-      '<defs><filter id="ggBlur2" x="-40%" y="-40%" width="180%" height="180%">' +
-      '<feGaussianBlur stdDeviation="' + Math.round(Math.min(W, H) * .05) + '"/></filter></defs></svg>';
-  }
-};
-
 DECOR.stripes = {
   label: '스트라이프 — 사선 줄무늬. 리듬·반복·포스터',
   build: function (W, H, T, lv) {

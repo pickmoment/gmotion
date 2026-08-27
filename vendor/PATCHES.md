@@ -200,3 +200,16 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
 - `baseName()` 및 `defaultDir()` 헬퍼 추가: 열려 있는 스펙 파일명(`filePath`), 자막 파일명(`subsPath`), 음성 파일명(`audioPath`), 문서 제목(`spec.title`)에서 stem을 자동 추출하고, 저장·내보내기 시 원본과 동일한 이름 및 디렉토리를 기본값으로 제안하도록 개선.
 
 **검증.** `npm run build` 통과 · `cargo test` 5건 통과.
+
+## 9. spotlight 배경 장식 제거 (2026-08-27)
+
+**왜.** `spotlight` 조명 효과는 화면 중앙과 상단에 강한 원뿔형 빛과 블러 원형 그라디언트를 형성하여, 씬의 텍스트·카드·차트의 시각적 대비를 해치고 주의를 산만하게 만들어 제거했다.
+
+### `assets/vectors.js`
+- `DECOR.spotlight` 정의 제거 (배경 15종 $\rightarrow$ 14종).
+
+### 예제 및 문서
+- `starter-charts.json` — 씬 7, 13의 `"decor": "spotlight"` $\rightarrow$ `"decor": "arcs"` 로 교체.
+- `SKILL.md` · `theming.md` · `direction.md` — `spotlight` 설명 및 예시 제거.
+
+**검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 5건 통과 · `npm run build` 통과.

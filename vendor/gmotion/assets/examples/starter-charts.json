@@ -172,7 +172,7 @@
       "purpose": "숫자 사이에 호흡을 둔다",
       "text": "숫자가 셋을 넘어가면\n사람은 그래프만 보고 뜻은 놓친다",
       "by": "차트를 쓰는 이유",
-      "decor": "spotlight",
+      "decor": "arcs",
       "transition": "fade"
     },
     {
@@ -378,7 +378,7 @@
       "pattern": "quote",
       "purpose": "닫는 문장",
       "text": "좋은 차트는 답을 주지 않는다\n질문을 정확하게 만든다",
-      "decor": "spotlight",
+      "decor": "arcs",
       "transition": "fade"
     }
   ]

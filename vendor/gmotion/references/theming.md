@@ -75,13 +75,13 @@
 
 ```jsonc
 "decor": ["blob", "grid"]     // 루트에 쓰면 전 씬 기본
-"decor": "spotlight"          // 씬에 쓰면 그 씬만
+"decor": "rays"               // 씬에 쓰면 그 씬만
 "decor": false                // 그 씬만 배경 없음
 "decorLevel": 2               // 0 약 · 1 기본 · 2 강
 ```
 
-15종: `blob` `wave` `grid` `dots` `rays` `rings` `mesh` `topo` `beams`
-`constellation` `arcs` `hexes` `spotlight` `stripes` `horizon`
+14종: `blob` `wave` `grid` `dots` `rays` `rings` `mesh` `topo` `beams`
+`constellation` `arcs` `hexes` `stripes` `horizon`
 (`gm info decor` 로 각각의 용도를 본다)
 
 배경은 CSS 애니메이션으로 느리게 움직인다 — 마스터 타임라인과 무관하므로 시킹·프레임
