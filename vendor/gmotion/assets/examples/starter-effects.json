@@ -1,0 +1,205 @@
+{
+  "title": "GSAP 효과 쇼케이스",
+  "message": "모프·곡선 경로·스크램블·롤·마퀴·스택·곡선 와이프를 한 번에 본다",
+  "theme": "midnight",
+  "aspect": "16:9",
+  "scenes": [
+    {
+      "id": "scr",
+      "pattern": "kineticType",
+      "purpose": "스크램블 타이포",
+      "textFx": "scramble",
+      "lines": [
+        "우리는",
+        {
+          "text": "안다고",
+          "emphasis": true
+        },
+        "믿었다"
+      ],
+      "mode": "cut"
+    },
+    {
+      "id": "morph",
+      "pattern": "matchCut",
+      "purpose": "앵커 모프 + 텍스트 롤",
+      "anchor": "question",
+      "anchorTo": "compass",
+      "textFx": "roll",
+      "from": {
+        "title": "무엇을 아는가",
+        "sub": "지금까지의 질문"
+      },
+      "to": {
+        "title": "무엇을 모르는가",
+        "sub": "이 시리즈의 질문"
+      },
+      "transition": "match"
+    },
+    {
+      "id": "flow",
+      "pattern": "networkBuild",
+      "purpose": "링크 위 흐르는 점",
+      "title": "요청이 흐른다",
+      "flow": true,
+      "nodes": [
+        {
+          "label": "게이트웨이",
+          "icon": "plug",
+          "hub": true
+        },
+        {
+          "label": "인증",
+          "icon": "권한"
+        },
+        {
+          "label": "주문",
+          "icon": "cart"
+        },
+        {
+          "label": "결제",
+          "icon": "creditcard"
+        }
+      ],
+      "transition": "pushLeft"
+    },
+    {
+      "id": "conv",
+      "pattern": "convergence",
+      "purpose": "곡선 경로 수렴",
+      "title": "곡선을 따라 모인다",
+      "sources": [
+        {
+          "label": "Slack",
+          "icon": "채팅"
+        },
+        {
+          "label": "Jira",
+          "icon": "체크"
+        },
+        {
+          "label": "문서",
+          "icon": "doc"
+        },
+        {
+          "label": "코드",
+          "icon": "code"
+        }
+      ],
+      "target": {
+        "label": "하나로",
+        "icon": "database"
+      },
+      "transition": "zoomIn"
+    },
+    {
+      "id": "title",
+      "pattern": "heroReveal",
+      "purpose": "제목 스크램블",
+      "kicker": "TITLE",
+      "title": "글자가 섞이다 정렬된다",
+      "textFx": "scramble",
+      "sub": "ScrambleText",
+      "transition": "fade"
+    },
+    {
+      "id": "mq",
+      "pattern": "marquee",
+      "purpose": "흐르는 벨트",
+      "kicker": "쓰는 곳",
+      "title": "이미 여기저기 쓰인다",
+      "rows": 2,
+      "speed": 22,
+      "items": [
+        {
+          "label": "Slack",
+          "icon": "채팅"
+        },
+        {
+          "label": "Jira",
+          "icon": "체크"
+        },
+        {
+          "label": "Confluence",
+          "icon": "doc"
+        },
+        {
+          "label": "GitHub",
+          "icon": "code"
+        },
+        {
+          "label": "Figma",
+          "icon": "paint"
+        },
+        {
+          "label": "Notion",
+          "icon": "folder"
+        },
+        {
+          "label": "Linear",
+          "icon": "target"
+        },
+        {
+          "label": "Datadog",
+          "icon": "chart"
+        }
+      ],
+      "transition": "pushLeft"
+    },
+    {
+      "id": "stack",
+      "pattern": "cardsCascade",
+      "purpose": "카드 스택 등장",
+      "title": "한 덩어리에서 넷으로",
+      "dir": "stack",
+      "items": [
+        {
+          "label": "수집",
+          "icon": "refresh"
+        },
+        {
+          "label": "구조화",
+          "icon": "hierarchy"
+        },
+        {
+          "label": "검색",
+          "icon": "search"
+        },
+        {
+          "label": "공유",
+          "icon": "forward"
+        }
+      ],
+      "transition": "fade"
+    },
+    {
+      "id": "skew",
+      "pattern": "processFlow",
+      "purpose": "E3 스큐 질감",
+      "title": "빠르게 들어온다",
+      "steps": [
+        {
+          "label": "수집",
+          "icon": "refresh"
+        },
+        {
+          "label": "구조화",
+          "icon": "hierarchy"
+        },
+        {
+          "label": "검색",
+          "icon": "search"
+        }
+      ],
+      "transition": "curve"
+    },
+    {
+      "id": "close",
+      "pattern": "heroReveal",
+      "purpose": "곡선 와이프로 닫기",
+      "title": "곡선으로 닦는다",
+      "sub": "curve 트랜지션",
+      "transition": "pushLeft"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "title": "폰트 쇼케이스",
+  "message": "같은 내용도 글자꼴이 바꾸면 다른 말이 된다",
+  "theme": "paper",
+  "aspect": "16:9",
+  "energy": "E2",
+  "mode": "autoplay",
+
+  "_note": [
+    "폰트 10종을 한 파일에서 볼 수는 없다 — 폰트는 산출물 하나에 하나다.",
+    "루트의 font 를 바꿔 가며 빌드해 비교한다.",
+    "  for f in display sans serif impact round classic soft neo pen gothic; do",
+    "    node <skill>/assets/gm.js build starter-fonts.json --font-demo $f -o $f.html",
+    "  done",
+    "  (--font-demo 같은 플래그는 없다. 파일의 \"font\" 값을 고쳐 빌드한다)",
+    "",
+    "고르는 기준은 `gm info fonts` 에 한 줄씩 적혀 있다.",
+    "폰트를 안 적으면 테마가 정한 것을 쓴다 — midnight·neon 은 display,",
+    "paper·mono 는 sans, ink·warm 은 serif 다."
+  ],
+
+  "font": "neo",
+
+  "scenes": [
+    {
+      "pattern": "heroReveal",
+      "purpose": "글자꼴 자체를 보여준다",
+      "kicker": "폰트 시험",
+      "title": "다람쥐 헌 쳇바퀴에\n타고파",
+      "sub": "받침과 겹모음이 많은 문장이라 글자꼴의 성격이 드러난다"
+    },
+    {
+      "pattern": "dataCounter",
+      "purpose": "숫자가 어떻게 보이는지 — 폰트마다 숫자 폭이 다르다",
+      "kicker": "숫자 · 단위 · 라벨",
+      "title": "숫자는 폰트를 가장 크게 탄다",
+      "transition": "pushLeft",
+      "stats": [
+        { "value": 1234, "unit": "건", "label": "네 자리" },
+        { "value": 87.5, "unit": "%", "label": "소수점", "dec": 1 },
+        { "value": 6, "unit": "배", "label": "한 자리" }
+      ]
+    },
+    {
+      "pattern": "cardsCascade",
+      "purpose": "작은 글씨의 가독성",
+      "title": "작은 글씨에서 갈린다",
+      "transition": "fade",
+      "items": [
+        { "label": "제목용", "note": "굵고 크게 쓸 때만 좋은 폰트가 있다", "icon": "chart" },
+        { "label": "본문용", "note": "작아져도 획이 버티는 폰트가 따로 있다", "icon": "doc" },
+        { "label": "숫자용", "note": "자릿수가 흔들리지 않아야 읽힌다", "icon": "trendup" }
+      ]
+    },
+    {
+      "pattern": "quote",
+      "purpose": "긴 문장에서의 인상",
+      "transition": "fade",
+      "text": "글자꼴은 목소리의 높낮이다.\n같은 문장도 다른 사람이 말한 것처럼 들린다.",
+      "by": "폰트 고르기",
+      "role": "gm info fonts 에 용도가 한 줄씩 있다"
+    },
+    {
+      "pattern": "deviceShow",
+      "purpose": "고정폭 — 터미널·코드 화면은 본문 폰트와 따로 논다",
+      "kicker": "고정폭",
+      "title": "코드 화면은 칸이 맞아야 한다",
+      "transition": "zoomIn",
+      "frame": "terminal",
+      "screen": {
+        "lines": [
+          "$ gm info fonts",
+          "  display  프리텐다드 — 기본값",
+          "  impact   블랙한산스 — 쇼츠·선언",
+          "$ 한글이 섞여도 칸이 맞는다"
+        ]
+      },
+      "caption": "터미널·창 프레임을 쓰면 고정폭 폰트를 자동으로 받는다"
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "gmotion-vendor",
+  "private": true,
+  "type": "commonjs",
+  "//": "루트 package.json 의 type:module 이 vendor 의 CommonJS 엔진을 깨뜨린다. 이 파일은 vendor/ 에만 두어 스킬 페이로드(vendor/gmotion/)에는 들어가지 않는다."
+}

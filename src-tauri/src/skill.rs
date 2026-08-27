@@ -1,0 +1,231 @@
+//! 번들된 gmotion 스킬 페이로드를 다룬다.
+//!
+//! 스킬은 `vendor/gmotion` 을 통째로 바이너리에 넣어 둔다 — 실행 시점에
+//! 스킬 디렉토리를 참조하지 않으므로, 사용자 환경에 스킬이 없어도 앱은 완전히
+//! 동작하고 오히려 앱이 스킬을 설치하는 쪽이 된다.
+
+use include_dir::{include_dir, Dir};
+use serde::Serialize;
+use std::path::{Path, PathBuf};
+
+/// 컴파일 시점에 통째로 들어간다. 소스 오브 트루스는 `vendor/gmotion` 하나다.
+pub static SKILL: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../vendor/gmotion");
+
+const SKILL_NAME: &str = "gmotion";
+
+#[derive(Serialize)]
+pub struct SkillStatus {
+    /// 설치 대상 경로 (…/skills/gmotion)
+    pub target: String,
+    pub installed: bool,
+    /// 번들 파일 수
+    pub bundled_files: usize,
+    /// 설치본이 번들과 완전히 같은가
+    pub up_to_date: bool,
+    /// 설치본에 없는 파일
+    pub missing: Vec<String>,
+    /// 내용이 다른 파일
+    pub differing: Vec<String>,
+    /// 번들에 없는데 설치본에 있는 파일
+    pub extra: Vec<String>,
+    pub bundled_version: String,
+    pub installed_version: Option<String>,
+}
+
+/// 번들 안의 모든 파일을 (상대경로, 내용) 으로 펼친다.
+fn walk<'a>(dir: &'a Dir<'a>, out: &mut Vec<(String, &'a [u8])>) {
+    for f in dir.files() {
+        out.push((f.path().to_string_lossy().replace('\\', "/"), f.contents()));
+    }
+    for d in dir.dirs() {
+        walk(d, out);
+    }
+}
+
+pub fn bundled_files() -> Vec<(String, &'static [u8])> {
+    let mut v = Vec::new();
+    walk(&SKILL, &mut v);
+    v.sort_by(|a, b| a.0.cmp(&b.0));
+    v
+}
+
+/// 설치된 디렉토리를 훑어 상대경로 목록을 만든다.
+fn walk_disk(root: &Path, base: &Path, out: &mut Vec<String>) {
+    let Ok(rd) = std::fs::read_dir(root) else { return };
+    for e in rd.flatten() {
+        let p = e.path();
+        let name = e.file_name();
+        // macOS 부산물은 비교 대상이 아니다
+        if name == ".DS_Store" {
+            continue;
+        }
+        if p.is_dir() {
+            walk_disk(&p, base, out);
+        } else if let Ok(rel) = p.strip_prefix(base) {
+            out.push(rel.to_string_lossy().replace('\\', "/"));
+        }
+    }
+}
+
+/// `var VERSION = '0.1.0';` 에서 버전을 뽑는다.
+fn engine_version(src: &str) -> Option<String> {
+    let i = src.find("var VERSION = '")? + "var VERSION = '".len();
+    let rest = &src[i..];
+    let j = rest.find('\'')?;
+    Some(rest[..j].to_string())
+}
+
+fn bundled_version() -> String {
+    SKILL
+        .get_file("assets/gsapgraph.js")
+        .and_then(|f| f.contents_utf8())
+        .and_then(engine_version)
+        .unwrap_or_else(|| "unknown".into())
+}
+
+/// 설치 루트를 정한다. `root` 를 주면 `<root>/.claude/skills`, 없으면 `~/.claude/skills`.
+pub fn skills_root(root: Option<&str>) -> Result<PathBuf, String> {
+    match root {
+        Some(r) if !r.is_empty() => Ok(PathBuf::from(r).join(".claude").join("skills")),
+        _ => dirs::home_dir()
+            .map(|h| h.join(".claude").join("skills"))
+            .ok_or_else(|| "홈 디렉토리를 찾지 못했다".to_string()),
+    }
+}
+
+pub fn status(root: Option<&str>) -> Result<SkillStatus, String> {
+    let target = skills_root(root)?.join(SKILL_NAME);
+    let bundled = bundled_files();
+    let bv = bundled_version();
+
+    if !target.is_dir() {
+        return Ok(SkillStatus {
+            target: target.to_string_lossy().into(),
+            installed: false,
+            bundled_files: bundled.len(),
+            up_to_date: false,
+            missing: bundled.iter().map(|(p, _)| p.clone()).collect(),
+            differing: vec![],
+            extra: vec![],
+            bundled_version: bv,
+            installed_version: None,
+        });
+    }
+
+    let mut missing = Vec::new();
+    let mut differing = Vec::new();
+    for (rel, bytes) in &bundled {
+        let p = target.join(rel);
+        match std::fs::read(&p) {
+            Ok(cur) if cur == *bytes => {}
+            Ok(_) => differing.push(rel.clone()),
+            Err(_) => missing.push(rel.clone()),
+        }
+    }
+
+    let mut on_disk = Vec::new();
+    walk_disk(&target, &target, &mut on_disk);
+    let known: std::collections::HashSet<&str> = bundled.iter().map(|(p, _)| p.as_str()).collect();
+    let mut extra: Vec<String> = on_disk
+        .into_iter()
+        .filter(|p| !known.contains(p.as_str()))
+        .collect();
+    extra.sort();
+
+    let iv = std::fs::read_to_string(target.join("assets/gsapgraph.js"))
+        .ok()
+        .as_deref()
+        .and_then(engine_version);
+
+    Ok(SkillStatus {
+        target: target.to_string_lossy().into(),
+        installed: true,
+        bundled_files: bundled.len(),
+        up_to_date: missing.is_empty() && differing.is_empty(),
+        missing,
+        differing,
+        extra,
+        bundled_version: bv,
+        installed_version: iv,
+    })
+}
+
+/// 번들을 대상 경로에 쓴다. 덮어쓰되, 번들에 없는 파일은 건드리지 않는다
+/// (사용자가 스킬 폴더에 따로 둔 메모를 지우지 않기 위해서다).
+pub fn install(root: Option<&str>) -> Result<SkillStatus, String> {
+    let target = skills_root(root)?.join(SKILL_NAME);
+    for (rel, bytes) in bundled_files() {
+        let p = target.join(&rel);
+        if let Some(dir) = p.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        }
+        std::fs::write(&p, bytes).map_err(|e| format!("{}: {e}", p.display()))?;
+    }
+    status(root)
+}
+
+/// 스킬 디렉토리를 지운다. 안전을 위해 경로 끝이 `skills/gmotion` 일 때만 지운다.
+pub fn remove(root: Option<&str>) -> Result<SkillStatus, String> {
+    let target = skills_root(root)?.join(SKILL_NAME);
+    if !target.is_dir() {
+        return status(root);
+    }
+    let ok = target.ends_with(SKILL_NAME)
+        && target
+            .parent()
+            .map(|p| p.ends_with("skills"))
+            .unwrap_or(false);
+    if !ok {
+        return Err(format!("예상치 못한 경로라 지우지 않았다: {}", target.display()));
+    }
+    std::fs::remove_dir_all(&target).map_err(|e| format!("{}: {e}", target.display()))?;
+    status(root)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 임시 루트에 설치 → 상태 → 변조 감지 → 재설치 → 제거까지 한 바퀴.
+    #[test]
+    fn install_roundtrip() {
+        let root = std::env::temp_dir().join(format!("gmotion-test-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let r = Some(root.to_string_lossy().to_string());
+        let rs = r.as_deref();
+
+        let before = status(rs).unwrap();
+        assert!(!before.installed, "아직 설치 전이다");
+        assert!(before.bundled_files > 20, "번들에 파일이 들어 있어야 한다");
+        assert_ne!(before.bundled_version, "unknown", "엔진 버전을 읽어야 한다");
+
+        let after = install(rs).unwrap();
+        assert!(after.installed && after.up_to_date, "설치 직후는 최신이어야 한다");
+        assert!(after.missing.is_empty() && after.differing.is_empty());
+        assert_eq!(after.installed_version.as_deref(), Some(after.bundled_version.as_str()));
+
+        // 스킬이 실제로 동작할 수 있는 형태인지 — 핵심 파일이 있어야 한다
+        let target = root.join(".claude/skills/gmotion");
+        for f in ["SKILL.md", "assets/gm.js", "assets/gsapgraph.js", "references/spec.md"] {
+            assert!(target.join(f).is_file(), "{f} 가 없다");
+        }
+
+        // 사용자가 따로 둔 파일은 설치가 건드리지 않는다
+        std::fs::write(target.join("MEMO.txt"), "내 메모").unwrap();
+        std::fs::write(target.join("SKILL.md"), "변조").unwrap();
+        let dirty = status(rs).unwrap();
+        assert!(!dirty.up_to_date);
+        assert_eq!(dirty.differing, vec!["SKILL.md".to_string()]);
+        assert_eq!(dirty.extra, vec!["MEMO.txt".to_string()]);
+
+        let fixed = install(rs).unwrap();
+        assert!(fixed.up_to_date, "재설치가 변조를 되돌려야 한다");
+        assert!(target.join("MEMO.txt").is_file(), "번들 밖 파일은 남아야 한다");
+
+        let gone = remove(rs).unwrap();
+        assert!(!gone.installed);
+        assert!(!target.exists());
+
+        let _ = std::fs::remove_dir_all(&root);
+    }
+}

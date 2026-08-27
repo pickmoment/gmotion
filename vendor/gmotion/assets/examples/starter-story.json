@@ -1,0 +1,197 @@
+{
+  "title": "흩어진 정보를 한곳으로",
+  "message": "정보가 네 곳에 흩어져 있어 답을 찾는 데 시간이 든다 — 하나의 원천으로 모으면 찾는 시간이 사라진다",
+  "theme": "midnight",
+  "aspect": "16:9",
+  "energy": "E2",
+  "mode": "autoplay",
+  "scenes": [
+    {
+      "id": "problem",
+      "pattern": "kineticType",
+      "purpose": "문제를 한 문장으로 던진다",
+      "lines": [
+        "정보는",
+        {
+          "text": "어디에나 있다",
+          "emphasis": true
+        },
+        "필요한 곳만 빼고"
+      ],
+      "hold": 1.4
+    },
+    {
+      "id": "scatter",
+      "pattern": "cardsCascade",
+      "purpose": "분산의 실체를 눈으로 보여준다",
+      "kicker": "지금",
+      "title": "답은 네 곳에 나뉘어 있다",
+      "mark": "underline",
+      "items": [
+        {
+          "label": "Slack",
+          "icon": "채팅",
+          "note": "결정은 스레드 안에"
+        },
+        {
+          "label": "Jira",
+          "icon": "체크",
+          "note": "맥락 없는 티켓"
+        },
+        {
+          "label": "Confluence",
+          "icon": "문서",
+          "note": "최신본이 어느 것인지"
+        },
+        {
+          "label": "소스 코드",
+          "icon": "code",
+          "note": "주석이 유일한 설명"
+        }
+      ],
+      "transition": "pushLeft"
+    },
+    {
+      "id": "cost",
+      "pattern": "dataCounter",
+      "purpose": "분산의 비용을 수치로 못 박는다",
+      "title": "찾는 데 쓰는 시간",
+      "stats": [
+        {
+          "value": 41,
+          "unit": "%",
+          "label": "정보 탐색에 쓰는 업무 시간",
+          "icon": "hourglass"
+        },
+        {
+          "value": 3.2,
+          "unit": "회",
+          "dec": 1,
+          "label": "같은 질문 반복 횟수 / 주",
+          "icon": "question"
+        },
+        {
+          "value": 12,
+          "unit": "일",
+          "label": "온보딩 지연",
+          "icon": "사람"
+        }
+      ],
+      "transition": "fade"
+    },
+    {
+      "id": "converge",
+      "pattern": "convergence",
+      "purpose": "해결의 동작 자체를 보여준다 — 이 씬이 이 영상의 핵",
+      "kicker": "제안",
+      "title": "하나의 원천으로 모은다",
+      "sources": [
+        {
+          "label": "Slack",
+          "icon": "채팅"
+        },
+        {
+          "label": "Jira",
+          "icon": "체크"
+        },
+        {
+          "label": "Confluence",
+          "icon": "문서"
+        },
+        {
+          "label": "소스 코드",
+          "icon": "code"
+        },
+        {
+          "label": "회의록",
+          "icon": "발표자료"
+        }
+      ],
+      "target": {
+        "label": "Single Source of Truth",
+        "icon": "database",
+        "note": "질문이 아니라 검색으로"
+      },
+      "transition": "zoomIn",
+      "decor": [
+        "blob",
+        "rings"
+      ]
+    },
+    {
+      "id": "how",
+      "pattern": "processFlow",
+      "purpose": "실행 가능하다는 것을 보여준다",
+      "kicker": "어떻게",
+      "title": "세 단계로 옮긴다",
+      "steps": [
+        {
+          "label": "수집",
+          "icon": "refresh",
+          "note": "네 채널을 자동 동기화"
+        },
+        {
+          "label": "구조화",
+          "icon": "hierarchy",
+          "note": "결정·근거·상태로 쪼갠다"
+        },
+        {
+          "label": "검색",
+          "icon": "search",
+          "note": "한 곳에서 답이 나온다"
+        }
+      ],
+      "transition": "pushLeft"
+    },
+    {
+      "id": "after",
+      "pattern": "beforeAfter",
+      "purpose": "바뀐 것을 대비로 확정한다",
+      "title": "질문하는 조직에서 찾는 조직으로",
+      "before": {
+        "label": "BEFORE",
+        "value": "41%",
+        "icon": "warn",
+        "items": [
+          {
+            "label": "네 곳을 돌아다닌다"
+          },
+          {
+            "label": "아는 사람에게 물어본다"
+          },
+          {
+            "label": "최신본을 확신할 수 없다"
+          }
+        ]
+      },
+      "after": {
+        "label": "AFTER",
+        "value": "12%",
+        "icon": "check",
+        "items": [
+          {
+            "label": "한 곳에서 검색한다"
+          },
+          {
+            "label": "근거가 함께 나온다"
+          },
+          {
+            "label": "최신본이 하나다"
+          }
+        ]
+      },
+      "transition": "fade"
+    },
+    {
+      "id": "close",
+      "pattern": "heroReveal",
+      "purpose": "메시지를 한 줄로 남긴다",
+      "kicker": "Single Source of Truth",
+      "title": "찾는 시간을\n만드는 시간으로",
+      "sub": "다음 스프린트에 수집 파이프라인부터 시작합니다",
+      "transition": "zoomOut",
+      "hold": 2.6,
+      "art": "data"
+    }
+  ]
+}

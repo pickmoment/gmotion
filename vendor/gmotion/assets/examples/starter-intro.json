@@ -1,0 +1,53 @@
+{
+  "title": "시리즈 오프닝",
+  "message": "이 시리즈는 하나의 질문에서 출발한다 — 우리는 무엇을 모르고 있나",
+  "theme": "ink",
+  "aspect": "16:9",
+  "energy": "E3",
+  "mode": "autoplay",
+  "scenes": [
+    {
+      "id": "hook",
+      "pattern": "kineticType",
+      "purpose": "첫 3초를 붙잡는다",
+      "mode": "cut",
+      "lines": [
+        "우리는",
+        {
+          "text": "안다고",
+          "emphasis": true
+        },
+        "믿었다"
+      ],
+      "textFx": "scramble"
+    },
+    {
+      "id": "turn",
+      "pattern": "matchCut",
+      "purpose": "질문의 방향을 뒤집는다 — 앵커가 두 문장을 잇는다",
+      "anchor": "question",
+      "from": {
+        "title": "무엇을 아는가",
+        "sub": "지금까지의 질문"
+      },
+      "to": {
+        "title": "무엇을 모르는가",
+        "sub": "이 시리즈의 질문"
+      },
+      "transition": "match",
+      "anchorTo": "compass",
+      "textFx": "roll"
+    },
+    {
+      "id": "title",
+      "pattern": "heroReveal",
+      "purpose": "제목을 세운다",
+      "kicker": "6부작 시리즈",
+      "title": "모르는 것의 지도",
+      "sub": "매주 수요일 공개",
+      "icon": "compass",
+      "transition": "zoomOut",
+      "hold": 2.4
+    }
+  ]
+}

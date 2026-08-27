@@ -1,0 +1,56 @@
+{
+  "title": "쇼츠 — 습관 하나",
+  "message": "아침 10분이 하루의 집중을 결정한다",
+  "theme": "neon",
+  "aspect": "9:16",
+  "energy": "E3",
+  "mode": "autoplay",
+  "scenes": [
+    {
+      "id": "hook",
+      "pattern": "kineticType",
+      "purpose": "스크롤을 멈추게 한다",
+      "mode": "cut",
+      "lines": [
+        "아침에",
+        { "text": "딱 10분", "emphasis": true },
+        "이것만"
+      ]
+    },
+    {
+      "id": "core",
+      "pattern": "orbit",
+      "purpose": "습관 하나가 무엇을 바꾸는지 한 장으로",
+      "title": "10분이 바꾸는 것",
+      "center": { "label": "아침 10분", "icon": "sun" },
+      "orbits": [
+        { "label": "집중", "icon": "target" },
+        { "label": "기분", "icon": "heart" },
+        { "label": "체력", "icon": "fitness" },
+        { "label": "수면", "icon": "moon" }
+      ],
+      "transition": "zoomIn"
+    },
+    {
+      "id": "proof",
+      "pattern": "dataCounter",
+      "purpose": "숫자로 못 박는다",
+      "title": "2주 뒤",
+      "stats": [
+        { "value": 27, "unit": "%", "label": "집중 지속 시간", "icon": "trendup" },
+        { "value": 41, "unit": "분", "label": "잠드는 시간 단축", "icon": "moon" }
+      ],
+      "transition": "pushUp"
+    },
+    {
+      "id": "cta",
+      "pattern": "heroReveal",
+      "purpose": "행동을 남긴다",
+      "title": "내일 아침\n10분만",
+      "sub": "알람을 10분 앞으로",
+      "icon": "bolt",
+      "transition": "zoomOut",
+      "hold": 1.8
+    }
+  ]
+}

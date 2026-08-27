@@ -1,0 +1,385 @@
+{
+  "title": "차트 쇼케이스",
+  "message": "데이터의 일이 차트를 정한다 — 크기·추세·구성·목표·분포를 각각 어떤 형태로 그리는지",
+  "theme": "paper",
+  "aspect": "16:9",
+  "energy": "E2",
+  "scenes": [
+    {
+      "id": "bar",
+      "pattern": "chart",
+      "purpose": "세로 막대 + emphasis",
+      "kicker": "월별",
+      "title": "3월에 꺾였다",
+      "chart": "bar",
+      "data": {
+        "items": [
+          {
+            "label": "1월",
+            "value": 1240
+          },
+          {
+            "label": "2월",
+            "value": 1890
+          },
+          {
+            "label": "3월",
+            "value": 820
+          },
+          {
+            "label": "4월",
+            "value": 1510
+          },
+          {
+            "label": "5월",
+            "value": 2140
+          }
+        ]
+      },
+      "options": {
+        "emphasis": 2
+      },
+      "caption": "3월만 강조하고 나머지는 회색으로 물러난다"
+    },
+    {
+      "id": "line",
+      "pattern": "chart",
+      "purpose": "다중 시리즈 꺾은선",
+      "title": "유입은 늘고 정착은 줄었다",
+      "chart": "line",
+      "data": {
+        "categories": [
+          "1월",
+          "2월",
+          "3월",
+          "4월",
+          "5월",
+          "6월"
+        ],
+        "series": [
+          {
+            "name": "신규 가입",
+            "values": [
+              820,
+              1100,
+              1340,
+              1620,
+              1810,
+              2040
+            ]
+          },
+          {
+            "name": "4주 정착",
+            "values": [
+              410,
+              480,
+              470,
+              440,
+              420,
+              390
+            ]
+          }
+        ]
+      },
+      "transition": "pushLeft"
+    },
+    {
+      "id": "stack",
+      "pattern": "chart",
+      "purpose": "누적 막대",
+      "title": "채널 구성이 바뀌었다",
+      "chart": "barStack",
+      "data": {
+        "categories": [
+          "1분기",
+          "2분기",
+          "3분기"
+        ],
+        "series": [
+          {
+            "name": "제휴",
+            "values": [
+              120,
+              340,
+              620
+            ]
+          },
+          {
+            "name": "검색",
+            "values": [
+              280,
+              310,
+              340
+            ]
+          },
+          {
+            "name": "직접",
+            "values": [
+              190,
+              180,
+              160
+            ]
+          }
+        ]
+      },
+      "transition": "fade"
+    },
+    {
+      "id": "pause2",
+      "pattern": "heroReveal",
+      "purpose": "숫자에서 뜻으로 넘어가는 지점",
+      "kicker": "여기까지가 무엇",
+      "title": "이제 왜",
+      "sub": "형태를 바꾸면 같은 수가 다른 말을 한다",
+      "art": "balance",
+      "transition": "zoomOut"
+    },
+    {
+      "id": "donut",
+      "pattern": "chart",
+      "purpose": "도넛",
+      "title": "이탈 사유",
+      "chart": "donut",
+      "data": {
+        "items": [
+          {
+            "label": "쓸 이유 못 찾음",
+            "value": 46
+          },
+          {
+            "label": "너무 복잡",
+            "value": 28
+          },
+          {
+            "label": "가격",
+            "value": 16
+          },
+          {
+            "label": "기타",
+            "value": 10
+          }
+        ]
+      },
+      "options": {
+        "center": "46%",
+        "centerLabel": "1위 사유"
+      },
+      "transition": "zoomIn"
+    },
+    {
+      "id": "breath",
+      "pattern": "quote",
+      "purpose": "숫자 사이에 호흡을 둔다",
+      "text": "숫자가 셋을 넘어가면\n사람은 그래프만 보고 뜻은 놓친다",
+      "by": "차트를 쓰는 이유",
+      "decor": "spotlight",
+      "transition": "fade"
+    },
+    {
+      "id": "iso",
+      "pattern": "chart",
+      "purpose": "아이소타입",
+      "title": "정보 탐색에 하루의 41%",
+      "chart": "isotype",
+      "data": {
+        "items": [
+          41
+        ]
+      },
+      "options": {
+        "icon": "사람",
+        "caption": false
+      },
+      "transition": "fade"
+    },
+    {
+      "id": "wf",
+      "pattern": "chart",
+      "purpose": "워터폴",
+      "title": "무엇이 매출을 움직였나",
+      "chart": "waterfall",
+      "data": {
+        "categories": [
+          "기초",
+          "신규",
+          "이탈",
+          "확장",
+          "기말"
+        ],
+        "series": [
+          {
+            "values": [
+              240,
+              86,
+              -52,
+              34,
+              308
+            ]
+          }
+        ]
+      },
+      "options": {
+        "totals": [
+          0,
+          4
+        ]
+      },
+      "transition": "pushLeft"
+    },
+    {
+      "id": "bullet",
+      "pattern": "chart",
+      "purpose": "불릿",
+      "title": "목표 대비",
+      "chart": "bullet",
+      "data": {
+        "items": [
+          {
+            "label": "신규 가입",
+            "value": 18400,
+            "target": 16000
+          },
+          {
+            "label": "4주 정착",
+            "value": 34,
+            "target": 45
+          },
+          {
+            "label": "분기 매출",
+            "value": 2.7,
+            "target": 2.9
+          }
+        ]
+      },
+      "transition": "fade"
+    },
+    {
+      "id": "radar",
+      "pattern": "chart",
+      "title": "현재와 목표",
+      "chart": "radar",
+      "data": {
+        "categories": [
+          "속도",
+          "품질",
+          "비용",
+          "안정",
+          "확장"
+        ],
+        "series": [
+          {
+            "name": "현재",
+            "values": [
+              3,
+              4,
+              2,
+              5,
+              3
+            ]
+          },
+          {
+            "name": "목표",
+            "values": [
+              5,
+              5,
+              4,
+              5,
+              4
+            ]
+          }
+        ]
+      },
+      "options": {
+        "max": 5
+      },
+      "transition": "zoomIn"
+    },
+    {
+      "id": "slope",
+      "pattern": "chart",
+      "title": "지역별 변화",
+      "chart": "slope",
+      "data": {
+        "categories": [
+          "서울",
+          "부산",
+          "대구",
+          "광주"
+        ],
+        "series": [
+          {
+            "name": "3분기",
+            "values": [
+              42,
+              28,
+              19,
+              24
+            ]
+          },
+          {
+            "name": "4분기",
+            "values": [
+              51,
+              22,
+              26,
+              23
+            ]
+          }
+        ]
+      },
+      "transition": "pushLeft"
+    },
+    {
+      "id": "heat",
+      "pattern": "chart",
+      "title": "요일 × 시간대 활동",
+      "chart": "heatmap",
+      "data": {
+        "categories": [
+          "월",
+          "화",
+          "수",
+          "목",
+          "금"
+        ],
+        "rows": [
+          "오전",
+          "오후",
+          "저녁"
+        ],
+        "grid": [
+          [
+            12,
+            18,
+            22,
+            19,
+            14
+          ],
+          [
+            28,
+            34,
+            41,
+            38,
+            24
+          ],
+          [
+            8,
+            11,
+            16,
+            22,
+            31
+          ]
+        ]
+      },
+      "transition": "fade"
+    },
+    {
+      "id": "close",
+      "pattern": "quote",
+      "purpose": "닫는 문장",
+      "text": "좋은 차트는 답을 주지 않는다\n질문을 정확하게 만든다",
+      "decor": "spotlight",
+      "transition": "fade"
+    }
+  ]
+}

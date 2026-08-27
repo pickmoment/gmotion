@@ -1,0 +1,27 @@
+[package]
+name = "gmotion"
+version = "0.1.0"
+description = "gmotion — 모션그래픽 스펙 에디터"
+authors = ["gmotion"]
+edition = "2021"
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "gmotion_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "6"
+include_dir = "0.7"
+# CDP 는 ws://127.0.0.1 이라 TLS 가 필요 없다. 동기 클라이언트로 충분해 tokio 를 끌어오지 않는다.
+tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }

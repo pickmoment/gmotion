@@ -1,0 +1,116 @@
+{
+  "title": "벡터 세트 쇼케이스",
+  "message": "배경·강조·프레임·일러스트 네 세트가 화면에서 어떻게 쓰이는지 한 번에 본다",
+  "theme": "midnight",
+  "aspect": "16:9",
+  "energy": "E2",
+  "scenes": [
+    {
+      "id": "mark",
+      "pattern": "cardsCascade",
+      "purpose": "마크와 배지",
+      "kicker": "강조 요소",
+      "title": "여기가 핵심이다",
+      "mark": "underline",
+      "items": [
+        {
+          "label": "배지",
+          "icon": "star",
+          "badge": "NEW",
+          "note": "우상단 알약"
+        },
+        {
+          "label": "리본",
+          "icon": "medal",
+          "ribbon": "핵심",
+          "note": "좌상단 띠"
+        },
+        {
+          "label": "카드 일러스트",
+          "icon": "chart",
+          "art": "growth",
+          "note": "우하단 배경"
+        },
+        {
+          "label": "톤",
+          "icon": "check",
+          "tone": "good",
+          "note": "색으로 의미"
+        }
+      ]
+    },
+    {
+      "id": "circle",
+      "pattern": "dataCounter",
+      "purpose": "동그라미 마크",
+      "title": "41%",
+      "mark": "circle",
+      "sub": "제목에 손그림 원을 두른다",
+      "stats": [
+        {
+          "value": 41,
+          "unit": "%",
+          "label": "정보 탐색 시간",
+          "icon": "hourglass"
+        }
+      ],
+      "transition": "fade"
+    },
+    {
+      "id": "art",
+      "pattern": "heroReveal",
+      "purpose": "추상 일러스트",
+      "kicker": "ART",
+      "title": "도형으로 개념을 말한다",
+      "art": "collab",
+      "sub": "픽토그램보다 크고 구성적이다",
+      "transition": "zoomIn"
+    },
+    {
+      "id": "dev",
+      "pattern": "deviceShow",
+      "purpose": "디바이스 프레임",
+      "kicker": "FRAME",
+      "title": "실제 화면처럼 보여준다",
+      "frame": "browser",
+      "screen": {
+        "title": "검색 결과",
+        "items": [
+          {
+            "label": "결정 로그",
+            "icon": "doc",
+            "value": "12"
+          },
+          {
+            "label": "관련 티켓",
+            "icon": "체크",
+            "value": "5"
+          },
+          {
+            "label": "회의록",
+            "icon": "발표자료",
+            "value": "3"
+          }
+        ]
+      },
+      "caption": "한 곳에서 답이 나온다",
+      "transition": "pushLeft"
+    },
+    {
+      "id": "term",
+      "pattern": "deviceShow",
+      "purpose": "터미널 프레임",
+      "title": "로그도 프레임 안에",
+      "frame": "terminal",
+      "screen": {
+        "lines": [
+          "$ gm build spec.json --present",
+          "→ 발표.html (190KB)",
+          "$ gm check 발표.html",
+          "검수 8항목 통과"
+        ]
+      },
+      "transition": "fade"
+    }
+  ]
+}

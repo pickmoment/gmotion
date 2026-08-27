@@ -1,0 +1,74 @@
+{
+  "title": "시스템 구조 설명",
+  "message": "요청은 게이트웨이를 지나 네 서비스로 갈라지고, 결과는 하나의 응답으로 합쳐진다",
+  "theme": "midnight",
+  "aspect": "16:9",
+  "energy": "E1",
+  "mode": "autoplay",
+  "scenes": [
+    {
+      "id": "overview",
+      "pattern": "networkBuild",
+      "purpose": "전체 관계를 먼저 세운다",
+      "kicker": "구조",
+      "title": "요청은 한 곳으로 들어온다",
+      "nodes": [
+        { "label": "API Gateway", "icon": "plug", "hub": true },
+        { "label": "인증", "icon": "권한" },
+        { "label": "주문", "icon": "cart" },
+        { "label": "결제", "icon": "creditcard" },
+        { "label": "알림", "icon": "broadcast" }
+      ]
+    },
+    {
+      "id": "layers",
+      "pattern": "explodedDiagram",
+      "purpose": "게이트웨이 내부를 층으로 분해한다",
+      "kicker": "게이트웨이 내부",
+      "title": "네 층을 순서대로 지난다",
+      "layers": [
+        { "label": "레이트 리밋", "icon": "hourglass", "note": "초당 요청 수 제한" },
+        { "label": "인증·인가", "icon": "shield", "note": "토큰 검증" },
+        { "label": "라우팅", "icon": "branch", "note": "경로별 분기" },
+        { "label": "집계", "icon": "layers", "note": "응답 병합" }
+      ],
+      "transition": "zoomIn"
+    },
+    {
+      "id": "focus",
+      "pattern": "zoomDetail",
+      "purpose": "가장 위험한 지점 하나로 들어간다",
+      "title": "병목은 한 곳에서 생긴다",
+      "items": [
+        { "label": "인증", "icon": "권한" },
+        { "label": "주문", "icon": "cart" },
+        { "label": "결제", "icon": "creditcard", "note": "외부 PG 의존" },
+        { "label": "알림", "icon": "broadcast" }
+      ],
+      "focus": 2,
+      "detail": {
+        "title": "결제 — 외부 PG 응답이 전체 지연을 결정한다",
+        "points": [
+          "타임아웃 3초, 재시도 2회 → 최악 9초",
+          "게이트웨이 집계가 결제를 기다린다",
+          "결제만 비동기로 떼면 응답이 400ms 로 내려간다"
+        ]
+      },
+      "transition": "fade"
+    },
+    {
+      "id": "route",
+      "pattern": "cameraJourney",
+      "purpose": "요청이 지나는 길을 훑는다",
+      "kicker": "요청의 경로",
+      "title": "들어와서 나가기까지",
+      "stops": [
+        { "label": "수신", "icon": "plug", "note": "게이트웨이 진입" },
+        { "label": "검증", "icon": "shield", "note": "토큰과 권한" },
+        { "label": "분기", "icon": "branch", "note": "네 서비스 호출" },
+        { "label": "병합", "icon": "layers", "note": "하나의 응답으로" }
+      ],
+      "transition": "pushLeft"
+    }
+  ]
+}
