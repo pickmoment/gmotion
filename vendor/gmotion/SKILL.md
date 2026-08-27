@@ -87,6 +87,14 @@ node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 | `assets/examples/starter-narrated.json` | **자막 동기화** — 씬·항목에 `say` 를 단 예 (5씬 62초). 옆의 `.srt` 와 함께 쓴다 |
 | `assets/examples/starter-fonts.json` | **폰트 비교** — `font` 를 바꿔 가며 빌드해 글자꼴을 고른다 |
 
+### 파일명 규칙 — 원본 파일과 동일한 이름(stem) 사용
+
+스펙 JSON 및 산출물 파일명은 **관련된 원본 파일(대본·자막·음성·주제)의 기본 이름(stem)과 동일하게** 짓는다.
+- 원본이 `intro.srt` 또는 `intro.mp3` 이면: 스펙은 `intro.json`, 산출물은 `intro.html` (발표용은 `intro-발표.html`).
+- 원본이 `chapter_01.sv.md` 이면: `chapter_01.json`, `chapter_01.html`.
+- 특정 주제(예: `prob-illusion`) 기반이면: `prob-illusion.json`, `prob-illusion.html`.
+- 제네릭한 이름(`spec.json`, `out.html`, `산출물.html`)은 가이드 예시 설명용일 뿐이며, **실제 파일 생성 시에는 항상 관련 원본 파일명을 그대로 계승**한다.
+
 ### 4. validate 를 통과시킨다.
 
 ```bash

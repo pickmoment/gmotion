@@ -90,9 +90,42 @@ export default function App() {
     return doSaveAs();
   };
 
+  const baseName = (): string => {
+    if (filePath) {
+      const stem = filePath.split(/[/\\]/).pop()?.replace(/\.json$/i, "");
+      if (stem) return stem;
+    }
+    if (subsPath) {
+      const stem = subsPath.split(/[/\\]/).pop()?.replace(/\.(srt|vtt)$/i, "");
+      if (stem) return stem;
+    }
+    if (audioPath) {
+      const stem = audioPath.split(/[/\\]/).pop()?.replace(/\.(mp3|m4a|wav|ogg|aac|webm|opus)$/i, "");
+      if (stem) return stem;
+    }
+    return slug(spec.title);
+  };
+
+  const defaultDir = async (): Promise<string> => {
+    if (filePath) {
+      const dir = filePath.replace(/[/\\][^/\\]+$/, "");
+      if (dir) return dir;
+    }
+    if (subsPath) {
+      const dir = subsPath.replace(/[/\\][^/\\]+$/, "");
+      if (dir) return dir;
+    }
+    if (audioPath) {
+      const dir = audioPath.replace(/[/\\][^/\\]+$/, "");
+      if (dir) return dir;
+    }
+    return (await api.homeDir()) ?? "";
+  };
+
   const doSaveAs = async () => {
-    const home = (await api.homeDir()) ?? "";
-    const defaultPath = filePath ?? (home ? `${home}/${slug(spec.title)}.json` : `${slug(spec.title)}.json`);
+    const dir = await defaultDir();
+    const base = baseName();
+    const defaultPath = filePath ?? (dir ? `${dir}/${base}.json` : `${base}.json`);
     const p = await dialogs.saveAs(defaultPath, "스펙 JSON", "json");
     if (p) await writeSpec(p);
   };
@@ -153,11 +186,11 @@ export default function App() {
   const doExport = async (kind: ExportKind["key"]) => {
     if (kind === "mp4") return doRenderMp4();
     if (!result.ok) return say("검증 오류를 먼저 고친다");
-    const home = (await api.homeDir()) ?? "";
-    const base = slug(spec.title);
+    const dir = await defaultDir();
+    const base = baseName();
     const csv = kind === "csv";
     const name = csv ? `${base}-타임코드.csv` : kind === "present" ? `${base}-발표.html` : `${base}.html`;
-    const defaultPath = home ? `${home}/${name}` : name;
+    const defaultPath = dir ? `${dir}/${name}` : name;
     const p = await dialogs.saveAs(defaultPath, csv ? "CSV" : "HTML", csv ? "csv" : "html");
     if (!p) return;
     setBusy(true);
@@ -199,8 +232,9 @@ export default function App() {
     } catch (e) {
       return say(String(e));
     }
-    const home = (await api.homeDir()) ?? "";
-    const defaultPath = home ? `${home}/${slug(spec.title)}.mp4` : `${slug(spec.title)}.mp4`;
+    const dir = await defaultDir();
+    const base = baseName();
+    const defaultPath = dir ? `${dir}/${base}.mp4` : `${base}.mp4`;
     const out = await dialogs.saveAs(defaultPath, "MP4", "mp4");
     if (!out) return;
 
