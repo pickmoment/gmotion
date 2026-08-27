@@ -2,6 +2,41 @@
 
 export type Cue = { start: number; end: number; text: string };
 
+export interface ThemeColors {
+  bg: string;
+  bg2: string;
+  ink: string;
+  ink2: string;
+  dim: string;
+  accent: string;
+  accent2: string;
+  good: string;
+  warn: string;
+  bad: string;
+  line?: string;
+  panel?: string;
+  panelLine?: string;
+}
+
+export interface ThemeDefinition extends ThemeColors {
+  label: string;
+  font?: string;
+  grain?: number;
+  vig?: number;
+  glow?: number;
+  decor?: string[];
+  custom?: boolean;
+}
+
+export interface CustomDesignLibrary {
+  themes: Record<string, ThemeDefinition>;
+  icons: Record<string, { path: string; aliases: string[]; label?: string }>;
+  arts: Record<string, { label: string; svg: string }>;
+  marks: Record<string, { label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw?: boolean; text?: boolean }>;
+  decors: Record<string, { label: string; category?: string; svg: string }>;
+  frames: Record<string, { label: string; ratio: number; svg: string; bar?: number }>;
+}
+
 export interface ValidateResult {
   ok: boolean;
   errors: string[];
@@ -68,6 +103,7 @@ export interface Engine {
   aspects: Record<string, string>;
   tokens: unknown;
   decors: Record<string, string>;
+  _THEMES?: Record<string, ThemeDefinition>;
   marks: Record<string, string>;
   frames: Record<string, string>;
   arts: Record<string, string>;

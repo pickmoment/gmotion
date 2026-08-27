@@ -32,6 +32,7 @@ export function Toolbar({
   onSave,
   onSaveAs,
   onExample,
+  onDesign,
   onUndo,
   onRedo,
   onPickSubs,
@@ -59,6 +60,7 @@ export function Toolbar({
   onSave: () => void;
   onSaveAs: () => void;
   onExample: () => void;
+  onDesign: () => void;
   onUndo: () => void;
   onRedo: () => void;
   onPickSubs: () => void;
@@ -108,8 +110,10 @@ export function Toolbar({
         <button type="button" onClick={onSave} disabled={busy}>저장</button>
         <button type="button" onClick={onSaveAs} disabled={busy}>다른 이름</button>
         <button type="button" onClick={onExample}>예제</button>
+        <button type="button" onClick={onDesign} title="디자인 스튜디오 및 요소 관리 (테마·배경·마크·일러스트·프레임·아이콘)">
+          디자인
+        </button>
       </div>
-
       <div className="tb-group">
         <button type="button" onClick={onUndo} disabled={!canUndo} title="실행 취소 (Ctrl+Z / ⌘Z)">↶</button>
         <button type="button" onClick={onRedo} disabled={!canRedo} title="다시 실행 (Ctrl+Y / ⇧⌘Z)">↷</button>

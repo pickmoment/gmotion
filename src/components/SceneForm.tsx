@@ -1,20 +1,29 @@
-/** 씬 하나의 폼. 패턴별 필드 + 모든 패턴이 받는 공통 필드. */
+/** 씬 하나의 폼. 패턴별 필드 + 씬 비주얼 디자인 바 + 타이밍/연출 필드. */
 import { useState } from "react";
-import { COMMON_FIELDS, PATTERNS } from "../engine/schema";
+import { GG } from "../engine/boot";
+import { PATTERNS, blankScene } from "../engine/schema";
 import type { Scene } from "../engine/types";
+import { ArtPicker } from "./fields/ArtPicker";
+import { DecorEditor } from "./fields/DecorEditor";
 import { FieldRenderer } from "./fields/FieldRenderer";
-import { blankScene } from "../engine/schema";
+import { MarkPicker } from "./fields/MarkPicker";
 
 export function SceneForm({
   scene,
   index,
+  theme = "midnight",
   onChange,
+  onOpenDesign,
 }: {
   scene: Scene;
   index: number;
+  theme?: string;
   onChange: (s: Scene) => void;
+  onOpenDesign?: () => void;
 }) {
-  const [showCommon, setShowCommon] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [openDesignSlot, setOpenDesignSlot] = useState<"decor" | "mark" | "art" | null>(null);
+
   const schema = PATTERNS[scene.pattern];
 
   if (!schema) {
@@ -27,10 +36,21 @@ export function SceneForm({
     );
   }
 
+  const patch = (k: keyof Scene, v: unknown) => {
+    const next = { ...scene };
+    if (v === undefined || v === "") {
+      delete next[k];
+    } else {
+      (next as Record<string, unknown>)[k] = v;
+    }
+    onChange(next);
+  };
+
   return (
-    <div className="pane-body">
+    <div className="pane-body scene-form-pane">
+      {/* ── 1. 씬 헤더 ── */}
       <header className="scene-head">
-        <div>
+        <div className="scene-head-main">
           <span className="scene-n">[{index + 1}]</span>
           <strong>{schema.label}</strong>
           <span className="dim"> {scene.pattern}</span>
@@ -38,26 +58,240 @@ export function SceneForm({
         <p className="use">{schema.use}</p>
       </header>
 
+      {/* ── 2. 패턴 선택 ── */}
       <PatternSelect scene={scene} onChange={onChange} />
 
-      <div className="grid">
-        {schema.fields.map((f) => (
-          <FieldRenderer key={f.key} field={f} obj={scene as Record<string, unknown>}
-                         onPatch={(next) => onChange(next as Scene)} />
-        ))}
+      {/* ── 3. 씬 비주얼 디자인 바 (Scene Visual Design Bar) ── */}
+      <div className="scene-visual-bar">
+        <div className="visual-bar-header">
+          <span className="visual-bar-title">✨ 씬 비주얼 디자인</span>
+          {onOpenDesign && (
+            <button
+              type="button"
+              className="ghost visual-studio-link"
+              onClick={onOpenDesign}
+              title="디자인 스튜디오 열기"
+            >
+              🎨 디자인 스튜디오 ↗
+            </button>
+          )}
+        </div>
+
+        <div className="visual-chips-row">
+          {/* 배경 (Decor) 칩 */}
+          <button
+            type="button"
+            className={`visual-slot-chip ${scene.decor ? "active" : ""}`}
+            onClick={() => setOpenDesignSlot((cur) => (cur === "decor" ? null : "decor"))}
+            title="씬 배경 레이어 설정"
+          >
+            <span className="slot-icon">🌊</span>
+            <span className="slot-label">배경</span>
+            <strong className="slot-value">
+              {scene.decor === false
+                ? "끄기"
+                : Array.isArray(scene.decor)
+                  ? scene.decor.join("+")
+                  : scene.decor || "테마 기본"}
+            </strong>
+          </button>
+
+          {/* 제목 강조 마크 (Mark) 칩 */}
+          <button
+            type="button"
+            className={`visual-slot-chip ${scene.mark ? "active" : ""}`}
+            onClick={() => setOpenDesignSlot((cur) => (cur === "mark" ? null : "mark"))}
+            title="제목 강조 마크 설정 (밑줄·동그라미·배지)"
+          >
+            <span className="slot-icon">✏️</span>
+            <span className="slot-label">마크</span>
+            <strong className="slot-value">{scene.mark || "— 없음"}</strong>
+          </button>
+
+          {/* 메인 일러스트 (Art) 칩 */}
+          <button
+            type="button"
+            className={`visual-slot-chip ${scene.art ? "active" : ""}`}
+            onClick={() => setOpenDesignSlot((cur) => (cur === "art" ? null : "art"))}
+            title="씬 대표 일러스트 설정"
+          >
+            <span className="slot-icon">🎨</span>
+            <span className="slot-label">일러스트</span>
+            <strong className="slot-value">{scene.art || "— 없음"}</strong>
+          </button>
+
+          {/* 트랜지션 (Transition) 선택기 */}
+          <div className="visual-slot-select" title="이전 씬에서 넘어오는 화면 전환 효과">
+            <span className="slot-icon">🎬</span>
+            <select
+              value={scene.transition ?? ""}
+              onChange={(e) => patch("transition", e.target.value || undefined)}
+            >
+              <option value="">전환: 기본 (fade/cut)</option>
+              {Object.entries(GG.transitions).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 텍스트 효과 (Text FX) 선택기 */}
+          <div className="visual-slot-select" title="글자 등장 모션 효과">
+            <span className="slot-icon">⚡</span>
+            <select
+              value={scene.textFx ?? ""}
+              onChange={(e) => patch("textFx", e.target.value || undefined)}
+            >
+              <option value="">텍스트FX: 기본</option>
+              <option value="scramble">scramble (섞이다 정렬)</option>
+              <option value="roll">roll (굴러 교체)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* ── 퀵 슬롯 인라인 에디터 팝오버들 ── */}
+        {openDesignSlot === "decor" && (
+          <div className="visual-slot-popover">
+            <div className="slot-popover-head">
+              <strong>배경 레이어 (decor) 설정</strong>
+              <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
+                ×
+              </button>
+            </div>
+            <DecorEditor
+              label=""
+              value={scene.decor}
+              onChange={(v) => patch("decor", v)}
+              decorLevel={scene.decorLevel}
+              onChangeLevel={(lvl) => patch("decorLevel", lvl)}
+              theme={theme}
+              hint="비워두면 문서 테마의 기본 배경이 적용됩니다."
+            />
+          </div>
+        )}
+
+        {openDesignSlot === "mark" && (
+          <div className="visual-slot-popover">
+            <div className="slot-popover-head">
+              <strong>제목 강조 마크 (mark) 설정</strong>
+              <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
+                ×
+              </button>
+            </div>
+            <MarkPicker
+              label=""
+              value={scene.mark}
+              onChange={(v) => patch("mark", v)}
+              theme={theme}
+              hint="한 씬에 하나. 단어나 숫자에 밑줄, 원, 배지, 스탬프를 입힙니다."
+            />
+          </div>
+        )}
+
+        {openDesignSlot === "art" && (
+          <div className="visual-slot-popover">
+            <div className="slot-popover-head">
+              <strong>씬 대표 일러스트 (art) 설정</strong>
+              <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
+                ×
+              </button>
+            </div>
+            <ArtPicker
+              label=""
+              value={scene.art}
+              onChange={(v) => patch("art", v)}
+              theme={theme}
+              hint="씬 상단/중앙에 배치되는 200×200 테마 색상 연동 추상 도형 일러스트입니다."
+            />
+          </div>
+        )}
       </div>
 
-      <button type="button" className="section-toggle" onClick={() => setShowCommon((s) => !s)}>
-        {showCommon ? "▾" : "▸"} 씬 공통 — 용도·노트·대사·트랜지션·강조·배경
-      </button>
-      {showCommon && (
+      {/* ── 4. 패턴 주요 필드 (Pattern Specific Content) ── */}
+      <div className="scene-content-section">
+        <h4 className="section-subtitle">📝 패턴 내용 편집</h4>
         <div className="grid">
-          {COMMON_FIELDS.map((f) => (
-            <FieldRenderer key={f.key} field={f} obj={scene as Record<string, unknown>}
-                           onPatch={(next) => onChange(next as Scene)} />
+          {schema.fields.map((f) => (
+            <FieldRenderer
+              key={f.key}
+              field={f}
+              obj={scene as Record<string, unknown>}
+              onPatch={(next) => onChange(next as Scene)}
+            />
           ))}
         </div>
-      )}
+      </div>
+
+      {/* ── 5. 타이밍 & 연출 세부 필드 (Timing, Audio, Notes) ── */}
+      <div className="scene-details-accordion">
+        <button
+          type="button"
+          className="section-toggle"
+          onClick={() => setShowDetails((s) => !s)}
+        >
+          {showDetails ? "▾" : "▸"} 씬 타이밍·대사·발표자 노트
+          {scene.say && <span className="badge-mini">대사</span>}
+          {scene.hold && <span className="badge-mini">{scene.hold}s</span>}
+          {scene.purpose && <span className="badge-mini">용도</span>}
+        </button>
+
+        {showDetails && (
+          <div className="scene-details-body grid">
+            <div className="field">
+              <label>대사 (say)</label>
+              <input
+                value={scene.say ?? ""}
+                placeholder="내레이션 또는 자막과 일치할 대사 텍스트"
+                onChange={(e) => patch("say", e.target.value)}
+              />
+              <p className="hint">자막 싱크 시 이 대사를 기준으로 씬 등장 시각과 길이를 맞춥니다.</p>
+            </div>
+
+            <div className="field">
+              <label>머무는 시간 (초, hold)</label>
+              <input
+                type="number"
+                step={0.1}
+                value={scene.hold === undefined ? "" : String(scene.hold)}
+                placeholder="생략 시 글자 수로 자동 계산"
+                onChange={(e) =>
+                  patch("hold", e.target.value === "" ? undefined : Number(e.target.value))
+                }
+              />
+              <p className="hint">내용이 다 나온 뒤 머무는 시간입니다.</p>
+            </div>
+
+            <div className="field">
+              <label>씬 용도 (purpose)</label>
+              <input
+                value={scene.purpose ?? ""}
+                placeholder="이 씬의 핵심 전달 목적을 한 줄로"
+                onChange={(e) => patch("purpose", e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label>발표자 노트 (notes)</label>
+              <textarea
+                rows={2}
+                value={scene.notes ?? ""}
+                placeholder="발표 모드(P)에서 발표자 화면에 띄울 메모"
+                onChange={(e) => patch("notes", e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label>씬 식별자 (id)</label>
+              <input
+                value={scene.id ?? ""}
+                placeholder="s1, problem, solution 등 (생략 시 자동)"
+                onChange={(e) => patch("id", e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -67,10 +301,22 @@ export function SceneForm({
  * 공통 필드만 남기고 새 패턴의 뼈대로 갈아끼운다.
  */
 function PatternSelect({ scene, onChange }: { scene: Scene; onChange: (s: Scene) => void }) {
-  const KEEP = ["id", "purpose", "hold", "say", "transition", "notes", "decor", "decorLevel", "mark", "textFx"];
+  const KEEP = [
+    "id",
+    "purpose",
+    "hold",
+    "say",
+    "transition",
+    "notes",
+    "decor",
+    "decorLevel",
+    "mark",
+    "art",
+    "textFx",
+  ];
   return (
-    <div className="field">
-      <label>패턴</label>
+    <div className="field pattern-select-field">
+      <label>패턴 (Pattern)</label>
       <select
         value={scene.pattern}
         onChange={(e) => {

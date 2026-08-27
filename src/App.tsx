@@ -11,6 +11,7 @@ import { DocsPanel } from "./components/DocsPanel";
 import { ExamplesPanel } from "./components/ExamplesPanel";
 import { CheckPanel } from "./components/CheckPanel";
 import { RenderPanel } from "./components/RenderPanel";
+import { DesignPanel } from "./components/DesignPanel";
 import { useSpecStore } from "./lib/useSpecStore";
 import { EMPTY_SPEC, insertScene, moveScene, removeScene, replaceScene } from "./lib/spec";
 import { build, checkOutput, parseSubtitles, timingCsv, validate, type CheckLine, type SyncInput } from "./lib/build";
@@ -19,8 +20,7 @@ import { api, ask, dialogs, shell } from "./lib/tauri";
 import type { Cue, Scene, Spec } from "./engine/types";
 
 type Tab = "form" | "doc" | "json";
-type Modal = null | "skill" | "docs" | "examples" | "check" | "render";
-
+type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design";
 export default function App() {
   const store = useSpecStore(EMPTY_SPEC);
   const { spec, update, reset } = store;
@@ -329,6 +329,7 @@ export default function App() {
         onSave={doSave}
         onSaveAs={doSaveAs}
         onExample={() => setModal("examples")}
+        onDesign={() => setModal("design")}
         onUndo={store.undo}
         onRedo={store.redo}
         onPickSubs={pickSubs}
@@ -367,7 +368,9 @@ export default function App() {
               <SceneForm
                 scene={scene}
                 index={selected}
+                theme={spec.theme || "midnight"}
                 onChange={(s) => update((cur) => replaceScene(cur, selected, s))}
+                onOpenDesign={() => setModal("design")}
               />
             ) : (
               <div className="pane-body">
@@ -376,7 +379,13 @@ export default function App() {
                 </p>
               </div>
             ))}
-          {tab === "doc" && <DocSettings spec={spec} onChange={(s) => update(() => s)} />}
+          {tab === "doc" && (
+            <DocSettings
+              spec={spec}
+              onChange={(s) => update(() => s)}
+              onOpenDesign={() => setModal("design")}
+            />
+          )}
           {tab === "json" && <JsonEditor spec={spec} onChange={(s) => update(() => s)} />}
         </section>
 
@@ -407,6 +416,49 @@ export default function App() {
       )}
       {modal === "check" && check && (
         <CheckPanel lines={check.lines} info={check.info} fail={check.fail} onClose={() => setModal(null)} />
+      )}
+      {modal === "design" && (
+        <DesignPanel
+          currentTheme={spec.theme || "midnight"}
+          onClose={() => setModal(null)}
+          onApplyTheme={(themeKey) => {
+            update((cur) => ({ ...cur, theme: themeKey }));
+            say(`테마 "${themeKey}" 가 문서에 적용되었습니다.`);
+          }}
+          onApplyDecor={(decorKey) => {
+            update((cur) => {
+              const existing =
+                cur.decor === false
+                  ? []
+                  : Array.isArray(cur.decor)
+                    ? cur.decor
+                    : cur.decor
+                      ? [cur.decor]
+                      : [];
+              return { ...cur, decor: [...existing, decorKey] };
+            });
+            say(`배경 "${decorKey}" 가 문서에 추가되었습니다.`);
+          }}
+          onApplyMark={(markKey) => {
+            if (scene) {
+              update((cur) => replaceScene(cur, selected, { ...scene, mark: markKey }));
+              say(`씬 [${selected + 1}] 에 마크 "${markKey}" 가 적용되었습니다.`);
+            }
+          }}
+          onApplyArt={(artKey) => {
+            if (scene) {
+              update((cur) => replaceScene(cur, selected, { ...scene, art: artKey }));
+              say(`씬 [${selected + 1}] 에 일러스트 "${artKey}" 가 적용되었습니다.`);
+            }
+          }}
+          onApplyFrame={(frameKey) => {
+            if (scene) {
+              update((cur) => replaceScene(cur, selected, { ...scene, frame: frameKey }));
+              say(`씬 [${selected + 1}] 에 프레임 "${frameKey}" 가 적용되었습니다.`);
+            }
+          }}
+          onNotify={say}
+        />
       )}
     </div>
   );

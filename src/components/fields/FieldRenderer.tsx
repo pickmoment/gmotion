@@ -5,7 +5,11 @@ import { setField } from "../../lib/spec";
 import { IconPicker } from "./IconPicker";
 import { ItemsEditor } from "./ItemsEditor";
 import { ChartEditor } from "./ChartEditor";
-
+import { ThemePicker } from "./ThemePicker";
+import { DecorEditor } from "./DecorEditor";
+import { ArtPicker } from "./ArtPicker";
+import { MarkPicker } from "./MarkPicker";
+import { FramePicker } from "./FramePicker";
 type Obj = Record<string, unknown>;
 
 export function FieldRenderer({
@@ -21,6 +25,63 @@ export function FieldRenderer({
   const set = (v: unknown) => onPatch(setField(obj, field.key, v));
   const v = obj[field.key];
 
+  if (field.key === "decor") {
+    return (
+      <DecorEditor
+        label={field.label}
+        value={v as string | string[] | false | undefined}
+        onChange={set}
+        decorLevel={obj.decorLevel as 0 | 1 | 2 | undefined}
+        onChangeLevel={(lvl) => onPatch(setField(obj, "decorLevel", lvl))}
+        theme={(obj.theme as string) || "midnight"}
+        hint={field.hint}
+      />
+    );
+  }
+  if (field.key === "art" || field.key === "screen.art") {
+    return (
+      <ArtPicker
+        label={field.label}
+        value={v as string | undefined}
+        onChange={set}
+        theme={(obj.theme as string) || "midnight"}
+        hint={field.hint}
+      />
+    );
+  }
+  if (field.key === "mark") {
+    return (
+      <MarkPicker
+        label={field.label}
+        value={v as string | undefined}
+        onChange={set}
+        theme={(obj.theme as string) || "midnight"}
+        hint={field.hint}
+      />
+    );
+  }
+  if (field.key === "frame") {
+    return (
+      <FramePicker
+        label={field.label}
+        value={v as string | undefined}
+        onChange={set}
+        theme={(obj.theme as string) || "midnight"}
+        hint={field.hint}
+      />
+    );
+  }
+  if (field.key === "theme") {
+    return (
+      <ThemePicker
+        label={field.label}
+        value={v as string | undefined}
+        onChange={(t) => set(t)}
+        hint={field.hint}
+      />
+    );
+  }
+
   switch (field.k) {
     case "text":
       return (
@@ -30,7 +91,6 @@ export function FieldRenderer({
           <Hint f={field} />
         </div>
       );
-
     case "multiline":
       return (
         <div className="field wide">

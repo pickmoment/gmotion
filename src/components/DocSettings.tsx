@@ -2,6 +2,8 @@
 import { GG } from "../engine/boot";
 import type { Spec } from "../engine/types";
 import { setField } from "../lib/spec";
+import { ThemePicker } from "./fields/ThemePicker";
+import { DecorEditor } from "./fields/DecorEditor";
 
 const MODES: Record<string, string> = {
   autoplay: "autoplay — 열면 재생",
@@ -9,7 +11,15 @@ const MODES: Record<string, string> = {
   step: "step — 눌러서 넘김",
 };
 
-export function DocSettings({ spec, onChange }: { spec: Spec; onChange: (s: Spec) => void }) {
+export function DocSettings({
+  spec,
+  onChange,
+  onOpenDesign,
+}: {
+  spec: Spec;
+  onChange: (s: Spec) => void;
+  onOpenDesign?: () => void;
+}) {
   const set = (k: string, v: unknown) => onChange(setField(spec as Record<string, unknown>, k, v) as unknown as Spec);
   const sel = (k: string, label: string, opts: Record<string, string>, hint?: string) => (
     <div className="field" key={k}>
@@ -40,34 +50,26 @@ export function DocSettings({ spec, onChange }: { spec: Spec; onChange: (s: Spec
       </div>
 
       <div className="grid">
-        {sel("theme", "테마", GG.themes)}
+        <ThemePicker
+          value={spec.theme}
+          onChange={(t) => set("theme", t)}
+          onOpenDesignPanel={onOpenDesign}
+        />
         {sel("aspect", "화면비", GG.aspects)}
         {sel("energy", "에너지", GG.energies)}
         {sel("font", "폰트", GG.fonts, "생략하면 테마가 정한다")}
         {sel("mode", "재생 모드", MODES)}
-        {sel("decorLevel", "배경 세기", { "0": "0 — 약", "1": "1 — 기본", "2": "2 — 강" })}
       </div>
 
       <div className="field wide">
-        <label>배경 레이어</label>
-        <textarea
-          rows={3}
-          placeholder="blob / grid …  한 줄에 하나(겹친다)"
-          value={
-            Array.isArray(spec.decor)
-              ? (spec.decor as string[]).join("\n")
-              : typeof spec.decor === "string"
-                ? spec.decor
-                : ""
-          }
-          onChange={(e) => {
-            const lines = e.target.value.split("\n").filter((s) => s.trim());
-            set("decor", lines.length ? lines : undefined);
-          }}
+        <DecorEditor
+          value={spec.decor}
+          onChange={(d) => set("decor", d)}
+          decorLevel={spec.decorLevel}
+          onChangeLevel={(lvl) => set("decorLevel", lvl)}
+          theme={spec.theme || "midnight"}
+          hint={`생략하면 테마 기본 배경이 적용됩니다. 전체 ${Object.keys(GG.decors).length}종 제공`}
         />
-        <p className="hint">
-          생략하면 테마마다 어울리는 조합이 깔린다. 쓸 수 있는 이름: {Object.keys(GG.decors).join(" · ")}
-        </p>
       </div>
 
       <fieldset className="group">

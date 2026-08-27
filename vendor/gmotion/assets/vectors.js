@@ -941,4 +941,101 @@ ART.layers = { label: '레이어 — 겹친 판. 추상화·단계', build: func
       F(T, .1 + i * .05) + '/><rect x="' + (40 + i * 6) + '" y="' + y + '" width="' + (120 - i * 12) + '" height="26" rx="7" ' +
       S(T) + '/></g>'; }).join('')); } };
 
+ART.rocket = { label: '로켓 — 추진과 비상. 도약·출시·성장', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M100 144 C88 162, 88 174, 100 184 C112 174, 112 162, 100 144 Z" fill="' + T.warn + '" opacity=".85"/>' +
+  '<path d="M100 148 C94 158, 94 168, 100 174 C106 168, 106 158, 100 148 Z" fill="' + T.bad + '"/></g>' +
+  '<g class="gg-artP"><path d="M76 114 L52 142 L78 138 Z" ' + F2(T, .3) + '/><path d="M76 114 L52 142 L78 138 Z" ' + S2(T) + '/>' +
+  '<path d="M124 114 L148 142 L122 138 Z" ' + F2(T, .3) + '/><path d="M124 114 L148 142 L122 138 Z" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M100 24 C82 58, 76 104, 76 138 L124 138 C124 104, 118 58, 100 24 Z" ' + F(T, .16) + '/>' +
+  '<path d="M100 24 C82 58, 76 104, 76 138 L124 138 C124 104, 118 58, 100 24 Z" ' + S(T) + '/>' +
+  '<circle cx="100" cy="74" r="14" fill="' + T.bg2 + '" stroke="' + T.accent2 + '" stroke-width="3.5"/></g>'); } };
+
+ART.aiBrain = { label: '인공지능 — 뉴럴 네트워크와 시냅스. AI·지능·연산', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M60 110 C46 90, 52 56, 84 52 C90 36, 110 36, 116 52 C148 56, 154 90, 140 110 C146 130, 134 154, 110 156 C90 156, 78 136, 60 110 Z" ' +
+    F(T, .14) + '/><path d="M60 110 C46 90, 52 56, 84 52 C90 36, 110 36, 116 52 C148 56, 154 90, 140 110 C146 130, 134 154, 110 156 C90 156, 78 136, 60 110 Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><line x1="84" y1="80" x2="116" y2="80" stroke="' + T.accent2 + '" stroke-width="3" opacity=".6"/>' +
+  '<line x1="84" y1="80" x2="100" y2="118" stroke="' + T.accent2 + '" stroke-width="3" opacity=".6"/>' +
+  '<line x1="116" y1="80" x2="100" y2="118" stroke="' + T.accent2 + '" stroke-width="3" opacity=".6"/>' +
+  '<line x1="100" y1="52" x2="100" y2="118" stroke="' + T.accent + '" stroke-width="2" stroke-dasharray="4 6" opacity=".5"/></g>' +
+  '<g class="gg-artP"><circle cx="100" cy="52" r="7" fill="' + T.accent + '"/>' +
+  '<circle cx="84" cy="80" r="8" fill="' + T.accent2 + '"/>' +
+  '<circle cx="116" cy="80" r="8" fill="' + T.accent2 + '"/>' +
+  '<circle cx="100" cy="118" r="9" fill="' + T.good + '"/></g>'); } };
+
+ART.trophy = { label: '트로피 — 시상대와 별. 성과·우승·1위', build: function (T) { return art(
+  '<g class="gg-artP"><rect x="66" y="152" width="68" height="24" rx="4" ' + F(T, .2) + '/><rect x="66" y="152" width="68" height="24" rx="4" ' + S(T) + '/>' +
+  '<path d="M86 134 L114 134 L114 152 L86 152 Z" fill="' + T.bg2 + '" stroke="' + T.accent + '" stroke-width="4"/></g>' +
+  '<g class="gg-artP"><path d="M50 56 C34 56, 34 88, 64 88" ' + S2(T) + '/><path d="M150 56 C166 56, 166 88, 136 88" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M64 44 L136 44 L136 84 C136 112, 118 134, 100 134 C82 134, 64 112, 64 84 Z" ' + F(T, .18) + '/>' +
+  '<path d="M64 44 L136 44 L136 84 C136 112, 118 134, 100 134 C82 134, 64 112, 64 84 Z" ' + S(T) + '/>' +
+  '<polygon points="100,64 104,74 114,75 107,82 109,92 100,87 91,92 93,82 86,75 96,74" fill="' + T.accent2 + '"/></g>'); } };
+
+ART.codeBlock = { label: '코드 — 터미널 창과 태그. 개발·빌드·소프트웨어', build: function (T) { return art(
+  '<g class="gg-artP"><rect x="36" y="40" width="128" height="120" rx="10" ' + F(T, .12) + '/><rect x="36" y="40" width="128" height="120" rx="10" ' + S(T) + '/>' +
+  '<line x1="36" y1="68" x2="164" y2="68" stroke="' + T.accent + '" stroke-width="2.5" opacity=".4"/></g>' +
+  '<g class="gg-artP"><circle cx="52" cy="54" r="4" fill="' + T.bad + '"/><circle cx="64" cy="54" r="4" fill="' + T.warn + '"/><circle cx="76" cy="54" r="4" fill="' + T.good + '"/></g>' +
+  '<g class="gg-artP"><path d="M74 88 L58 102 L74 116 M126 88 L142 102 L126 116" ' + S2(T) + '/>' +
+  '<line x1="108" y1="82" x2="92" y2="122" stroke="' + T.accent + '" stroke-width="3.5" stroke-linecap="round"/></g>'); } };
+
+ART.speedometer = { label: '속도 — 가속 게이지와 바늘. 퍼포먼스·최적화·효율', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M40 144 A68 68 0 1 1 160 144" fill="none" stroke="' + T.accent + '" stroke-width="12" opacity=".18" stroke-linecap="round"/>' +
+  '<path d="M40 144 A68 68 0 1 1 140 82" fill="none" stroke="' + T.accent + '" stroke-width="12" stroke-linecap="round"/></g>' +
+  '<g class="gg-artP"><circle cx="100" cy="144" r="12" fill="' + T.accent2 + '"/>' +
+  '<line x1="100" y1="144" x2="144" y2="86" stroke="' + T.accent2 + '" stroke-width="4.5" stroke-linecap="round"/>' +
+  '<circle cx="100" cy="144" r="4" fill="' + T.bg2 + '"/></g>'); } };
+
+ART.vault = { label: '금고 — 두터운 도어와 다이얼. 자산·보안·신뢰', build: function (T) { return art(
+  '<g class="gg-artP"><rect x="40" y="38" width="120" height="124" rx="12" ' + F(T, .14) + '/><rect x="40" y="38" width="120" height="124" rx="12" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><circle cx="100" cy="100" r="42" fill="' + T.bg2 + '" stroke="' + T.accent2 + '" stroke-width="4"/>' +
+  '<circle cx="100" cy="100" r="28" ' + F2(T, .2) + '/><circle cx="100" cy="100" r="28" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP"><line x1="100" y1="72" x2="100" y2="128" stroke="' + T.accent2 + '" stroke-width="4" stroke-linecap="round"/>' +
+  '<line x1="72" y1="100" x2="128" y2="100" stroke="' + T.accent2 + '" stroke-width="4" stroke-linecap="round"/>' +
+  '<circle cx="100" cy="100" r="8" fill="' + T.accent + '"/></g>'); } };
+
+ART.telescope = { label: '망원경 — 비전과 지향. 전망·탐색·미래', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M100 114 L64 172 M100 114 L136 172 M100 114 L100 172" ' + S(T) + '/>' +
+  '<circle cx="100" cy="114" r="6" fill="' + T.accent + '"/></g>' +
+  '<g class="gg-artP"><polygon points="56,118 136,58 148,74 68,134" ' + F2(T, .2) + '/>' +
+  '<polygon points="56,118 136,58 148,74 68,134" ' + S2(T) + '/>' +
+  '<rect x="134" y="52" width="22" height="28" rx="4" fill="' + T.accent + '" transform="rotate(-37 145 66)"/></g>' +
+  '<g class="gg-artP"><polygon points="166,42 168,48 174,50 168,52 166,58 164,52 158,50 164,48" fill="' + T.warn + '"/></g>'); } };
+
+ART.keyUnlock = { label: '열쇠 — 자물쇠와 해제. 해결·접근·솔루션', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M78 94 V66 C78 50, 122 50, 122 66 V78" fill="none" stroke="' + T.accent + '" stroke-width="4" stroke-linecap="round"/>' +
+  '<rect x="66" y="94" width="68" height="58" rx="8" ' + F(T, .15) + '/><rect x="66" y="94" width="68" height="58" rx="8" ' + S(T) + '/>' +
+  '<circle cx="100" cy="120" r="5" fill="' + T.accent + '"/></g>' +
+  '<g class="gg-artP"><circle cx="140" cy="56" r="14" fill="' + T.bg2 + '" stroke="' + T.accent2 + '" stroke-width="4"/>' +
+  '<path d="M130 66 L94 102 M106 90 L114 98 M116 80 L124 88" stroke="' + T.accent2 + '" stroke-width="4" stroke-linecap="round"/></g>'); } };
+
+ART.sparkleMagic = { label: '스파클 — 빛나는 다이아몬드 별무리. 혁신·창의·가치', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M100 24 Q100 80 50 100 Q100 100 100 156 Q100 100 150 100 Q100 80 100 24 Z" ' + F(T, .2) + '/>' +
+  '<path d="M100 24 Q100 80 50 100 Q100 100 100 156 Q100 100 150 100 Q100 80 100 24 Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M152 44 Q152 64 134 72 Q152 72 152 92 Q152 72 170 72 Q152 64 152 44 Z" fill="' + T.accent2 + '"/>' +
+  '<path d="M48 126 Q48 140 34 146 Q48 146 48 160 Q48 146 62 146 Q48 140 48 126 Z" fill="' + T.accent2 + '" opacity=".8"/></g>'); } };
+
+ART.pieChart3d = { label: '통계 — 입체 분할 섹터. 데이터·점유율·분석', build: function (T) { return art(
+  '<g class="gg-artP"><ellipse cx="100" cy="116" rx="58" ry="32" ' + F(T, .1) + '/>' +
+  '<path d="M100 100 L158 84 A58 30 0 1 1 94 44 L94 100 Z" ' + F(T, .22) + '/>' +
+  '<path d="M100 100 L158 84 A58 30 0 1 1 94 44 L94 100 Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M106 82 L154 52 A54 28 0 0 1 162 82 L106 100 Z" fill="' + T.accent2 + '" opacity=".85"/>' +
+  '<path d="M106 82 L154 52 A54 28 0 0 1 162 82 L106 100 Z" ' + S2(T) + '/>' +
+  '<path d="M106 100 L106 112 L162 94 L162 82 Z" fill="' + T.accent2 + '"/>' +
+  '<path d="M106 100 L106 112 L162 94 L162 82 Z" ' + S2(T) + '/></g>'); } };
+
+ART.flagPeak = { label: '정상 — 산봉우리와 깃발. 목표 달성·마일스톤', build: function (T) { return art(
+  '<g class="gg-artP"><polygon points="30,166 100,56 170,166" ' + F(T, .14) + '/>' +
+  '<polygon points="30,166 100,56 170,166" ' + S(T) + '/>' +
+  '<line x1="100" y1="56" x2="100" y2="166" stroke="' + T.accent + '" stroke-width="2.5" opacity=".5"/></g>' +
+  '<g class="gg-artP"><polygon points="100,56 100,100 134,166 170,166" ' + F2(T, .18) + '/>' +
+  '<path d="M56 138 L84 122 L108 94 L128 72" stroke="' + T.accent2 + '" stroke-width="3" stroke-dasharray="4 6" fill="none"/></g>' +
+  '<g class="gg-artP"><line x1="100" y1="56" x2="100" y2="24" ' + S2(T) + '/>' +
+  '<polygon points="100,26 142,40 100,54" fill="' + T.accent2 + '"/></g>'); } };
+
+ART.ecoLeaf = { label: '친환경 — 순환 링과 잎사귀. 지속가능성·ESG·자연', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M100 32 A68 68 0 1 1 42 128" fill="none" stroke="' + T.good + '" stroke-width="3.5" stroke-dasharray="8 6" opacity=".5"/>' +
+  '<polygon points="34,116 46,128 34,136" fill="' + T.good + '"/></g>' +
+  '<g class="gg-artP"><path d="M100 58 C140 58, 150 96, 144 142 C98 148, 58 138, 58 98 C58 74, 78 58, 100 58 Z" fill="' + T.good + '" opacity=".2"/>' +
+  '<path d="M100 58 C140 58, 150 96, 144 142 C98 148, 58 138, 58 98 C58 74, 78 58, 100 58 Z" stroke="' + T.good + '" stroke-width="4" fill="none"/>' +
+  '<path d="M60 140 Q100 114 136 72 M96 116 L120 120 M82 130 L98 140" stroke="' + T.good + '" stroke-width="3.5" stroke-linecap="round"/></g>'); } };
+
 module.exports = { DECOR: DECOR, MARK: MARK, FRAME: FRAME, ART: ART, rng: rng };

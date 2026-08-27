@@ -5,8 +5,8 @@
 import { useState } from "react";
 import type { ItemFieldKey } from "../../engine/schema";
 import type { Item, SceneItem } from "../../engine/types";
-import { IconPicker } from "./IconPicker";
-
+import { IconPicker, IconGlyph } from "./IconPicker";
+import { ArtPicker } from "./ArtPicker";
 const LABELS: Record<ItemFieldKey, string> = {
   label: "라벨", text: "글", when: "시점", icon: "아이콘", note: "노트",
   value: "값", unit: "단위", prefix: "접두", dec: "소수 자리",
@@ -49,8 +49,11 @@ export function ItemsEditor({
   primary: ItemFieldKey;
   fields: ItemFieldKey[];
 }) {
-  const list = value ?? [];
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [pickingIconIdx, setPickingIconIdx] = useState<number | null>(null);
+  const [pickingArtIdx, setPickingArtIdx] = useState<number | null>(null);
+
+  const list = value ?? [];
 
   const patch = (i: number, k: ItemFieldKey, v: unknown) => {
     const next = list.slice();
@@ -94,11 +97,40 @@ export function ItemsEditor({
             <div key={i} className={`item${isOpen ? " open" : ""}`}>
               <div className="item-head">
                 <span className="idx">{i}</span>
+
+                {fields.includes("icon") && (
+                  <button
+                    type="button"
+                    className={`item-head-icon-btn ${o.icon ? "has-val" : ""}`}
+                    onClick={() => setPickingIconIdx(pickingIconIdx === i ? null : i)}
+                    title={o.icon ? `아이콘: ${o.icon} (클릭하여 변경)` : "아이콘 선택"}
+                  >
+                    {o.icon ? <IconGlyph name={o.icon as string} size={16} /> : <span className="dim">＋icon</span>}
+                  </button>
+                )}
+
+                {fields.includes("art") && (
+                  <button
+                    type="button"
+                    className={`item-head-art-btn ${o.art ? "has-val" : ""}`}
+                    onClick={() => setPickingArtIdx(pickingArtIdx === i ? null : i)}
+                    title={o.art ? `일러스트: ${o.art} (클릭하여 변경)` : "일러스트 선택"}
+                  >
+                    {o.art ? `🎨 ${o.art}` : <span className="dim">＋art</span>}
+                  </button>
+                )}
+
                 <input
                   value={(o[primary] as string) ?? ""}
                   placeholder={LABELS[primary]}
                   onChange={(e) => patch(i, primary, e.target.value)}
                 />
+
+                {/* Mini visual badges */}
+                {o.tone && <span className={`item-chip-tone tone-${o.tone}`}>{o.tone}</span>}
+                {o.badge && <span className="item-chip-badge">{o.badge}</span>}
+                {o.ribbon && <span className="item-chip-ribbon">{o.ribbon}</span>}
+
                 <button type="button" className="ghost" onClick={() => setOpenIdx(isOpen ? null : i)}
                         title="세부 필드">
                   {extra ? `⋯${extra}` : "⋯"}
@@ -114,24 +146,59 @@ export function ItemsEditor({
                     next.splice(i, 1);
                     onChange(next.length ? next : undefined);
                     setOpenIdx(null);
+                    setPickingIconIdx(null);
+                    setPickingArtIdx(null);
                   }}
                 >
                   ×
                 </button>
               </div>
+
+              {/* Inline Quick Icon Popover */}
+              {pickingIconIdx === i && (
+                <div className="item-inline-popover">
+                  <IconPicker
+                    label="아이콘 선택"
+                    value={o.icon as string}
+                    onChange={(v) => {
+                      patch(i, "icon", v);
+                      setPickingIconIdx(null);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Inline Quick Art Popover */}
+              {pickingArtIdx === i && (
+                <div className="item-inline-popover">
+                  <ArtPicker
+                    label="일러스트 선택"
+                    value={o.art as string}
+                    onChange={(v) => {
+                      patch(i, "art", v);
+                      setPickingArtIdx(null);
+                    }}
+                  />
+                </div>
+              )}
               {isOpen && (
                 <div className="item-body">
                   {fields.map((f) => {
                     if (f === "icon" || f === "art") {
                       return f === "icon" ? (
-                        <IconPicker key={f} label={LABELS[f]} value={o.icon as string}
-                                    onChange={(v) => patch(i, "icon", v)} />
+                        <IconPicker
+                          key={f}
+                          label={LABELS[f]}
+                          value={o.icon as string}
+                          onChange={(v) => patch(i, "icon", v)}
+                        />
                       ) : (
-                        <div className="field" key={f}>
-                          <label>{LABELS[f]}</label>
-                          <input value={(o.art as string) ?? ""} placeholder="collab / data / growth …"
-                                 onChange={(e) => patch(i, "art", e.target.value)} />
-                        </div>
+                        <ArtPicker
+                          key={f}
+                          label={LABELS[f]}
+                          value={o.art as string}
+                          onChange={(v) => patch(i, "art", v)}
+                        />
                       );
                     }
                     if (f === "hub" || f === "emphasis") {
