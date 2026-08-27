@@ -213,3 +213,18 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
 - `SKILL.md` · `theming.md` · `direction.md` — `spotlight` 설명 및 예시 제거.
 
 **검증.** `node assets/gm.js test` 92건 통과 · `cargo test` 5건 통과 · `npm run build` 통과.
+
+## 10. Windows 환경 FFmpeg 자동 탐색 강화 (2026-08-27)
+
+**왜.** Windows 환경에서 winget, scoop 등으로 설치된 패키지나 Vrew, OBS, Shotcut 등 흔히 설치된 미디어 도구의 내장 FFmpeg을 자동으로 발견하지 못해 MP4 렌더 시 "ffmpeg을 찾지 못했다"는 오류가 발생하는 문제 해결.
+
+### `src-tauri/src/cdp.rs`
+- `scan_for_ffmpeg()` 재귀 탐색 헬퍼 구현.
+- `find_ffmpeg()`:
+  - WinGet 패키지 디렉토리(`%LOCALAPPDATA%\Microsoft\WinGet\Packages`) 하위 재귀 탐색.
+  - Vrew, Shotcut 등 `%APPDATA%` / `%LOCALAPPDATA%` 내장 도구 디렉토리 탐색.
+  - `%LOCALAPPDATA%\Programs`, `imageio`, `uv` 캐시 바이너리 탐색.
+  - HandBrake, OBS Studio 등 ProgramFiles 디렉토리 탐색.
+  - `where.exe ffmpeg.exe` 및 `PATH` 환경변수 전체 탐색.
+
+**검증.** `cargo test` 6건 통과 (`find_ffmpeg_finds_binary` 통과) · WinGet 및 Vrew FFmpeg 자동 감지 확인.

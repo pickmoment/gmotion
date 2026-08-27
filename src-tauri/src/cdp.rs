@@ -167,6 +167,28 @@ pub fn find_chrome() -> Result<PathBuf, String> {
         })
 }
 
+#[cfg(target_os = "windows")]
+fn scan_for_ffmpeg(root: &std::path::Path, max_depth: usize, out: &mut Vec<PathBuf>) {
+    if max_depth == 0 {
+        return;
+    }
+    if let Ok(rd) = std::fs::read_dir(root) {
+        for e in rd.flatten() {
+            let p = e.path();
+            if p.is_file() {
+                if let Some(name) = p.file_name() {
+                    let s = name.to_string_lossy().to_lowercase();
+                    if s == "ffmpeg.exe" || (s.starts_with("ffmpeg") && s.ends_with(".exe")) {
+                        out.push(p);
+                    }
+                }
+            } else if p.is_dir() {
+                scan_for_ffmpeg(&p, max_depth - 1, out);
+            }
+        }
+    }
+}
+
 /// ffmpeg 을 찾는다.
 pub fn find_ffmpeg() -> Result<PathBuf, String> {
     if let Ok(p) = std::env::var("GMOTION_FFMPEG") {
@@ -179,29 +201,23 @@ pub fn find_ffmpeg() -> Result<PathBuf, String> {
 
     #[cfg(target_os = "windows")]
     {
-        // Scoop / WinGet / Chocolatey / 표준 설치 위치
+        // 1. Scoop / WinGet / Chocolatey / 표준 설치 위치
         if let Some(home) = dirs::home_dir() {
             cands.push(home.join(r"scoop\shims\ffmpeg.exe"));
             cands.push(home.join(r"scoop\apps\ffmpeg\current\bin\ffmpeg.exe"));
         }
         if let Ok(lad) = std::env::var("LOCALAPPDATA") {
-            cands.push(PathBuf::from(&lad).join(r"Microsoft\WinGet\Links\ffmpeg.exe"));
-            let winget_pkg = PathBuf::from(&lad).join(r"Microsoft\WinGet\Packages");
-            if let Ok(rd) = std::fs::read_dir(&winget_pkg) {
-                for e in rd.flatten() {
-                    let d = e.path();
-                    let name = d.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
-                    if name.contains("ffmpeg") {
-                        cands.push(d.join("ffmpeg.exe"));
-                        cands.push(d.join(r"bin\ffmpeg.exe"));
-                        if let Ok(sub_rd) = std::fs::read_dir(&d) {
-                            for sub_e in sub_rd.flatten() {
-                                cands.push(sub_e.path().join(r"bin\ffmpeg.exe"));
-                            }
-                        }
-                    }
-                }
-            }
+            let lad_p = PathBuf::from(&lad);
+            cands.push(lad_p.join(r"Microsoft\WinGet\Links\ffmpeg.exe"));
+            scan_for_ffmpeg(&lad_p.join(r"Microsoft\WinGet\Packages"), 4, &mut cands);
+            scan_for_ffmpeg(&lad_p.join("Programs"), 3, &mut cands);
+            scan_for_ffmpeg(&lad_p.join("imageio"), 3, &mut cands);
+            scan_for_ffmpeg(&lad_p.join("uv"), 4, &mut cands);
+        }
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            let appdata_p = PathBuf::from(&appdata);
+            scan_for_ffmpeg(&appdata_p.join("vrew"), 3, &mut cands);
+            scan_for_ffmpeg(&appdata_p.join("Shotcut"), 2, &mut cands);
         }
         if let Ok(pd) = std::env::var("ProgramData") {
             cands.push(PathBuf::from(pd).join(r"chocolatey\bin\ffmpeg.exe"));
@@ -209,8 +225,16 @@ pub fn find_ffmpeg() -> Result<PathBuf, String> {
         cands.push(PathBuf::from(r"C:\ffmpeg\bin\ffmpeg.exe"));
         cands.push(PathBuf::from(r"C:\ffmpeg\ffmpeg.exe"));
         if let Ok(pf) = std::env::var("ProgramFiles") {
-            cands.push(PathBuf::from(&pf).join(r"ffmpeg\bin\ffmpeg.exe"));
-            cands.push(PathBuf::from(&pf).join(r"ffmpeg\ffmpeg.exe"));
+            let pf_p = PathBuf::from(&pf);
+            cands.push(pf_p.join(r"ffmpeg\bin\ffmpeg.exe"));
+            cands.push(pf_p.join(r"ffmpeg\ffmpeg.exe"));
+            cands.push(pf_p.join(r"HandBrake\ffmpeg.exe"));
+            cands.push(pf_p.join(r"OBS Studio\bin\64bit\ffmpeg.exe"));
+        }
+        if let Ok(pf86) = std::env::var("ProgramFiles(x86)") {
+            let pf86_p = PathBuf::from(&pf86);
+            cands.push(pf86_p.join(r"ffmpeg\bin\ffmpeg.exe"));
+            cands.push(pf86_p.join(r"ffmpeg\ffmpeg.exe"));
         }
 
         if let Ok(out) = Command::new("where.exe").arg("ffmpeg.exe").output() {
@@ -234,7 +258,7 @@ pub fn find_ffmpeg() -> Result<PathBuf, String> {
         ]);
         if let Ok(out) = Command::new("which").arg("ffmpeg").output() {
             let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
-            if !s.is_empty() && Path::new(&s).is_file() {
+            if !s.is_empty() && PathBuf::from(&s).is_file() {
                 cands.push(PathBuf::from(s));
             }
         }
@@ -446,5 +470,12 @@ mod tests {
         let res = super::find_chrome();
         println!("find_chrome result: {:?}", res);
         assert!(res.is_ok(), "Chrome/Edge should be found on development/CI machine: {:?}", res.err());
+    }
+
+    #[test]
+    fn find_ffmpeg_finds_binary() {
+        let res = super::find_ffmpeg();
+        println!("find_ffmpeg result: {:?}", res);
+        assert!(res.is_ok(), "ffmpeg should be found: {:?}", res.err());
     }
 }
