@@ -239,10 +239,10 @@ convergence — 수렴
 ```bash
 gm icons 서버              # 픽토그램 191종에서 검색 (한글로 찾아진다)
 gm icons                  # 전체 목록
-gm info decor             # 배경 레이어 15종
-gm info mark              # 강조 마크 12종 (밑줄·동그라미·형광펜…)
-gm info frame             # 디바이스 프레임 8종 (브라우저·터미널·폰…)
-gm info art               # 추상 일러스트 20종
+gm info decor             # 배경 레이어 20종
+gm info mark              # 강조 마크 15종 (밑줄·동그라미·형광펜…)
+gm info frame             # 디바이스 프레임 12종 (브라우저·터미널·폰…)
+gm info art               # 추상 일러스트 32종
 gm info chart             # 차트 17종과 각각의 용도
 ```
 
@@ -254,13 +254,13 @@ server(서버·백엔드·서버실·호스팅)
 
 괄호 안은 **별칭**이다. `"icon": "server"` 라고 써도 되고 별칭으로 검색해도 찾아진다.
 
-### 4-5. 테마 · 트랜지션 · 화면비
+### 4-5. 테마 · 스킨 · 트랜지션 · 화면비
 
 ```bash
-gm info themes    gm info trans    gm info aspects    gm info energy
+gm info themes    gm info skins    gm info trans    gm info aspects    gm info energy
 ```
 
-**테마 6종**
+**테마 15종**
 
 | 이름 | 성격 |
 |---|---|
@@ -276,14 +276,93 @@ gm info themes    gm info trans    gm info aspects    gm info energy
 | `forest` | 짙은 녹색. 지속가능성·성장·자연 |
 | `ocean` | 심해 청록. 데이터·인프라·신뢰 |
 | `plum` | 자주. 문화·예술·프리미엄 |
+| `kraft` | **밝은** 갈색 소포지 질감 + 따뜻한 잉크. 아날로그·기획 노트·공예 |
+| `clay` | **밝은** 3D 점토 볼륨 + 매트 파스텔. 클레이모피즘·친근한 설명 |
+| `blueprint` | 청사진 남색 + 백색 도면선. 설계·아키텍처·구조도 |
 
-**밝은 배경 넷**(`paper` `slate` `sand` `mint`), **어두운 배경 여덟.**
+**밝은 배경 여섯**(`paper` `slate` `sand` `mint` `kraft` `clay`), **어두운 배경 아홉.**
 발표장이 밝거나 인쇄를 전제하면 밝은 쪽, 영상으로 재생하면 어두운 쪽이 낫다.
 
-12종 모두 **글자가 배경에서 읽히도록 대비를 맞춰 뒀다**(WCAG AA). 카드 설명 같은
+15종 모두 **글자가 배경에서 읽히도록 대비를 맞춰 뒀다**(WCAG AA). 카드 설명 같은
 작은 회색 글씨까지 포함해서다. 비교해 보려면 스펙의 `"theme"` 값만 바꿔 빌드하면 된다.
 
-**트랜지션 10종** — 씬의 `transition` 에 쓴다. 첫 씬은 무시된다.
+**스킨 6종** — 테마가 **색**을 정하고, 스킨이 **재질**(표면·선·타이포의 모양)을 정한다.
+둘은 직교하므로 곱해서 쓴다. 루트의 `skin` 에 적는다.
+
+| 이름 | 모습 | 어울리는 곳 |
+|---|---|---|
+| `glass` | 반투명 패널 + 배경 블러. **기본값** | 기존 산출물과 같은 모습 |
+| `flat` | 불투명 면 + 얇은 테두리. 블러 없음 | 문서·인쇄·저사양 화면 |
+| `brutalist` | 직각 + 굵은 잉크 테두리 + 어긋난 하드 그림자 | 포스터·편집 디자인 |
+| `clay` | 큰 반경 + 이중 그림자로 점토 볼륨 | 친근한 설명·교육 |
+| `paper` | 작은 반경 + 실선 한 겹 + 낮은 그림자 | 종이·스케치노트 |
+| `neon` | 빈 면 + 형광 테두리 + 외곽 광채 | 어두운 테마 전용 |
+
+```jsonc
+{ "theme": "paper", "skin": "brutalist", "scenes": [ … ] }
+```
+
+스킨은 **디자인 프리미티브 48종**(면 색·테두리 굵기·모서리 반경 5단·블러 4단·연결선
+굵기·타이포 비율·자막 뱃지)의 값 묶음이다. 프리미티브를 직접 손봐 자기 스킨을 만들 수도
+있다 — 스펙 안에 적으므로 파일 한 장으로 재현된다.
+
+```jsonc
+{
+  "skin": {
+    "extends": "flat",
+    "name":    "우리 브랜드",
+    "vars":    { "r-lg": "4px", "surf-lw": "2px", "link-w": "3" },
+    "css":     [".gg-card{text-transform:uppercase}"]
+  }
+}
+```
+
+토큰 전체 목록과 각각이 무엇을 정하는지는 `gm info skins` 가 출력한다. 이름을 틀리면
+`gm validate` 가 잡는다.
+
+**씬별로 갈아 끼우기** — 씬에도 `skin` 을 적으면 그 씬만 재질이 달라진다.
+
+```jsonc
+{ "skin": "flat", "scenes": [
+    { "pattern": "cardsCascade", "items": [ … ] },            // flat
+    { "pattern": "cardsCascade", "skin": "brutalist", … }      // 이 씬만 직각
+] }
+```
+
+트랜지션 중에는 두 씬이 각자 자기 재질을 지킨 채 교차한다. 자막 뱃지는 씬 밖 레이어라
+씬 스킨으로는 안 바뀐다 — 루트 `skin` 에 적는다.
+
+`starter-skins.json` 을 그대로 빌드하면 6종과 인라인 커스텀을 한 화면씩 볼 수 있다.
+`"theme"` 만 바꿔 다시 빌드하면 색은 갈리고 재질은 그대로다.
+
+### 커스텀 요소 — 스펙 안에 정의를 담는다
+
+기본 요소로 안 되면 루트 `design` 에 정의한다. 테마·스킨·픽토그램·일러스트·마크·
+배경·프레임 일곱 갈래다.
+
+```jsonc
+{
+  "theme": "myBrand",
+  "design": {
+    "themes": { "myBrand": { "label":"우리 브랜드", "bg":"#0b1020", "bg2":"#141b33",
+      "ink":"#eef2ff", "ink2":"#a9b4d6", "dim":"#8290b5", "accent":"#ff7a45",
+      "accent2":"#3ddc97", "good":"#3ddc97", "warn":"#ffb020", "bad":"#ff5470" } },
+    "icons": { "myLogo": { "path":"M12 2 L22 20 L2 20 Z", "aliases":["우리로고"] } }
+  },
+  "scenes": [ … ]
+}
+```
+
+**정의가 스펙 안에 있어야 한다.** 앱의 디자인 스튜디오에서 만든 요소를 이름으로만
+참조하면, 그 스펙을 CLI 로 빌드하거나 남에게 넘겼을 때 요소가 없어
+`theme "myBrand" 는 없다` 가 뜨고 조용히 기본값으로 떨어진다. 앱은 스펙이 참조하는
+정의를 `design` 에 자동으로 심으므로, 앱에서 저장한 파일은 그대로 CLI 로 빌드된다.
+
+SVG 는 템플릿이다 — `{accent}` `{W}` 같은 자리가 테마 색·화면 크기로 채워져서
+커스텀 요소도 테마를 바꾸면 색이 따라온다. 갈래별 필수 필드와 좌표계는
+`references/spec.md` 의 design 절에 표로 있다.
+
+**트랜지션 15종** — 씬의 `transition` 에 쓴다. 첫 씬은 무시된다.
 
 | 이름 | 의미 |
 |---|---|
@@ -297,6 +376,14 @@ gm info themes    gm info trans    gm info aspects    gm info energy
 | `wipe` | 화면을 닦아 교체. 장 구분 |
 | `match` | 겹쳐 넘긴다. 같은 형태가 이어질 때 |
 | `curve` | 아래에서 원호가 올라와 덮는다. 장 전환 |
+| `pageFlip` | 책장을 넘기듯 3D Y축 회전. 장·챕터 구분 |
+| `paperPeel` | 포스트잇이 떼어지듯 사선으로 들려 나감 |
+| `curlWipe` | 종이 귀퉁이가 대각선으로 말려 올라간다 |
+| `clayPop` | 통통 튀어 올라 찌그러지는 탄성 전환 |
+| `squish` | 바닥으로 쿵 눌렸다가 튀어 오르는 탄성 전환 |
+
+뒤의 다섯은 종이·점토 질감을 전제한다 — `kraft`·`clay` 테마나 `paper`·`clay` 스킨과
+같이 쓸 때 뜻이 산다.
 
 **화면비 4종**
 
@@ -361,6 +448,7 @@ ls ~/.claude/skills/gmotion/assets/examples/
 | `starter-effects.json` | 모프·스크램블·마퀴 등 효과 쇼케이스 |
 | `starter-narrated.json` | **자막 동기화 예제.** 옆의 `.srt` 와 함께 쓴다 |
 | `starter-fonts.json` | **폰트 비교용.** `"font"` 를 바꿔 가며 빌드해 본다 |
+| `starter-skins.json` | **스킨 비교용.** 씬마다 재질이 다르다 — 한 번 빌드하면 6종이 다 보인다 |
 
 ---
 
@@ -441,14 +529,15 @@ gm test -v       # 무엇을 검사했는지 본다
 |---|---|
 | `gm info` | 전체 요약 |
 | `gm info patterns` | 씬 패턴 20종과 필드 |
-| `gm info themes` | 테마 6종 |
-| `gm info trans` | 트랜지션 10종 |
+| `gm info themes` | 테마 목록 |
+| `gm info skins` | 스킨 6종 + 디자인 프리미티브 48종 |
+| `gm info trans` | 트랜지션 15종 |
 | `gm info energy` | 에너지 3종 |
 | `gm info aspects` | 화면비 4종 |
-| `gm info decor` | 배경 레이어 15종 |
-| `gm info mark` | 강조 마크 12종 |
-| `gm info frame` | 디바이스 프레임 8종 |
-| `gm info art` | 추상 일러스트 20종 |
+| `gm info decor` | 배경 레이어 20종 |
+| `gm info mark` | 강조 마크 15종 |
+| `gm info frame` | 디바이스 프레임 12종 |
+| `gm info art` | 추상 일러스트 32종 |
 | `gm info fonts` | 폰트 10종 |
 | `gm info chart` | 차트 17종 |
 | `gm info tokens` | 모션 토큰 (엔진 내부값. 스펙에서 못 쓴다) |

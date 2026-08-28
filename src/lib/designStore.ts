@@ -1,16 +1,18 @@
 import { useSyncExternalStore } from "react";
 import {
   registerCustomTheme,
+  registerCustomSkin,
   registerCustomIcon,
   registerCustomVector,
   unregisterCustomItem,
 } from "../engine/boot";
-import type { CustomDesignLibrary, ThemeDefinition } from "../engine/types";
+import type { CustomDesignLibrary, SkinDefinition, ThemeDefinition } from "../engine/types";
 
 const STORAGE_KEY = "gmotion_custom_design_v1";
 
 const EMPTY_LIBRARY: CustomDesignLibrary = {
   themes: {},
+  skins: {},
   icons: {},
   arts: {},
   marks: {},
@@ -24,6 +26,9 @@ const listeners = new Set<() => void>();
 function syncLibraryToEngine(lib: CustomDesignLibrary): void {
   for (const [k, v] of Object.entries(lib.themes)) {
     registerCustomTheme(k, v);
+  }
+  for (const [k, v] of Object.entries(lib.skins)) {
+    registerCustomSkin(k, v);
   }
   for (const [k, v] of Object.entries(lib.icons)) {
     registerCustomIcon(k, v.path, v.aliases, v.label);
@@ -58,6 +63,8 @@ function loadInitialLibrary(): CustomDesignLibrary {
     const parsed = JSON.parse(raw) as Partial<CustomDesignLibrary>;
     const lib: CustomDesignLibrary = {
       themes: parsed.themes || {},
+      /* 스킨은 나중에 들어온 갈래다 — 예전 저장본에는 없으므로 빈 것으로 채운다 */
+      skins: parsed.skins || {},
       icons: parsed.icons || {},
       arts: parsed.arts || {},
       marks: parsed.marks || {},
@@ -120,6 +127,40 @@ export const designStore = {
     delete themes[key];
     unregisterCustomItem("theme", key);
     saveLibrary({ ...currentLibrary, themes });
+  },
+
+  /* ── 스킨 — 디자인 프리미티브의 구현부 ──────────────────────────── */
+
+  addSkin(key: string, def: SkinDefinition): void {
+    const withFlag: SkinDefinition = { ...def, custom: true };
+    const next: CustomDesignLibrary = {
+      ...currentLibrary,
+      skins: { ...currentLibrary.skins, [key]: withFlag },
+    };
+    registerCustomSkin(key, withFlag);
+    saveLibrary(next);
+  },
+
+  updateSkin(key: string, def: SkinDefinition): void {
+    designStore.addSkin(key, def);
+  },
+
+  deleteSkin(key: string): void {
+    const skins = { ...currentLibrary.skins };
+    delete skins[key];
+    unregisterCustomItem("skin", key);
+    saveLibrary({ ...currentLibrary, skins });
+  },
+
+  /**
+   * 스펙에 인라인할 형태로 스킨을 꺼낸다.
+   *
+   * 앱에 등록만 해 두면 CLI 로 빌드하거나 스펙을 남에게 넘겼을 때 모습이 재현되지
+   * 않는다 — 스펙 파일 안에 정의가 들어 있어야 한다. 저장·내보내기 경로가 이걸 쓴다.
+   */
+  skinDefOf(key: string): SkinDefinition | null {
+    const def = currentLibrary.skins[key];
+    return def ? { ...def } : null;
   },
 
   addIcon(key: string, path: string, aliases: string[] = [], label?: string): void {
@@ -233,18 +274,20 @@ export const designStore = {
         return { success: false, count: 0, error: "유효한 JSON 객체가 아닙니다." };
       }
       const themes = { ...currentLibrary.themes, ...(parsed.themes || {}) };
+      const skins = { ...currentLibrary.skins, ...(parsed.skins || {}) };
       const icons = { ...currentLibrary.icons, ...(parsed.icons || {}) };
       const arts = { ...currentLibrary.arts, ...(parsed.arts || {}) };
       const marks = { ...currentLibrary.marks, ...(parsed.marks || {}) };
       const decors = { ...currentLibrary.decors, ...(parsed.decors || {}) };
       const frames = { ...currentLibrary.frames, ...(parsed.frames || {}) };
 
-      const next: CustomDesignLibrary = { themes, icons, arts, marks, decors, frames };
+      const next: CustomDesignLibrary = { themes, skins, icons, arts, marks, decors, frames };
       syncLibraryToEngine(next);
       saveLibrary(next);
 
       const count =
         Object.keys(parsed.themes || {}).length +
+        Object.keys(parsed.skins || {}).length +
         Object.keys(parsed.icons || {}).length +
         Object.keys(parsed.arts || {}).length +
         Object.keys(parsed.marks || {}).length +

@@ -1897,3 +1897,157 @@ fieldset.group > legend { font-size: 11px; color: var(--ink2); padding: 0 5px; d
   gap: 2px;
 }
 .glyph-meta-cell strong { font-size: 12px; color: var(--ink); }
+
+/* ── 스킨 선택 · 프리미티브 편집 ─────────────────────────────────────
+ *
+ * 스와치는 실제 산출물의 카드 규칙과 같은 토큰을 읽는다 — 여기서 보이는 모양이
+ * 빌드 결과와 어긋나지 않게 하려는 것이다. 다만 스와치가 작으므로 길이 토큰은
+ * --sw-k 배율로 줄여 비율을 맞춘다(24px 반경을 14px 상자에 그대로 주면 알약이 된다).
+ */
+.skin-swatch {
+  --sw-k: 0.5;
+  position: relative;
+  overflow: hidden;
+  border-radius: 6px;
+  flex: 0 0 auto;
+  background: var(--bg);
+}
+.skin-swatch-sm { --sw-k: 0.3; width: 46px; height: 28px; }
+.skin-swatch-md { width: 100%; height: 66px; }
+.skin-swatch-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 0%, var(--bg2) 0%, var(--bg) 62%);
+}
+.skin-swatch-card {
+  position: absolute;
+  left: 9%;
+  top: 20%;
+  width: 31%;
+  height: 60%;
+  background: var(--surf-fill);
+  border: calc(var(--surf-lw) * 0.8) solid var(--surf-line);
+  border-radius: calc(var(--r-lg) * var(--sw-k));
+  box-shadow: var(--surf-shadow);
+  backdrop-filter: var(--bd-2);
+  -webkit-backdrop-filter: var(--bd-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 11%;
+}
+.skin-swatch-card-2 { left: 60%; }
+.skin-swatch-card i {
+  width: 24%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--acc);
+  filter: var(--glow);
+}
+.skin-swatch-card b {
+  width: 56%;
+  height: 8%;
+  min-height: 2px;
+  border-radius: 1px;
+  background: var(--ink);
+  opacity: 0.6;
+}
+.skin-swatch-link { position: absolute; inset: 0; width: 100%; height: 100%; }
+.skin-swatch-link path {
+  fill: none;
+  stroke: var(--acc);
+  stroke-width: var(--link-w);
+  opacity: var(--link-op);
+  stroke-linecap: var(--ln-cap);
+}
+
+.skin-popover { max-height: 520px; overflow-y: auto; }
+.skin-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  padding: 8px;
+}
+.skin-card-item {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+.skin-card-item:hover { border-color: var(--ink2); }
+.skin-card-item.on { border-color: var(--acc); box-shadow: 0 0 0 1px var(--acc) inset; }
+.skin-card-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.skin-card-desc { font-size: 10.5px; color: var(--ink2); line-height: 1.35; }
+.badge-dark {
+  background: rgba(120, 160, 255, 0.16);
+  color: #8fb2ff;
+  border: 1px solid rgba(120, 160, 255, 0.36);
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+/* 프리미티브 편집기 — 토큰을 갈래로 묶어 보여준다 */
+.skin-token-group { border: 1px solid var(--line); border-radius: 7px; padding: 8px; margin-bottom: 8px; }
+.skin-token-group > h5 {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink2);
+  margin-bottom: 6px;
+  letter-spacing: 0.04em;
+}
+.skin-token-row {
+  display: grid;
+  grid-template-columns: 128px 1fr;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.skin-token-row > label { font-size: 11px; color: var(--ink); font-family: var(--mono, monospace); }
+.skin-token-row > label small { display: block; color: var(--ink2); font-size: 9.5px; font-family: inherit; }
+.skin-token-row input { font-size: 11px; padding: 3px 6px; }
+.skin-token-row input.changed { border-color: var(--acc); }
+.skin-editor-preview { position: sticky; top: 0; margin-bottom: 10px; }
+.skin-editor-preview .skin-swatch-md { height: 120px; }
+
+/* 스킨 스튜디오 — 목록과 편집기 */
+.studio-lead { margin: 0 0 10px; line-height: 1.5; }
+.skin-studio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+.skin-studio-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skin-studio-card.on { border-color: var(--acc); box-shadow: 0 0 0 1px var(--acc) inset; }
+.skin-studio-meta { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink); }
+.skin-studio-card .skin-card-desc { min-height: 2.6em; }
+
+.skin-editor { display: grid; grid-template-columns: 300px 1fr; gap: 14px; align-items: start; }
+.skin-editor-side { display: flex; flex-direction: column; gap: 8px; }
+.skin-editor-tokens { max-height: 62vh; overflow-y: auto; padding-right: 4px; }
+.skin-editor-actions { display: flex; gap: 6px; margin-top: 4px; }
+.skin-swatch-tall { height: 140px; }
+@media (max-width: 900px) {
+  .skin-editor { grid-template-columns: 1fr; }
+  .skin-editor-tokens { max-height: none; }
+}

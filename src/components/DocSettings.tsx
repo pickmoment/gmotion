@@ -3,6 +3,7 @@ import { GG } from "../engine/boot";
 import type { Spec } from "../engine/types";
 import { setField } from "../lib/spec";
 import { ThemePicker } from "./fields/ThemePicker";
+import { SkinPicker } from "./fields/SkinPicker";
 import { DecorEditor } from "./fields/DecorEditor";
 
 const MODES: Record<string, string> = {
@@ -54,6 +55,13 @@ export function DocSettings({
           value={spec.theme}
           onChange={(t) => set("theme", t)}
           onOpenDesignPanel={onOpenDesign}
+        />
+        <SkinPicker
+          value={spec.skin}
+          theme={spec.theme || "midnight"}
+          onChange={(s) => set("skin", s)}
+          onOpenDesignPanel={onOpenDesign}
+          hint="색은 테마가, 재질은 스킨이 정한다"
         />
         {sel("aspect", "화면비", GG.aspects)}
         {sel("energy", "에너지", GG.energies)}

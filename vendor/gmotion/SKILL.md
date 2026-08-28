@@ -52,7 +52,7 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 | `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 흔한 실패 |
 | `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 패턴 20종의 필드와 예시 |
 | `references/charts.md` | **차트를 넣을 때.** 어떤 차트인가, 색은 어떤 일을 하는가, 데이터 형태와 옵션 |
-| `references/theming.md` | 테마·화면비·에너지·재생 모드·모션 토큰 |
+| `references/theming.md` | 테마·**스킨**·화면비·에너지·재생 모드·모션 토큰 |
 | `references/api.md` | CLI, 검수 쿼리, agent-browser 캡처, 산출물 구조, GSAP 함정 |
 | `references/api.md` `#자막-동기화` | **음성·자막을 받았을 때.** 순서, 경고 읽는 법, 맞는 분량 |
 
@@ -88,6 +88,7 @@ node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 | `assets/examples/starter-fonts.json` | **폰트 비교** — `font` 를 바꿔 가며 빌드해 글자꼴을 고른다 |
 | `assets/examples/starter-paper.json` | **종이 모션 쇼케이스** — 크래프트 테마, 접힘선·줄노트·모눈 배경, 페이지 넘김·종이 떼기·컬 와이프 트랜지션, 메모·스프링노트 프레임 |
 | `assets/examples/starter-clay.json` | **클레이 애니메이션 쇼케이스** — 클레이 테마, 3D 점토 블롭·도우 배경, 클레이 팝·스쿼시 탄성 트랜지션, 점토 보드 프레임 |
+| `assets/examples/starter-skins.json` | **스킨 쇼케이스** — 씬마다 `skin` 을 갈아 끼워 6종 + 인라인 커스텀을 한 파일에서 본다 (8씬 36초, ink) |
 
 ### 파일명 규칙 — 원본 파일과 동일한 이름(stem) 사용
 
@@ -205,6 +206,9 @@ node <skill>/assets/gm.js build spec.json -o 발표.html --present
 5. **없는 수치·인용·사실을 만들지 않는다.** 사용자가 준 내용만 쓴다.
 6. **정보량은 애니메이션으로 줄어들지 않는다.** 밀도 경고가 나오면 씬을 나눈다.
 7. **스크린샷을 보지 않았으면 끝난 게 아니다.**
+8. **재질은 색과 따로 고른다.** 테마가 색을, `skin` 이 표면·선·타이포의 모양을
+   정한다(6종, `gm info skins`). 같은 내용을 문서 톤으로도 포스터 톤으로도 낼 수
+   있으므로, 용도가 분명하면 스킨을 함께 고른다 — 기본값 `glass` 는 기존 모습이다.
 
 ## 구성
 
@@ -217,7 +221,8 @@ assets/
   icons.js         픽토그램 191종 (mojs · scriptviz · mindmap 과 같은 세트)
   vectors.js       벡터 세트 79종 — 배경 20 · 강조 15 · 프레임 12 · 일러스트 32. 전부 코드로 그린다
   charts.js        차트 17종 — 형태·색·마크 스펙. 애니메이션은 지시만 하고 방법은 엔진이 정한다
-  examples/        스타터 스펙 12종 + 자막 동기화용 샘플 SRT
+  skins.js         디자인 프리미티브(인터페이스) 48종 + 스킨(구현부) 6종 — 표면·선·타이포의 재질
+  examples/        스타터 스펙 13종 + 자막 동기화용 샘플 SRT
   selftest.js      엔진 회귀 검사 — 엔진을 고쳤으면 `gm test` 를 통과시킨다
 references/        direction · spec · theming · api · charts
 MANUAL.md          사람이 직접 CLI 를 쓸 때 보는 설명서 (사용자가 물으면 이 파일을 알려준다)

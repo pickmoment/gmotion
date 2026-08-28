@@ -20,6 +20,7 @@ const NOTES: Record<string, string> = {
   "starter-fonts": "폰트 비교 — font 를 바꿔 가며 글자꼴을 고른다",
   "starter-paper": "종이 모션 쇼케이스 — 크래프트 테마, 접힘선·줄노트 배경, 페이지 넘김·종이 떼기 전환, 노트 프레임",
   "starter-clay": "클레이 애니메이션 쇼케이스 — 클레이 테마, 3D 점토 블롭 배경, 클레이 팝·스쿼시 탄성 전환, 점토 보드 프레임",
+  "starter-skins": "스킨 쇼케이스 — 씬마다 재질을 갈아 끼운 예 (8씬 36초, ink). 6종 + 인라인 커스텀을 한 파일에서 본다",
 };
 
 const LIST = Object.entries(raw)

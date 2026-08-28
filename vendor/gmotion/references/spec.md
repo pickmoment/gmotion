@@ -10,17 +10,71 @@
   "title":   "산출물 제목",              // <title>, 접근성 라벨
   "message": "이 영상이 남길 한 줄",       // 필수는 아니지만 없으면 경고. 씬 구성의 검증 기준
   "theme":   "midnight",                // midnight ink paper mono neon warm
+  "skin":    "glass",                   // 표면·선·타이포의 구현부. 6종 (`gm info skins`). 테마와 직교
   "aspect":  "16:9",                    // 16:9 9:16 1:1 4:5
   "energy":  "E2",                      // E1 차분 · E2 표준 · E3 하이에너지
   "font":    "display",                 // 10종. 생략하면 테마가 정한다 (`gm info fonts`)
   "mode":    "autoplay",                // autoplay loop step
   "audio":   { "offset": 0, "volume": 1 }, // 음성을 얹을 때만. 파일은 --audio 로 준다
+  "design":  { /* 아래 */ },            // 이 스펙에서만 쓰는 커스텀 요소 정의
   "scenes":  [ /* 아래 */ ]
 }
 ```
 
 `audio.offset` 은 **음성 안에서 첫 대사가 시작하는 시각**이다. 녹음 앞에 여백이
 있으면 그만큼 적는다.
+
+`skin` 은 색이 아니라 **재질**을 정한다 — 테마가 색을 정하고 스킨이 표면·선·타이포의
+모양을 정하므로 둘은 곱해서 쓴다(테마 15종 × 스킨 6종). 생략하면 테마가 정한 기본
+스킨이고, 그것도 없으면 `glass` 다. 자세한 것은 `theming.md` 의 스킨 절을 본다.
+
+## design — 이 스펙에서만 쓰는 커스텀 요소
+
+기본 요소(테마 15 · 스킨 6 · 픽토그램 191 · 벡터 79)로 안 되면 여기에 정의한다.
+**정의가 스펙 안에 있으므로 CLI 로 빌드해도, 남에게 넘겨도 같은 모습이 나온다** —
+이름만 참조하면 그 요소가 없는 곳에서 조용히 기본값으로 떨어진다.
+
+```jsonc
+{
+  "theme": "myBrand",              // 아래 정의를 이름으로 가리킨다
+  "skin":  "myBrand",
+  "design": {
+    "themes": { "myBrand": {
+      "label": "우리 브랜드", "font": "neo",
+      "bg": "#0b1020", "bg2": "#141b33", "ink": "#eef2ff", "ink2": "#a9b4d6", "dim": "#8290b5",
+      "accent": "#ff7a45", "accent2": "#3ddc97", "good": "#3ddc97", "warn": "#ffb020", "bad": "#ff5470"
+    } },
+    "skins":  { "myBrand": { "extends": "flat", "vars": { "r-lg": "4px", "surf-line": "#ff7a45" } } },
+    "icons":  { "myLogo": { "path": "M12 2 L22 20 L2 20 Z", "aliases": ["우리로고"] } },
+    "arts":   { "myArt":  { "label": "우리 그림", "svg": "<circle cx='100' cy='100' r='62' stroke='{accent}' fill='none'/>" } },
+    "marks":  { "myMark": { "label": "우리 밑줄", "where": "under", "svg": "<path d='M0 8 L100 6' stroke='{accent}'/>" } },
+    "decors": { "myBg":   { "label": "우리 배경", "svg": "<rect width='{W}' height='{H}' fill='{bg}'/>" } },
+    "frames": { "myFrame":{ "label": "우리 프레임", "ratio": 1.6, "svg": "<rect width='{W}' height='{H}' stroke='{ink}' fill='none'/>" } }
+  }
+}
+```
+
+| 갈래 | 필수 | 좌표계 |
+|---|---|---|
+| `themes` | 색 10종(`bg` `bg2` `ink` `ink2` `dim` `accent` `accent2` `good` `warn` `bad`) | — |
+| `skins` | 없음 (`extends` 한 스킨에서 물려받는다) | — |
+| `icons` | `path` | **24×24** path d |
+| `arts` | `svg` | **200×200** |
+| `marks` | `svg` · `where` | 붙는 글자 기준 상대 박스 |
+| `decors` | `svg` | `{W}`×`{H}` (화면 전체) |
+| `frames` | `svg` | `{W}`×`{H}`, `ratio` 로 가로세로비 |
+
+**SVG 는 템플릿이다.** `{accent}` `{accent2}` `{ink}` `{ink2}` `{dim}` `{bg}` `{bg2}`
+`{good}` `{warn}` `{bad}` `{line}` `{panel}` `{pline}` 자리가 테마 색으로 채워지고,
+`{W}` `{H}` 는 화면 크기, `decors` 는 `{lv}`(세기 0·1·2), `marks` 는 `{text}` 를 더 받는다.
+그래서 커스텀 요소도 **테마를 바꾸면 색이 따라온다.** 통째 `<svg>` 를 줘도 되고
+조각만 줘도 껍데기를 씌워 준다.
+
+`design` 의 정의는 **그 빌드 동안만** 유효하다 — 기본 요소와 이름이 겹쳐도
+(`"midnight"` 을 재정의해도) 다음 빌드에는 기본 요소가 돌아온다.
+
+앱(디자인 스튜디오)의 커스텀 라이브러리와 **키가 같다** — 라이브러리 내보내기 JSON 을
+`design` 에 그대로 붙일 수 있고, 앱은 스펙이 참조하는 정의를 자동으로 여기에 심는다.
 
 ## 씬 공통
 
@@ -36,6 +90,7 @@
 | `transition` | 앞 씬에서 넘어오는 방식. 첫 씬은 무시 |
 | `decor` | 배경 레이어. 이름 또는 배열(`["blob","grid"]`)로 겹친다. `false` 면 없음. 생략하면 루트 → 테마 기본 |
 | `decorLevel` | 배경 세기 `0`(약) `1`(기본) `2`(강) |
+| `skin` | **이 씬만 재질을 갈아 끼운다.** 스킨 이름 또는 인라인 정의. 생략하면 루트 `skin` |
 | `textFx` | 글자 등장 방식. `scramble`(섞이다 정렬) · `roll`(굴러 교체, `matchCut` 전용) |
 | `mark` | 제목에 붙는 강조. `"underline"` `"circle"` `"highlight"` 등. `"badge:NEW"` 처럼 값도 준다 |
 | `art` | 추상 일러스트. 패턴에 따라 아이콘 자리를 대신한다(`heroReveal`) |
@@ -161,7 +216,7 @@ node <skill>/assets/gm.js info chart       # 차트 17종
 ```
 
 ## processFlow — 프로세스 플로우
-순서. 3~6단계. 단계 → 화살표 → 단계 순으로 등장한다.
+순서. 3~6단계. **단계 → 화살표(선이 자라고 → 꺽쇠가 닫힌다) → 다음 단계** 순으로 등장한다.
 
 ```jsonc
 { "pattern": "processFlow",

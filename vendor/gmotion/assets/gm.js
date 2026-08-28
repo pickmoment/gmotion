@@ -6,7 +6,7 @@
  *   node gm.js build    <spec.json> [-o out.html] [--clean] [--cdn] [--no-fonts] [--present]
  *                                   [--subs voice.srt] [--audio voice.mp3] [--captions]
  *   node gm.js timing   <spec.json> [-o out.csv] [--fps 30] [--subs voice.srt]
- *   node gm.js info     [patterns|themes|fonts|trans|energy|aspects|tokens|decor|mark|frame|art|chart]
+ *   node gm.js info     [patterns|themes|skins|fonts|trans|energy|aspects|tokens|decor|mark|frame|art|chart]
  *   node gm.js pattern  <이름>            패턴 하나의 필드와 용도
  *   node gm.js icons    [검색어]          픽토그램 191종 찾기 (한글 이름 지원)
  *   node gm.js check    <out.html>        산출물 기계 검수 (자기 선언 금지)
@@ -169,6 +169,23 @@ if (cmd === 'info') {
   if (topic === 'mark') { dump('강조 마크 (씬 mark · 항목 badge/ribbon)', G.marks); process.exit(0); }
   if (topic === 'frame') { dump('디바이스 프레임 (deviceShow 의 frame)', G.frames); process.exit(0); }
   if (topic === 'art') { dump('추상 일러스트 (씬 art · 항목 art · screen.art)', G.arts); process.exit(0); }
+  if (topic === 'skins') {
+    console.log('## 스킨 ' + Object.keys(G.skins).length + '종  (루트 skin 필드. 테마와 직교한다)');
+    Object.keys(G.skins).forEach(function (k) { console.log('  ' + k.padEnd(12) + G.skins[k]); });
+    console.log('');
+    console.log('## 디자인 프리미티브 — 스킨이 정하는 값. 커스텀 스킨의 vars 에 이 이름을 쓴다');
+    var TK = G.designTokens;
+    Object.keys(TK).forEach(function (k) { console.log('  ' + k.padEnd(15) + TK[k]); });
+    console.log('');
+    console.log('예) 스펙에 인라인 커스텀 스킨');
+    console.log('  "skin": { "extends": "flat", "name": "우리 브랜드",');
+    console.log('            "vars": { "r-lg": "4px", "surf-lw": "2px" },');
+    console.log('            "css": [".gg-card{text-transform:uppercase}"] }');
+    console.log('');
+    console.log('예) 씬별 오버라이드 — 그 씬만 재질이 달라진다 (자막 뱃지는 안 바뀐다)');
+    console.log('  { "pattern": "cardsCascade", "skin": "brutalist", "items": [ ... ] }');
+    process.exit(0);
+  }
   if (topic === 'chart') {
     console.log('## 차트 ' + Object.keys(G.charts).length + '종  (pattern:"chart" 의 chart 필드)');
     Object.keys(G.charts).forEach(function (k) {
@@ -178,6 +195,7 @@ if (cmd === 'info') {
     process.exit(0);
   }
   if (!topic || topic === 'themes') dump('테마', G.themes);
+  if (!topic || topic === 'skins') dump('스킨 (루트 skin. 표면·선·타이포의 구현부를 갈아 끼운다 — 자세히: gm info skins)', G.skins);
   if (!topic || topic === 'fonts') dump('폰트 (루트 font 로 고른다. 생략하면 테마 기본)', G.fonts);
   if (!topic || topic === 'trans') dump('트랜지션', G.transitions);
   if (!topic || topic === 'energy') dump('에너지', G.energies);

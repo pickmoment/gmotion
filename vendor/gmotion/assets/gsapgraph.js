@@ -13,9 +13,9 @@
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports)
-    module.exports = factory(require('./icons.js'), require('./vectors.js'), require('./charts.js'));
-  else root.GG = factory(root.GGIcons, root.GGVectors, root.GGCharts);
-}(typeof self !== 'undefined' ? self : this, function (ICO, VEC, CH) {
+    module.exports = factory(require('./icons.js'), require('./vectors.js'), require('./charts.js'), require('./skins.js'), require('./design.js'));
+  else root.GG = factory(root.GGIcons, root.GGVectors, root.GGCharts, root.GGSkins, root.GGDesign);
+}(typeof self !== 'undefined' ? self : this, function (ICO, VEC, CH, SK, DS) {
 'use strict';
 
 var VERSION = '0.1.0';
@@ -36,6 +36,17 @@ function copy(o) { var r = {}; for (var k in o) if (has(o, k)) r[k] = o[k]; retu
 function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
 function pad(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
 function r2(n) { return Math.round(n * 100) / 100; }
+/** #rrggbb 의 상대 휘도(WCAG). 배경이 밝은 테마인지 가리는 데 쓴다. */
+function lum(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  if (h.length < 6) return 0;
+  var c = [0, 1, 2].map(function (i) {
+    var v = parseInt(h.substr(i * 2, 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
 function tc(sec) {
   var m = Math.floor(sec / 60), r = sec - m * 60;
   return pad(m, 2) + ':' + pad(r.toFixed(2), 5);
@@ -163,7 +174,9 @@ var THEMES = {
     bg: '#f0ece4', bg2: '#e2dccf', ink: '#26221d', ink2: '#524b42', dim: '#6b6357',
     accent: '#a83c16', accent2: '#1a695d', good: '#287538', warn: '#944e00', bad: '#ab2424',
     line: 'rgba(38,34,29,.14)', panel: '#fcfaf6', panelLine: 'rgba(255,255,255,.9)',
-    glow: 0, font: 'round', grain: .07, vig: .2, decor: ['clayBlobs', 'dots']
+    glow: 0, font: 'round', grain: .07, vig: .2, decor: ['clayBlobs', 'dots'],
+    /* 테마가 기본 스킨을 정할 수 있다 — 스펙의 skin 이 있으면 그쪽이 이긴다 */
+    skin: 'clay'
   }
 };
 /* ------------------------------------------------------------------ *
@@ -530,6 +543,41 @@ function card(it, g, ctx, o) {
     '<div class="gg-cardLb"' + lbStyle + '>' + esc(it.label) + '</div>' +
     (it.note ? '<div class="gg-cardNote"' + ntStyle + '>' + esc(it.note) + '</div>' : '') +
     '</div>';
+}
+/**
+ * 두 점을 잇는 화살표 — 선과 머리(꺽쇠)를 **두 path 로** 나눠 준다.
+ *
+ * 왜 이렇게 나누나. 함정이 둘 있다.
+ *
+ *  1. `marker-end` 로 머리를 붙이면 안 된다. SVG 마커는 `stroke-dasharray` 를 타지
+ *     않아서, DrawSVG 가 선을 0%에서 늘리는 동안에도 **머리는 처음부터 끝점에 그려져
+ *     있다.** 선이 아직 오지 않은 자리에 꺽쇠만 떠 있는 화면이 나온다.
+ *  2. 그렇다고 머리를 같은 path 의 두 번째 서브패스로 이어 붙여도 안 된다.
+ *     **SVG 는 서브패스마다 dash 패턴을 처음부터 다시 시작한다** — 선이 15% 그려질 때
+ *     머리도 자기 길이의 15%가 같이 나타난다.
+ *
+ * 그래서 선과 머리를 각각 **서브패스 하나뿐인 path** 로 두고, 머리의 draw 를 선보다
+ * 늦게 건다. 그러면 선이 자라고 → 꺽쇠가 닫히는 순서가 정확히 나온다.
+ *
+ * 머리 길이는 선 길이에 비례하되 상한을 둔다 — 세로 배치의 짧은 화살표(28px)에
+ * 가로용 머리(16px)를 그대로 쓰면 머리가 선의 절반을 넘는다.
+ */
+function arrowParts(x1, y1, x2, y2, max) {
+  var dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy) || 1;
+  var ux = dx / len, uy = dy / len;
+  var L = Math.min(num(max, 16), len * .4), W = L * .56;
+  var bx = x2 - ux * L, by = y2 - uy * L;      /* 꺽쇠 뿌리 */
+  var px = -uy * W, py = ux * W;               /* 선에 수직인 방향 */
+  return {
+    line: 'M' + r2(x1) + ' ' + r2(y1) + ' L' + r2(x2) + ' ' + r2(y2),
+    head: 'M' + r2(bx + px) + ' ' + r2(by + py) + ' L' + r2(x2) + ' ' + r2(y2) +
+      ' L' + r2(bx - px) + ' ' + r2(by - py)
+  };
+}
+/** 화살표 두 조각의 마크업. 머리는 data-head 로 구분해 draw 를 따로 건다. */
+function arrowSVG(i, parts) {
+  return '<path class="gg-arrow" data-i="' + i + '" d="' + parts.line + '"/>' +
+    '<path class="gg-arrow" data-i="' + i + '" data-head="1" d="' + parts.head + '"/>';
 }
 /** 두 점을 잇는 곡선 path d. bow 는 휘는 정도. */
 function curve(x1, y1, x2, y2, bow) {
@@ -1022,9 +1070,13 @@ PATTERNS.networkBuild = {
       var k = parseInt(name, 10);
       return isFinite(k) ? k : -1;
     }
+    /* 구분자는 `>` 가 있으면 `>` 만 쓴다 — 하이픈까지 구분자로 보면 라벨 안의
+       하이픈에서 쪼개져("허브>link-w" → 허브·link·w) 링크가 조용히 사라진다.
+       `>` 가 없을 때만 하이픈을 구분자로 본다("A - B" 표기 지원). */
     var links = arr(sc.links).map(function (l) {
       if (Array.isArray(l)) return { a: l[0], b: l[1] };
-      var p = String(l).split(/\s*[>\-]+\s*/);
+      var str = String(l);
+      var p = str.indexOf('>') >= 0 ? str.split(/\s*>\s*/) : str.split(/\s*-+\s*/);
       return { a: findIdx(p[0]), b: findIdx(p[1]), label: p[2] };
     }).filter(function (l) { return l.a >= 0 && l.b >= 0 && l.a < n && l.b < n; });
     if (!links.length && hubIdx >= 0) links = ringNodes.map(function (i) { return { a: hubIdx, b: i }; });
@@ -1089,9 +1141,7 @@ PATTERNS.processFlow = {
       t = hd.end;
     }
     var mid = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
-    var svg = ['<svg class="gg-svg" viewBox="0 0 ' + ctx.W + ' ' + ctx.H + '" aria-hidden="true">' +
-      '<defs><marker id="ah-' + ctx.sid + '" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">' +
-      '<path d="M0 0 L10 5 L0 10" fill="none" stroke="currentColor" stroke-width="1.7"/></marker></defs>'];
+    var svg = ['<svg class="gg-svg" viewBox="0 0 ' + ctx.W + ' ' + ctx.H + '" aria-hidden="true">'];
     var boxes = [];
     if (!vert) {
       var gap = 92, bw = Math.floor((ctx.W - ctx.safe * 2 - (n - 1) * gap) / n), bh = Math.round(bw * .62);
@@ -1100,8 +1150,7 @@ PATTERNS.processFlow = {
       r.forEach(function (g, i) { boxes.push({ x: g.x, y: mid - bh / 2, w: bw, h: bh, cx: g.cx, cy: mid }); });
       for (var i = 0; i < n - 1; i++) {
         var x1 = boxes[i].x + bw + 16, x2 = boxes[i + 1].x - 14;
-        svg.push('<path class="gg-arrow" data-i="' + i + '" d="M' + r2(x1) + ' ' + mid + ' L' + r2(x2) + ' ' + mid +
-          '" marker-end="url(#ah-' + ctx.sid + ')"/>');
+        svg.push(arrowSVG(i, arrowParts(x1, mid, x2, mid)));
       }
     } else {
       var vgap = 44, bw2 = Math.min(ctx.W - ctx.safe * 2, 760), bh2 = Math.round(Math.min(190, (ctx.H * .58 - (n - 1) * vgap) / n));
@@ -1109,8 +1158,7 @@ PATTERNS.processFlow = {
       for (var j = 0; j < n; j++) boxes.push({ x: (ctx.W - bw2) / 2, y: y0 + j * (bh2 + vgap), w: bw2, h: bh2, cx: ctx.cx, cy: y0 + j * (bh2 + vgap) + bh2 / 2 });
       for (var k = 0; k < n - 1; k++) {
         var y1 = boxes[k].y + bh2 + 8, y2 = boxes[k + 1].y - 8;
-        svg.push('<path class="gg-arrow" data-i="' + k + '" d="M' + ctx.cx + ' ' + r2(y1) + ' L' + ctx.cx + ' ' + r2(y2) +
-          '" marker-end="url(#ah-' + ctx.sid + ')"/>');
+        svg.push(arrowSVG(k, arrowParts(ctx.cx, y1, ctx.cx, y2)));
       }
     }
     svg.push('</svg>');
@@ -1130,7 +1178,13 @@ PATTERNS.processFlow = {
       tw.from(q('.gg-step[data-i="' + i + '"]'), t, { y: ctx.px(vert ? 26 : 0), x: ctx.px(vert ? 0 : 34),
         skewX: vert ? 0 : ctx.skew('x'), skewY: vert ? ctx.skew() : 0, opacity: 0, scale: .94, duration: beat, ease: ctx.ei });
       t += beat * .75;
-      if (i < n - 1) { tw.draw(q('.gg-arrow[data-i="' + i + '"]'), t, aw, TOKENS.e.move); t += aw * .8; }
+      if (i < n - 1) {
+        /* 선이 자라고 → 꺽쇠가 닫힌다. 머리를 나중에 걸어야 순서가 보인다. */
+        var sel = '.gg-arrow[data-i="' + i + '"]';
+        tw.draw(q(sel + ':not([data-head])'), t, aw * .72, TOKENS.e.move);
+        tw.draw(q(sel + '[data-head]'), t + aw * .64, aw * .36, TOKENS.e.move);
+        t += aw * .8;
+      }
     });
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(st)) };
   }
@@ -2188,10 +2242,15 @@ function compile(spec, opts) {
   var energy = ENERGY[spec.energy] ? spec.energy : 'E2';
   /* 폰트는 테마가 기본을 정하고 스펙이 덮어쓴다 — 같은 테마로 톤만 바꿀 수 있다 */
   var font = FONTS[spec.font] ? spec.font : THEMES[theme].font;
+  /* 스킨도 같은 규칙이다. 문자열이면 등록된 스킨, 객체면 스펙에 인라인된 커스텀 정의 */
+  var skin = spec.skin != null && spec.skin !== '' ? spec.skin : (THEMES[theme].skin || 'glass');
   var s2 = { aspect: aspect, theme: theme, energy: energy, font: font };
   var E = ENERGY[energy];
   var T = THEMES[theme];
   var scenes = arr(spec.scenes), out = [], used = {}, at = 0, errors = [], warnings = [];
+  /* 씬별 스킨 오버라이드 — 키 하나가 스코프 블록 하나다. 같은 스킨을 쓰는 씬들은
+     키를 공유해 블록이 한 번만 실린다. 인라인 정의는 씬 번호로 키를 만든다. */
+  var sceneSkins = {};
 
   scenes.forEach(function (sc, i) {
     sc = sc || {};
@@ -2234,9 +2293,16 @@ function compile(spec, opts) {
       var st = num(o.st, 0);
       ce = Math.max(ce, o.at + d + (st ? st * 5 : 0));
     });
+    /* 루트와 같은 스킨을 씬에 또 적은 경우는 오버라이드가 아니다 — 마크업을 늘리지 않는다 */
+    var skKey = null;
+    if (sc.skin != null && sc.skin !== '' &&
+        !(typeof sc.skin === 'string' && typeof skin === 'string' && sc.skin === skin)) {
+      skKey = typeof sc.skin === 'string' ? sc.skin : 'sk' + (i + 1);
+      sceneSkins[skKey] = sc.skin;
+    }
     out.push({
       id: sc.id || slug(sc.title || sc.pattern, i),
-      sid: ctx.sid, pattern: sc.pattern, purpose: sc.purpose || '',
+      sid: ctx.sid, pattern: sc.pattern, purpose: sc.purpose || '', skin: skKey,
       notes: sc.notes || sc.purpose || '',
       html: built.html, fixed: built.fixed || '', decor: decorSVG, tw: built.tw.list,
       dur: r2(built.dur), contentEnd: r2(Math.min(ce, built.dur)),
@@ -2260,7 +2326,7 @@ function compile(spec, opts) {
   if (sync && opts.cues.length) total = Math.max(total, r2(opts.cues[opts.cues.length - 1].end));
 
   return {
-    aspect: aspect, theme: theme, energy: energy,
+    aspect: aspect, theme: theme, energy: energy, skin: skin, sceneSkins: sceneSkins,
     mode: ['autoplay', 'loop', 'step'].indexOf(spec.mode) >= 0 ? spec.mode : 'autoplay',
     title: spec.title || '', message: spec.message || '', font: font,
     scenes: out, total: total, icons: Object.keys(used), errors: errors, warnings: warnings,
@@ -2271,6 +2337,33 @@ function compile(spec, opts) {
 /* ================================================================== *
  * validate — 스펙의 오류와 연출상의 의심을 갈라 보고한다.
  * ================================================================== */
+/**
+ * 스킨 하나를 검사한다. 루트와 씬이 같은 규칙을 쓴다 (tag 로 어디인지만 구분).
+ *
+ * 이름이 틀리면 엔진은 조용히 glass 로 떨어지고, 계약에 없는 토큰은 아무 일도
+ * 하지 않는다 — 둘 다 눈으로 알아채기 어려우므로 여기서 잡아야 한다.
+ */
+function checkSkin(skin, themeKey, tag, errors, warnings) {
+  if (skin == null || skin === '') return;
+  var names = Object.keys(SK.SKINS).join(' ');
+  if (typeof skin === 'string') {
+    if (!SK.SKINS[skin]) errors.push(tag + 'skin "' + skin + '" 는 없다 (' + names + ').');
+  } else if (typeof skin === 'object') {
+    var ext = skin['extends'];
+    if (ext != null && !SK.SKINS[ext]) errors.push(tag + 'skin.extends "' + ext + '" 는 없다 (' + names + ').');
+    var badTok = SK.unknownTokens(skin.vars || {});
+    if (badTok.length) errors.push(tag + 'skin.vars 에 없는 토큰: ' + badTok.join(' ') + ' (gm info skins 로 목록을 본다).');
+    if (!skin.vars && !skin.css) warnings.push(tag + 'skin 을 객체로 썼는데 vars 도 css 도 없다 — extends 한 스킨 그대로다.');
+  }
+  /* 어두운 배경을 전제로 만든 스킨을 밝은 테마에 얹으면 광채가 사라진다 */
+  var skName = typeof skin === 'string' ? skin : skin['extends'];
+  var skDef = SK.SKINS[skName];
+  var thDef = THEMES[themeKey || 'midnight'];
+  if (skDef && skDef.dark && thDef && lum(thDef.bg) > .35)
+    warnings.push(tag + 'skin "' + skName + '" 은 어두운 배경을 전제로 한다 — 밝은 테마 "' +
+      (themeKey || 'midnight') + '" 에서는 광채가 죽는다.');
+}
+
 function validate(spec, opts) {
   var errors = [], warnings = [];
   spec = spec || {};
@@ -2280,6 +2373,11 @@ function validate(spec, opts) {
   if (spec.theme && !THEMES[spec.theme]) errors.push('theme "' + spec.theme + '" 는 없다 (' + Object.keys(THEMES).join(' ') + ').');
   if (spec.energy && !ENERGY[spec.energy]) errors.push('energy "' + spec.energy + '" 는 없다 (E1 E2 E3).');
   if (spec.font && !FONTS[spec.font]) errors.push('font "' + spec.font + '" 는 없다 (' + Object.keys(FONTS).join(' ') + ').');
+  checkSkin(spec.skin, spec.theme, '', errors, warnings);
+  /* 스펙에 인라인한 디자인 요소 — 정의가 부실하면 조용히 이상한 화면이 나온다 */
+  var dv = DS.validate(spec.design, SK);
+  errors = errors.concat(dv.errors);
+  warnings = warnings.concat(dv.warnings);
   if (spec.decor && spec.decor !== false) arr(spec.decor).forEach(function (d) {
     if (!VEC.DECOR[d]) errors.push('decor "' + d + '" 는 없다 (' + Object.keys(VEC.DECOR).join(' ') + ').');
   });
@@ -2304,7 +2402,37 @@ function validate(spec, opts) {
       if (!ok) errors.push(tag + sc.pattern + ' 에 필수 필드 ' + f.split('|').join(' 또는 ') + ' 가 없다.');
     });
     if (sc.transition && !TRANSITIONS[sc.transition]) errors.push(tag + 'transition "' + sc.transition + '" 는 없다 (' + Object.keys(TRANSITIONS).join(' ') + ').');
+    checkSkin(sc.skin, spec.theme, tag, errors, warnings);
+    /* 씬 스킨은 토큰만 그 씬에 갇힌다 — 자막 뱃지는 씬 밖 무대 레이어라 안 바뀐다 */
+    if (sc.skin && typeof sc.skin === 'object' && sc.skin.vars) {
+      var ccOnly = Object.keys(sc.skin.vars).filter(function (k) { return k.slice(0, 3) === 'cc-'; });
+      if (ccOnly.length) warnings.push(tag + '씬 스킨의 자막 토큰(' + ccOnly.join(' ') +
+        ')은 무시된다 — 자막은 씬 밖 무대 레이어다. 루트 skin 에 적는다.');
+    }
     if (i === 0 && sc.transition && sc.transition !== 'cut') warnings.push(tag + '첫 씬의 transition 은 무시된다.');
+
+    /* networkBuild 의 links 는 못 찾은 참조를 조용히 버린다 — 선이 사라진 걸
+       눈으로 알아채기 어렵다(노드는 그대로 다 보인다). 여기서 이름을 대조한다. */
+    if (sc.pattern === 'networkBuild') {
+      var nn = items(sc.nodes), labels = nn.map(function (x) { return x.label; });
+      arr(sc.links).forEach(function (l) {
+        if (Array.isArray(l)) {
+          var okIdx = [l[0], l[1]].every(function (k) { return k >= 0 && k < nn.length; });
+          if (!okIdx) warnings.push(tag + 'links 의 [' + l.join(',') + '] 가 노드 범위(0~' +
+            (nn.length - 1) + ')를 벗어난다 — 이 선은 그려지지 않는다.');
+          return;
+        }
+        var str = String(l);
+        var pp = str.indexOf('>') >= 0 ? str.split(/\s*>\s*/) : str.split(/\s*-+\s*/);
+        [pp[0], pp[1]].forEach(function (name) {
+          if (name != null && labels.indexOf(name) >= 0) return;
+          var k = name == null ? NaN : parseInt(name, 10);
+          if (isFinite(k) && k >= 0 && k < nn.length) return;
+          warnings.push(tag + 'links "' + str + '" 의 "' + (name == null ? '(없음)' : name) +
+            '" 는 노드에 없다 — 이 선은 그려지지 않는다. 노드 라벨: ' + labels.join(' · '));
+        });
+      });
+    }
 
     /* kineticType 은 한 줄이 한 호흡이다. 엔진이 글자를 줄여 한 줄을 지키지만 하한이
        있어서, 그보다 긴 줄은 접힌다 — 접혀도 겹치지는 않지만 리듬이 무너진다.
@@ -2463,7 +2591,27 @@ function validate(spec, opts) {
  * ================================================================== */
 function css(c) {
   var T = THEMES[c.theme], A = ASPECTS[c.aspect], F = FONTS[c.font] || FONTS[T.font];
-  var glow = T.glow ? 'filter:drop-shadow(0 0 ' + (T.glow * 10) + 'px var(--acc));' : '';
+  /* 스킨 = 디자인 프리미티브의 구현부. 아래 규칙들은 스킨이 정한 변수만 읽는다. */
+  var S = SK.resolve(c.skin, T, A);
+  /* 씬별 오버라이드 — 토큰은 CSS 변수라 상속으로 씬 안에 저절로 갇힌다.
+     루트와 다른 것만 적는다(같은 값은 :root 에서 내려온다).
+     자막 토큰은 뺀다 — 자막은 씬 밖 무대 레이어라 씬 스코프가 닿지 않는다. */
+  var skinKeys = Object.keys(c.sceneSkins || {});
+  var sceneSkinCSS = [];
+  skinKeys.forEach(function (k) {
+    var R = SK.resolve(c.sceneSkins[k], T, A);
+    var sel = '.gg-scene[data-skin="' + k + '"]';
+    var d = SK.diffVars(S.vars, R.vars), live = {};
+    Object.keys(d).forEach(function (t) { if (t.slice(0, 3) !== 'cc-') live[t] = d[t]; });
+    var decls = SK.varsToCss(live);
+    if (decls) sceneSkinCSS.push(sel + '{' + decls + '}');
+    sceneSkinCSS = sceneSkinCSS.concat(SK.scopeRules(R.rules, sel));
+  });
+  /* 오버라이드가 있으면 루트 스킨의 추가 규칙도 스코프한다 — 안 그러면 재질을
+     갈아 낀 씬에까지 루트 스킨의 규칙이 남아 두 스킨이 섞인다. */
+  var rootRules = skinKeys.length ? SK.scopeRules(S.rules, '.gg-scene:not([data-skin])') : S.rules;
+  /* 광채도 프리미티브다 — 테마의 glow 값은 glass 스킨이 읽어 --glow 로 넘긴다 */
+  var glow = 'filter:var(--glow);';
   return [
 '*{margin:0;padding:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:break-word}',
 /* HTML 의 hidden 속성은 UA 스타일의 display:none 으로 동작한다 — 작성자 CSS 의
@@ -2472,7 +2620,8 @@ function css(c) {
 ':root{--bg:' + T.bg + ';--bg2:' + T.bg2 + ';--ink:' + T.ink + ';--ink2:' + T.ink2 + ';--dim:' + T.dim +
   ';--acc:' + T.accent + ';--acc2:' + T.accent2 + ';--good:' + T.good + ';--warn:' + T.warn + ';--bad:' + T.bad +
   ';--line:' + T.line + ';--panel:' + T.panel + ';--pline:' + T.panelLine + ';--font:' + F.stack +
-  ';--mono:' + MONO.stack + ';--tight:' + F.tight + ';--kick:' + (F.kick || '.24em') + '}',
+  ';--mono:' + MONO.stack + ';--tight:' + F.tight + ';--kick:' + (F.kick || '.24em') +
+  ';' + S.css + '}',
 /* 굵기가 하나뿐인 폰트는 브라우저가 굵기를 지어내지 못하게 막는다 — 획이 뭉갠다 */
 F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' : '',
 'html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden}',
@@ -2521,9 +2670,9 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 /* 공통 텍스트 */
 '.gg-head{position:absolute}',
 '.gg-c{text-align:center}',
-'.gg-kicker{font-size:26px;letter-spacing:var(--kick);text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:22px}',
-'.gg-title{font-weight:800;line-height:1.08;letter-spacing:var(--tight);color:var(--ink)}',
-'.gg-sub{margin-top:26px;color:var(--ink2);line-height:1.5;font-weight:400}',
+'.gg-kicker{font-size:var(--kick-size);letter-spacing:var(--kick);text-transform:var(--kick-caps);color:var(--acc);font-weight:var(--kick-w);margin-bottom:var(--kick-mb)}',
+'.gg-title{font-weight:var(--title-w);line-height:var(--title-lh);letter-spacing:var(--tight);color:var(--ink)}',
+'.gg-sub{margin-top:var(--sub-mt);color:var(--ink2);line-height:var(--sub-lh);font-weight:400}',
 '.gg-mask{display:block;overflow:hidden;padding-bottom:.06em}',
 '.gg-mk{display:block;will-change:transform}',
 '.gg-rule{position:absolute;height:3px;background:var(--acc);transform-origin:center;border-radius:2px;' + glow + '}',
@@ -2591,8 +2740,8 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-devTerm .gg-scL:not(.gg-scCmd){opacity:.72;padding-left:1.4em}',
 '.gg-devTerm .gg-scLines{color:rgba(235,240,255,.82)}',
 '.gg-scItems{display:flex;flex-direction:column;gap:12px}',
-'.gg-scI{display:flex;align-items:center;gap:13px;padding:12px 15px;border-radius:12px;' +
-  'background:var(--panel);border:1px solid var(--pline);font-size:.94em}',
+'.gg-scI{display:flex;align-items:center;gap:13px;padding:12px 15px;border-radius:var(--r-xs);' +
+  'background:var(--surf-fill);border:1px solid var(--surf-line);font-size:.94em}',
 '.gg-scI span{flex:1;font-weight:600;color:var(--ink)}',
 '.gg-scI b{color:var(--acc);font-weight:800}',
 '.gg-scArt{display:grid;place-items:center;flex:1;min-height:0}',
@@ -2605,13 +2754,13 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
    내려오는데 스테이지가 overflow:hidden 이라 그만큼 잘린다. em 이라 화면비를 따라간다. */
 '.gg-captions{position:absolute;left:4%;right:4%;bottom:' + Math.round(A.h * (A.w < A.h ? .065 : .036)) + 'px;' +
   'display:flex;justify-content:center;align-items:flex-end;z-index:200;pointer-events:none}',
-'.gg-captions span{display:inline-block;max-width:88%;color:#fff;background:rgba(10,14,24,.84);' +
-  'border:1.5px solid rgba(255,255,255,.16);border-radius:' + Math.round(Math.min(A.w, A.h) * .014) + 'px;' +
+'.gg-captions span{display:inline-block;max-width:88%;color:var(--cc-ink);background:var(--cc-fill);' +
+  'border:var(--cc-lw) solid var(--cc-line);border-radius:var(--cc-r);' +
   'padding:.28em .75em .32em;' +
   'font-size:' + Math.round(Math.min(A.w, A.h) * .032) + 'px;font-weight:600;line-height:1.42;' +
   'letter-spacing:-.01em;text-align:center;word-break:keep-all;overflow-wrap:break-word;' +
-  'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' +
-  'box-shadow:0 8px 24px rgba(0,0,0,.45);' +
+  'backdrop-filter:var(--cc-bd);-webkit-backdrop-filter:var(--cc-bd);' +
+  'box-shadow:var(--cc-shadow);' +
   'text-shadow:0 1px 3px rgba(0,0,0,.8)}',
 /* 자막 켜기/끄기 버튼 — 꺼진 상태를 눈으로 구분할 수 있어야 한다 */
 '.gg-ccBtn{font-size:11px;font-weight:700;letter-spacing:.02em;width:34px}',
@@ -2619,13 +2768,14 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-ic{color:var(--acc);' + glow + '}',
 '.gg-heroIc{position:absolute}',
 /* 카드 */
-'.gg-card{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:24px;' +
-  'padding:36px 30px;display:flex;flex-direction:column;gap:16px;justify-content:center;backdrop-filter:blur(7px)}',
+'.gg-card{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-lg);' +
+  'padding:36px 30px;display:flex;flex-direction:column;gap:16px;justify-content:center;' +
+  'backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow)}',
 '.gg-cardIc{margin-bottom:4px}',
 '.gg-cardVal{font-size:48px;font-weight:800;color:var(--acc);letter-spacing:-.02em}',
 '.gg-cardLb{font-size:34px;font-weight:700;line-height:1.32;color:var(--ink);letter-spacing:var(--tight)}',
 '.gg-cardNote{font-size:24px;color:var(--dim);line-height:1.45}',
-'.gg-focus{border-color:var(--pline)}',
+'.gg-focus{border-color:var(--surf-line)}',
 '.gg-t-good{border-color:' + T.good + '55}.gg-t-good .gg-ic{color:' + T.good + '}',
 '.gg-t-bad{border-color:' + T.bad + '55}.gg-t-bad .gg-ic{color:' + T.bad + '}',
 '.gg-t-warn{border-color:' + T.warn + '55}.gg-t-warn .gg-ic{color:' + T.warn + '}',
@@ -2634,26 +2784,27 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-t-bad .gg-sideVal,.gg-t-bad .gg-cardVal{color:' + T.bad + '}',
 '.gg-t-warn .gg-sideVal,.gg-t-warn .gg-cardVal{color:' + T.warn + '}',
 /* 네트워크 */
-'.gg-link{fill:none;stroke:var(--acc);stroke-width:2.2;opacity:.5;stroke-linecap:round}',
-'.gg-node{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:18px;' +
-  'padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;backdrop-filter:blur(6px)}',
-'.gg-hub{border-color:var(--acc);background:var(--panel);box-shadow:0 0 0 6px ' + T.accent + '18}',
+'.gg-link{fill:none;stroke:var(--acc);stroke-width:var(--link-w);opacity:var(--link-op);stroke-linecap:var(--ln-cap)}',
+'.gg-node{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-ms);' +
+  'padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;' +
+  'backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}',
+'.gg-hub{border-color:var(--acc);background:var(--surf-fill);box-shadow:var(--hub-ring)}',
 '.gg-nodeLb{font-weight:700;line-height:1.3}',
 '.gg-nodeNote{font-size:21px;color:var(--dim)}',
 /* 프로세스 */
-'.gg-arrow{fill:none;stroke:var(--acc);stroke-width:2.6;opacity:.72;color:var(--acc)}',
-'.gg-step{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:20px;' +
-  'padding:28px 26px;display:flex;flex-direction:column;gap:13px;align-items:flex-start;justify-content:center;backdrop-filter:blur(6px)}',
+/* color 는 예전에 marker-end 의 currentColor 를 위해 있었다 — 머리를 path 에 담은 뒤로 필요 없다 */
+'.gg-arrow{fill:none;stroke:var(--acc);stroke-width:var(--arrow-w);opacity:var(--arrow-op)}',
+'.gg-step{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);' +
+  'padding:28px 26px;display:flex;flex-direction:column;gap:13px;align-items:flex-start;justify-content:center;' +
+  'backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}',
 '.gg-stepNo{font-size:22px;font-weight:800;color:var(--acc);letter-spacing:.16em}',
 '.gg-stepLb{font-weight:700;line-height:1.32}',
 '.gg-stepNote{font-size:22px;color:var(--dim);line-height:1.45}',
 /* 비포애프터 · 스플릿 */
-'.gg-panel,.gg-side{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:24px;' +
-  'padding:38px 34px;display:flex;flex-direction:column;gap:18px;justify-content:center;backdrop-filter:blur(7px)}',
+'.gg-panel,.gg-side{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);' +
+  'border-radius:var(--r-lg);padding:38px 34px;display:flex;flex-direction:column;gap:18px;justify-content:center;' +
+  'backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow)}',
 '.gg-panelTag{font-size:23px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:700}',
-c.theme === 'clay' ? '.gg-card,.gg-panel,.gg-side,.gg-node,.gg-step,.gg-layer,.gg-detail{' +
-  'border-radius:32px!important;border:2.5px solid rgba(255,255,255,.9)!important;' +
-  'box-shadow:0 18px 40px rgba(45,35,25,.14),inset 0 6px 12px rgba(255,255,255,.9),inset 0 -6px 14px rgba(45,35,25,.08)!important}' : '',
 '.gg-panelVal{font-weight:800;color:var(--acc);letter-spacing:-.02em}',
 '.gg-af .gg-panelVal{color:var(--good)}',
 '.gg-panelList,.gg-sideList,.gg-detailL{list-style:none;display:flex;flex-direction:column;gap:13px}',
@@ -2665,13 +2816,14 @@ c.theme === 'clay' ? '.gg-card,.gg-panel,.gg-side,.gg-node,.gg-step,.gg-layer,.g
 '.gg-sideLb{font-weight:800;letter-spacing:var(--tight)}',
 '.gg-sideVal{font-weight:800;color:var(--acc);letter-spacing:-.02em}',
 /* 분해도 */
-'.gg-layer{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:16px;' +
-  'display:flex;align-items:center;gap:20px;padding:0 30px;backdrop-filter:blur(6px)}',
+'.gg-layer{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);' +
+  'display:flex;align-items:center;gap:20px;padding:0 30px;backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}',
 '.gg-layerLb{font-weight:700;flex:0 0 auto}',
 '.gg-layerNote{font-size:22px;color:var(--dim);margin-left:auto}',
 /* 줌 디테일 */
-'.gg-detail{position:absolute;background:var(--panel);border:1.5px solid var(--acc);border-radius:20px;padding:30px 34px;' +
-  'display:flex;flex-direction:column;gap:16px;backdrop-filter:blur(10px);z-index:30}',
+'.gg-detail{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--acc);border-radius:var(--r-md);' +
+  'padding:30px 34px;display:flex;flex-direction:column;gap:16px;backdrop-filter:var(--bd-4);' +
+  'box-shadow:var(--surf-shadow);z-index:30}',
 '.gg-detailT{font-weight:800;color:var(--acc)}',
 /* 지표 */
 '.gg-stat{position:absolute;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}',
@@ -2684,28 +2836,30 @@ c.theme === 'clay' ? '.gg-card,.gg-panel,.gg-side,.gg-node,.gg-step,.gg-layer,.g
 '.gg-statNote{font-size:22px;color:var(--dim)}',
 /* 타임라인 */
 '.gg-axis{fill:none;stroke:var(--line);stroke-width:2.6;stroke-linecap:round}',
-'.gg-dot{fill:var(--bg);stroke:var(--acc);stroke-width:3.4}',
+'.gg-dot{fill:var(--dot-fill);stroke:var(--acc);stroke-width:var(--dot-w)}',
 '.gg-ev{position:absolute;display:flex;flex-direction:column;gap:7px}',
 '.gg-evWhen{font-size:23px;font-weight:800;color:var(--acc);letter-spacing:.1em}',
 '.gg-evLb{font-weight:700;line-height:1.3}',
 '.gg-evNote{font-size:21px;color:var(--dim);line-height:1.4}',
 /* 수렴 · 발산 · 궤도 */
-'.gg-chip{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:16px;' +
-  'padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;backdrop-filter:blur(6px)}',
+'.gg-chip{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);' +
+  'padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;' +
+  'backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}',
 '.gg-chipLb{font-weight:700;line-height:1.28}',
-'.gg-flow{fill:none;stroke:var(--acc);stroke-width:2.2;opacity:.45;stroke-linecap:round;stroke-dasharray:0}',
-'.gg-flowDot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--acc);' +
-  'box-shadow:0 0 16px var(--acc);z-index:15;pointer-events:none}',
-'.gg-target,.gg-center{position:absolute;background:var(--panel);border:2px solid var(--acc);border-radius:24px;' +
-  'padding:26px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;' +
-  'text-align:center;backdrop-filter:blur(9px);z-index:20;box-shadow:0 0 0 8px ' + T.accent + '14}',
+'.gg-flow{fill:none;stroke:var(--acc);stroke-width:var(--flow-w);opacity:var(--flow-op);stroke-linecap:var(--ln-cap);stroke-dasharray:0}',
+'.gg-flowDot{position:absolute;width:var(--flowdot-size);height:var(--flowdot-size);border-radius:50%;' +
+  'background:var(--acc);box-shadow:var(--flowdot-shadow);z-index:15;pointer-events:none}',
+'.gg-target,.gg-center{position:absolute;background:var(--surf-fill);border:var(--surf-lw2) solid var(--acc);' +
+  'border-radius:var(--r-lg);padding:26px 22px;display:flex;flex-direction:column;align-items:center;' +
+  'justify-content:center;gap:12px;text-align:center;backdrop-filter:var(--bd-3);z-index:20;' +
+  'box-shadow:var(--target-ring)}',
 '.gg-targetLb,.gg-centerLb{font-weight:800;letter-spacing:var(--tight)}',
 '.gg-targetNote{font-size:22px;color:var(--dim)}',
-'.gg-ring{fill:none;stroke:var(--line);stroke-width:2;stroke-dasharray:6 10}',
+'.gg-ring{fill:none;stroke:var(--line);stroke-width:var(--ring-w);stroke-dasharray:var(--ring-dash)}',
 '.gg-orbit{position:absolute;will-change:transform}',
 '.gg-sat{position:absolute}',
-'.gg-satIn{background:color-mix(in srgb,' + T.bg + ' 84%,' + T.ink + ');border:1.5px solid var(--pline);' +
-  'border-radius:16px;padding:15px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}',
+'.gg-satIn{background:color-mix(in srgb,' + T.bg + ' 84%,' + T.ink + ');border:var(--surf-lw) solid var(--surf-line);' +
+  'border-radius:var(--r-sm);padding:15px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}',
 '.gg-satLb{font-weight:700;line-height:1.24}',
 /* 매치컷 */
 '.gg-anchor{position:absolute;display:grid;place-items:center;z-index:20}',
@@ -2723,10 +2877,11 @@ c.theme === 'clay' ? '.gg-card,.gg-panel,.gg-side,.gg-node,.gg-step,.gg-layer,.g
 '.gg-rollSub{margin-top:18px}',
 '.gg-mcS{margin-top:18px;color:var(--ink2);line-height:1.48}',
 /* 카메라 여정 */
-'.gg-route{fill:none;stroke:var(--acc);stroke-width:2.4;opacity:.4;stroke-dasharray:8 12;stroke-linecap:round}',
+'.gg-route{fill:none;stroke:var(--acc);stroke-width:var(--route-w);opacity:var(--route-op);' +
+  'stroke-dasharray:var(--route-dash);stroke-linecap:var(--ln-cap)}',
 /* 경로선이 카드 위를 지나므로 배경을 불투명하게 섞는다 — 반투명이면 선이 카드 안에 비친다 */
 '.gg-stop{position:absolute;background:color-mix(in srgb,' + T.bg + ' 86%,' + T.ink + ');' +
-  'border:1.5px solid var(--pline);border-radius:20px;padding:22px 20px;' +
+  'border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);padding:22px 20px;' +
   'display:flex;flex-direction:column;gap:11px}',
 '.gg-stopNo{font-size:21px;font-weight:800;color:var(--acc);letter-spacing:.16em}',
 '.gg-stopLb{font-weight:700;line-height:1.3}',
@@ -2818,7 +2973,9 @@ c.theme === 'clay' ? '.gg-card,.gg-panel,.gg-side,.gg-node,.gg-step,.gg-layer,.g
 '.gg-presenter footer{padding:10px 20px;border-top:1px solid rgba(255,255,255,.1);' +
   'font-size:12px;opacity:.45}',
 '@media (max-width:820px){.gg-pmain{grid-template-columns:1fr}}'
-  ].join('\n');
+  /* 스킨이 얹는 추가 규칙은 맨 뒤에 — 기본 규칙과 특정도가 같아도 나중 것이 이긴다.
+     씬 스코프 블록은 그보다 더 뒤에, 그리고 특정도도 높아 확실히 이긴다. */
+  ].concat(rootRules).concat(sceneSkinCSS).join('\n');
 }
 
 /* ================================================================== *
@@ -2896,6 +3053,7 @@ function toHTML(spec, opts) {
   var scenesHTML = c.scenes.map(function (s, i) {
     /* fixed 레이어는 world 밖에 붙인다 — 카메라가 움직여도 헤더·상세 패널은 제자리에 서 있어야 한다 */
     return '<section class="gg-scene" id="' + s.sid + '" data-pattern="' + s.pattern + '" data-id="' + esc(s.id) + '"' +
+      (s.skin ? ' data-skin="' + esc(s.skin) + '"' : '') +
       ' style="z-index:' + (i + 1) + '" aria-label="' + esc((i + 1) + '. ' + (s.title || s.pattern)) + '">' +
       (s.decor ? '<div class="gg-decorL">' + s.decor + '</div>' : '') +
       '<div class="gg-world">' + s.html + '</div>' +
@@ -2997,6 +3155,54 @@ function readAsset(name) {
 }
 
 /* ================================================================== *
+ * 스펙에 인라인한 커스텀 디자인 요소 — 빌드 범위로만 등록한다
+ *
+ * 레지스트리(THEMES · ICO · VEC · SK)는 모듈 수준이라 그냥 넣으면 같은 프로세스의
+ * 다음 빌드까지 오염된다. 앱은 타이핑마다 빌드하므로 반드시 되돌려야 한다.
+ * 모든 공개 진입점(compile · validate · toHTML · timing)이 이 함수를 통과한다.
+ * ================================================================== */
+var DESIGN_REG = { THEMES: THEMES, ICONS: ICO.ICONS, ALIAS: ICO.ALIAS, VEC: VEC, SK: SK };
+function withDesign(spec, fn) {
+  var token = DS.install(spec && spec.design, DESIGN_REG);
+  try { return fn(); }
+  finally { DS.restore(token); }
+}
+
+/**
+ * 스펙이 실제로 참조하는 디자인 요소 이름들 — 앱이 저장·내보낼 때 무엇을 스펙에
+ * 담아야 하는지 알아내는 데 쓴다. 항목 필드 이름은 ITEM_KEYS 한 곳만 본다.
+ */
+function usedDesignNames(spec) {
+  spec = spec || {};
+  var out = { themes: [], skins: [], icons: [], arts: [], marks: [], decors: [], frames: [] };
+  function put(k, v) { if (v && typeof v === 'string' && out[k].indexOf(v) < 0) out[k].push(v); }
+  put('themes', spec.theme);
+  put('skins', typeof spec.skin === 'string' ? spec.skin : (spec.skin && spec.skin['extends']));
+  arr(spec.decor).forEach(function (d) { put('decors', d); });
+  arr(spec.scenes).forEach(function (sc) {
+    sc = sc || {};
+    put('skins', typeof sc.skin === 'string' ? sc.skin : (sc.skin && sc.skin['extends']));
+    arr(sc.decor).forEach(function (d) { put('decors', d); });
+    /* mark 는 "badge:NEW" 처럼 값이 붙는다 */
+    put('marks', String(sc.mark || '').split(':')[0] || null);
+    put('arts', sc.art);
+    put('frames', sc.frame);
+    put('icons', sc.icon);
+    if (sc.screen) { put('arts', sc.screen.art); }
+    if (sc.target) { put('icons', sc.target.icon); }
+    if (sc.center) { put('icons', sc.center.icon); }
+    if (sc.source) { put('icons', sc.source.icon); }
+    allItemsOf(sc).forEach(function (x) {
+      if (!x || typeof x !== 'object') return;
+      put('icons', x.icon);
+      put('arts', x.art);
+      put('marks', String(x.badge || '').split(':')[0] || null);
+    });
+  });
+  return out;
+}
+
+/* ================================================================== *
  * timing — 씬별 타임코드 시트. 편집기에 넣을 때·검수할 때 쓴다.
  * ================================================================== */
 function timing(spec, fps, opts) {
@@ -3016,7 +3222,16 @@ function timing(spec, fps, opts) {
  * ================================================================== */
 return {
   version: VERSION, gsapVersion: GSAP_VERSION,
-  validate: validate, toHTML: toHTML, timing: timing, compile: compile,
+  /* 공개 진입점은 전부 withDesign 을 통과한다 — 스펙의 design 블록을 빌드 동안만
+     레지스트리에 얹고 끝나면 되돌린다. toHTML 이 안에서 compile 을 다시 불러도
+     install 이 이전 값을 기억하므로 중첩이 안전하다. */
+  validate: function (spec, opts) { return withDesign(spec, function () { return validate(spec, opts); }); },
+  toHTML: function (spec, opts) { return withDesign(spec, function () { return toHTML(spec, opts); }); },
+  timing: function (spec, fps, opts) { return withDesign(spec, function () { return timing(spec, fps, opts); }); },
+  compile: function (spec, opts) { return withDesign(spec, function () { return compile(spec, opts); }); },
+  /** 스펙이 참조하는 디자인 요소 이름 — 앱이 저장할 때 무엇을 담을지 정하는 데 쓴다 */
+  usedDesignNames: usedDesignNames,
+  designKinds: DS.KINDS,
   parseSubtitles: parseSubtitles,
   itemKeys: function () { return ITEM_KEYS.slice(); },
   get patterns() {
@@ -3044,6 +3259,21 @@ return {
   get energies() { var o = {}; Object.keys(ENERGY).forEach(function (k) { o[k] = ENERGY[k].label; }); return o; },
   get aspects() { var o = {}; Object.keys(ASPECTS).forEach(function (k) { o[k] = ASPECTS[k].w + '×' + ASPECTS[k].h + ' — ' + ASPECTS[k].label; }); return o; },
   tokens: TOKENS,
+  /* 디자인 프리미티브(인터페이스)와 스킨(구현부). 앱 스튜디오가 이걸로 목록·편집기를 만든다. */
+  get skins() {
+    var o = {};
+    Object.keys(SK.SKINS).forEach(function (k) { o[k] = SK.SKINS[k].label; });
+    return o;
+  },
+  designTokens: SK.TOKENS,
+  /** 스킨 하나를 실제 토큰 값으로 풀어 준다 — 미리보기·편집기의 초기값이 된다 */
+  resolveSkin: function (skin, theme, aspect) {
+    var T = THEMES[theme] || THEMES.midnight, A = ASPECTS[aspect] || ASPECTS['16:9'];
+    var r = SK.resolve(skin, T, A);
+    return { name: r.name, label: r.label, vars: r.vars, css: r.css, rules: r.rules };
+  },
+  registerSkin: SK.registerSkin,
+  unregisterSkin: SK.unregisterSkin,
   get decors() { var o = {}; Object.keys(VEC.DECOR).forEach(function (k) { o[k] = VEC.DECOR[k].label; }); return o; },
   get marks() { var o = {}; Object.keys(VEC.MARK).forEach(function (k) { o[k] = VEC.MARK[k].label; }); return o; },
   get frames() { var o = {}; Object.keys(VEC.FRAME).forEach(function (k) { o[k] = VEC.FRAME[k].label; }); return o; },

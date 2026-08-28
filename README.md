@@ -52,7 +52,10 @@ src/
     SceneList        씬 목록 (재정렬 · 복제 · 삭제)
     SceneForm        패턴별 폼 + 씬 공통 필드
     fields/          FieldRenderer · ItemsEditor · IconPicker · ChartEditor
-    DocSettings      루트 필드 (테마 · 화면비 · 에너지 · 폰트 · 배경 · 음성 정렬)
+    DocSettings      루트 필드 (테마 · 스킨 · 화면비 · 에너지 · 폰트 · 배경 · 음성 정렬)
+    DesignPanel      디자인 스튜디오 — 테마 · 스킨 · 배경 · 마크 · 일러스트 · 프레임 · 픽토그램
+    SkinsTab         스킨 탭 — 디자인 프리미티브 48종을 갈래별로 편집
+    fields/SkinPicker  루트·씬 재질 선택 (스와치는 실제 카드 규칙과 같은 토큰을 읽는다)
     JsonEditor       스펙 원문 편집 (CodeMirror)
     Preview          산출물 iframe + 씬 트랜스포트
     ValidatePanel    오류 · 경고 · 자막 불일치 진단
@@ -80,6 +83,8 @@ src-tauri/
 | 내보내기 | HTML(일반·발표용·클린) · 타임코드 CSV · MP4. 무엇이 실렸는지(자막·화면자막·음성) 결과에 명시한다 |
 | MP4 렌더 | 아래 절 |
 | 검수 | `gm check` 와 같은 정책 검사 |
+| 디자인 스튜디오 | 테마·스킨·배경·마크·일러스트·프레임·픽토그램을 만들어 라이브러리(localStorage)에 보관. JSON 가져오기·내보내기 |
+| 커스텀 재현성 | 스펙이 참조하는 커스텀 정의를 루트 `design` 에 **자동으로 심는다** — 앱에서 저장한 파일이 CLI 빌드에서도 같은 모습이 된다 |
 | 스킬 설치 | `~/.claude/skills` 또는 프로젝트 `.claude/skills` 로. 파일 단위 차이 표시 |
 | 문서 | 번들 안의 direction·spec·charts·theming·api·MANUAL 을 앱에서 읽는다 |
 

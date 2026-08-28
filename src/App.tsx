@@ -13,6 +13,8 @@ import { CheckPanel } from "./components/CheckPanel";
 import { RenderPanel } from "./components/RenderPanel";
 import { DesignPanel } from "./components/DesignPanel";
 import { useSpecStore } from "./lib/useSpecStore";
+import { syncSpecDesign } from "./lib/design";
+import { useDesignStore } from "./lib/designStore";
 import { EMPTY_SPEC, insertScene, moveScene, removeScene, replaceScene } from "./lib/spec";
 import { build, checkOutput, parseSubtitles, timingCsv, validate, type CheckLine, type SyncInput } from "./lib/build";
 import { GG } from "./engine/boot";
@@ -23,7 +25,26 @@ type Tab = "form" | "doc" | "json";
 type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design";
 export default function App() {
   const store = useSpecStore(EMPTY_SPEC);
-  const { spec, update, reset } = store;
+  const { spec } = store;
+  const { library } = useDesignStore();
+
+  /* 커스텀 요소를 쓰면 그 정의를 스펙의 design 블록에 심는다 —
+     스펙이 이름만 참조하면 CLI 로 빌드하거나 남에게 넘겼을 때 그 요소가 없다.
+     저장할 때 몰래 넣지 않고 편집 중에 맞춘다 — JSON 편집기에 보여야 한다. */
+  const update = useCallback(
+    (fn: (s: Spec) => Spec) => store.update((cur) => syncSpecDesign(fn(cur), library)),
+    [store, library]
+  );
+  const reset = useCallback(
+    (next: Spec) => store.reset(syncSpecDesign(next, library)),
+    [store, library]
+  );
+
+  /* 라이브러리에서 커스텀 요소를 고치면 스펙에 심긴 사본도 따라가야 한다 */
+  useEffect(() => {
+    store.update((cur) => syncSpecDesign(cur, library));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [library]);
 
   const [tab, setTab] = useState<Tab>("form");
   const [selected, setSelected] = useState(0);
@@ -420,7 +441,12 @@ export default function App() {
       {modal === "design" && (
         <DesignPanel
           currentTheme={spec.theme || "midnight"}
+          currentSkin={typeof spec.skin === "string" ? spec.skin : undefined}
           onClose={() => setModal(null)}
+          onApplySkin={(skinKey) => {
+            update((cur) => ({ ...cur, skin: skinKey }));
+            say(`스킨 "${skinKey}" 가 문서에 적용되었습니다.`);
+          }}
           onApplyTheme={(themeKey) => {
             update((cur) => ({ ...cur, theme: themeKey }));
             say(`테마 "${themeKey}" 가 문서에 적용되었습니다.`);

@@ -11,11 +11,13 @@
 import iconsSrc from "../../vendor/gmotion/assets/icons.js?raw";
 import vectorsSrc from "../../vendor/gmotion/assets/vectors.js?raw";
 import chartsSrc from "../../vendor/gmotion/assets/charts.js?raw";
+import skinsSrc from "../../vendor/gmotion/assets/skins.js?raw";
+import designSrc from "../../vendor/gmotion/assets/design.js?raw";
 import graphSrc from "../../vendor/gmotion/assets/gsapgraph.js?raw";
 import runtimeSrc from "../../vendor/gmotion/assets/runtime.js?raw";
 import gsapSrc from "../../vendor/gmotion/assets/gsap.bundle.js?raw";
 
-import type { Engine, ThemeColors, ThemeDefinition } from "./types";
+import type { Engine, SkinDefinition, ThemeColors, ThemeDefinition } from "./types";
 
 type Mod = Record<string, unknown>;
 
@@ -36,6 +38,8 @@ function evalCJS(src: string, name: string, deps: Record<string, Mod> = {}): Mod
 const ICO = evalCJS(iconsSrc, "icons.js");
 const VEC = evalCJS(vectorsSrc, "vectors.js");
 const CH = evalCJS(chartsSrc, "charts.js");
+const SK = evalCJS(skinsSrc, "skins.js");
+const DS = evalCJS(designSrc, "design.js");
 
 /** 엔진. 앱 전체가 이 하나만 쓴다. */
 const patchedGraphSrc = graphSrc.replace(
@@ -47,7 +51,16 @@ export const GG = evalCJS(patchedGraphSrc, "gsapgraph.js", {
   "./icons.js": ICO,
   "./vectors.js": VEC,
   "./charts.js": CH,
+  "./skins.js": SK,
+  "./design.js": DS,
 }) as unknown as Engine;
+
+/** 디자인 프리미티브(인터페이스)와 스킨(구현부). 스튜디오가 이걸로 편집기를 만든다. */
+export const SKINS = SK as unknown as {
+  TOKENS: Record<string, string>;
+  SKINS: Record<string, { label: string; dark?: boolean; custom?: boolean }>;
+  unknownTokens(vars: Record<string, string>): string[];
+};
 /** 산출물에 인라인되는 소스 — toHTML 에 항상 이 둘을 넘긴다. */
 export const ASSETS = { gsap: gsapSrc, runtime: runtimeSrc };
 
@@ -74,8 +87,20 @@ export const VECTORS = VEC as {
 export const THEMES_REGISTRY = (GG._THEMES || {}) as Record<string, ThemeDefinition>;
 
 export function registerCustomTheme(key: string, def: ThemeDefinition): void {
-  def.custom = true;
-  THEMES_REGISTRY[key] = def;
+  /* 빠진 값 채우기(grain·vig·glow·font 기본값)도 엔진의 makers 가 한다 —
+     CLI 가 스펙의 design.themes 를 읽을 때와 같은 결과가 나와야 한다. */
+  const makers = (DS as unknown as { makers: { theme: (d: unknown) => ThemeDefinition } }).makers;
+  THEMES_REGISTRY[key] = makers.theme(def);
+}
+
+/**
+ * 커스텀 스킨을 엔진에 등록한다.
+ *
+ * 등록은 앱 안에서만 유효하다 — CLI 로 빌드하거나 남에게 넘길 때도 같은 모습이 나오게
+ * 하려면 스펙의 `skin` 에 정의를 그대로 인라인해야 한다(designStore.skinDefOf 가 만든다).
+ */
+export function registerCustomSkin(key: string, def: SkinDefinition): void {
+  (GG.registerSkin as (k: string, d: SkinDefinition) => void)(key, { ...def, custom: true });
 }
 
 export function registerCustomIcon(key: string, path: string, aliases: string[] = [], label?: string): void {
@@ -92,14 +117,11 @@ export function registerCustomIcon(key: string, path: string, aliases: string[] 
   }
 }
 
-function fillSvgTemplate(svg: string, vars: Record<string, string | number>): string {
-  let res = svg;
-  for (const [k, v] of Object.entries(vars)) {
-    res = res.split(`{${k}}`).join(String(v));
-  }
-  return res;
-}
-
+/**
+ * 커스텀 벡터를 등록한다. 실제 빌더는 **엔진의 design.js** 가 만든다 —
+ * 앱과 CLI 가 같은 함수를 써야 두 경로의 결과가 어긋나지 않는다.
+ * (예전에는 이 파일 안에 SVG 템플릿 채우기가 따로 있었다.)
+ */
 export function registerCustomVector(
   type: "DECOR" | "MARK" | "ART" | "FRAME",
   key: string,
@@ -114,120 +136,16 @@ export function registerCustomVector(
     text?: boolean;
   }
 ): void {
-  if (type === "DECOR") {
-    VECTORS.DECOR[key] = {
-      label: item.label,
-      category: item.category,
-      custom: true,
-      build: (W: number, H: number, T: ThemeColors, lv: number) => {
-        const filled = fillSvgTemplate(item.svg, {
-          W,
-          H,
-          accent: T.accent,
-          accent2: T.accent2,
-          ink: T.ink,
-          ink2: T.ink2,
-          dim: T.dim,
-          bg: T.bg,
-          bg2: T.bg2,
-          good: T.good,
-          warn: T.warn,
-          bad: T.bad,
-          lv,
-        });
-        if (filled.includes("<svg")) {
-          return filled;
-        }
-        return `<svg class="gg-decor" viewBox="0 0 ${W} ${H}" aria-hidden="true">${filled}</svg>`;
-      },
-    };
-  } else if (type === "MARK") {
-    VECTORS.MARK[key] = {
-      label: item.label,
-      where: item.where || "under",
-      draw: item.draw ?? true,
-      text: item.text ?? false,
-      custom: true,
-      build: (T: ThemeColors, text?: string) => {
-        const filled = fillSvgTemplate(item.svg, {
-          accent: T.accent,
-          accent2: T.accent2,
-          ink: T.ink,
-          ink2: T.ink2,
-          dim: T.dim,
-          bg: T.bg,
-          bg2: T.bg2,
-          good: T.good,
-          warn: T.warn,
-          bad: T.bad,
-          text: text || "",
-        });
-        return filled;
-      },
-    };
-  } else if (type === "ART") {
-    VECTORS.ART[key] = {
-      label: item.label,
-      custom: true,
-      build: (T: ThemeColors) => {
-        const filled = fillSvgTemplate(item.svg, {
-          accent: T.accent,
-          accent2: T.accent2,
-          ink: T.ink,
-          ink2: T.ink2,
-          dim: T.dim,
-          bg: T.bg,
-          bg2: T.bg2,
-          good: T.good,
-          warn: T.warn,
-          bad: T.bad,
-        });
-        if (filled.includes("<svg")) {
-          return filled;
-        }
-        return `<svg class="gg-art" viewBox="0 0 200 200" aria-hidden="true">${filled}</svg>`;
-      },
-    };
-  } else if (type === "FRAME") {
-    const ratio = item.ratio || 16 / 9;
-    VECTORS.FRAME[key] = {
-      label: item.label,
-      ratio,
-      custom: true,
-      build: (W: number, H: number, T: ThemeColors) => {
-        const filled = fillSvgTemplate(item.svg, {
-          W,
-          H,
-          accent: T.accent,
-          accent2: T.accent2,
-          ink: T.ink,
-          ink2: T.ink2,
-          dim: T.dim,
-          bg: T.bg,
-          bg2: T.bg2,
-          good: T.good,
-          warn: T.warn,
-          bad: T.bad,
-        });
-        const padX = Math.round(W * 0.05);
-        const padY = Math.round(H * 0.08);
-        return {
-          svg: filled.includes("<svg") ? filled : `<svg class="gg-frame" viewBox="0 0 ${W} ${H}" aria-hidden="true">${filled}</svg>`,
-          inner: {
-            x: padX,
-            y: padY,
-            w: W - padX * 2,
-            h: H - padY * 2,
-          },
-        };
-      },
-    };
-  }
+  const makers = (DS as unknown as { makers: Record<string, (d: unknown) => unknown> }).makers;
+  const kind = { DECOR: "decor", MARK: "mark", ART: "art", FRAME: "frame" }[type];
+  (VECTORS[type] as Record<string, unknown>)[key] = makers[kind]({ ...item, custom: true });
 }
 
-export function unregisterCustomItem(type: "theme" | "icon" | "DECOR" | "MARK" | "ART" | "FRAME", key: string): void {
+export function unregisterCustomItem(type: "theme" | "skin" | "icon" | "DECOR" | "MARK" | "ART" | "FRAME", key: string): void {
   if (type === "theme") {
     delete THEMES_REGISTRY[key];
+  } else if (type === "skin") {
+    (GG.unregisterSkin as (k: string) => void)(key);
   } else if (type === "icon") {
     const icons = ICO.ICONS as Record<string, string>;
     const aliasMap = ICO.ALIAS as Record<string, string>;

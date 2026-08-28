@@ -1,5 +1,5 @@
-import { GG, THEMES_REGISTRY, VECTORS } from "../engine/boot";
-import type { ThemeColors } from "../engine/types";
+import { GG, SKINS, THEMES_REGISTRY, VECTORS } from "../engine/boot";
+import type { CustomDesignLibrary, SkinDefinition, Spec, SpecDesign, ThemeColors } from "../engine/types";
 
 /* ── 1. 색상 파싱 & WCAG AA 대비율 계산 ────────────────────────────────── */
 
@@ -702,4 +702,104 @@ export function extractSvgPath(svgMarkup: string): string {
     return match[1].trim();
   }
   return "M12 2L4 14h7l-1 8 9-12h-7z";
+}
+
+/* ── 8. 스킨 미리보기 ──────────────────────────────────────────────────
+ *
+ * 스킨 토큰의 값은 `var(--panel)` 처럼 테마 변수를 참조할 수 있다(glass 가 그렇다).
+ * 그래서 미리보기 요소에는 스킨 토큰만 얹어서는 안 되고 테마 변수도 같이 깔아야
+ * 한다 — 안 깔면 그 선언들이 조용히 무효가 되어 아무것도 안 보인다.
+ */
+
+/** 스킨을 미리 보여 줄 요소에 얹을 인라인 CSS 변수. 테마 변수 + 스킨 토큰. */
+export function skinPreviewVars(
+  skin: string | SkinDefinition,
+  theme: string | ThemeColors,
+  aspect = "16:9"
+): Record<string, string> {
+  const c = resolveThemeColors(theme);
+  const out: Record<string, string> = {
+    "--bg": c.bg, "--bg2": c.bg2, "--ink": c.ink, "--ink2": c.ink2, "--dim": c.dim,
+    "--acc": c.accent, "--acc2": c.accent2, "--good": c.good, "--warn": c.warn, "--bad": c.bad,
+    "--line": c.line || "rgba(128,128,128,.16)",
+    "--panel": c.panel || c.bg2,
+    "--pline": c.panelLine || c.line || "rgba(128,128,128,.16)",
+  };
+  const themeKey = typeof theme === "string" ? theme : "midnight";
+  const resolved = GG.resolveSkin(skin, themeKey, aspect);
+  for (const [k, v] of Object.entries(resolved.vars)) out[`--${k}`] = v;
+  return out;
+}
+
+/** 스킨 목록 — 엔진 기본 + 커스텀. 라벨과 다크 전용 여부를 함께 준다. */
+export function listSkins(): { key: string; label: string; custom: boolean; dark: boolean }[] {
+  return Object.keys(SKINS.SKINS).map((key) => {
+    const def = SKINS.SKINS[key];
+    return { key, label: def.label || key, custom: !!def.custom, dark: !!def.dark };
+  });
+}
+
+/** 프리미티브 계약 — 토큰 이름 → 무엇을 정하는지. 편집기가 이 목록으로 입력칸을 만든다. */
+export function designTokenContract(): { key: string; doc: string; group: string }[] {
+  const groupOf = (k: string): string => {
+    if (k.startsWith("surf-")) return "표면";
+    if (k.startsWith("r-")) return "모서리 반경";
+    if (k.startsWith("bd-")) return "배경 블러";
+    if (k.endsWith("-ring")) return "링";
+    if (k.startsWith("cc-")) return "화면 자막";
+    if (k.startsWith("kick-") || k.startsWith("title-") || k.startsWith("sub-")) return "타이포";
+    if (k === "glow") return "광채";
+    return "연결선";
+  };
+  return Object.entries(SKINS.TOKENS).map(([key, doc]) => ({ key, doc, group: groupOf(key) }));
+}
+
+/* ── 9. 스펙에 커스텀 정의를 심는다 ────────────────────────────────────
+ *
+ * 커스텀 요소를 앱 라이브러리에만 두면 스펙은 **이름만** 참조한다 — 같은 스펙을
+ * CLI 로 빌드하거나 남에게 넘기면 `theme "myBrand" 는 없다` 가 뜨고 조용히
+ * 기본값으로 떨어진다. 그래서 스펙이 참조하는 커스텀 정의를 스펙의 `design`
+ * 블록에 그대로 심는다. 파일 한 장으로 모습이 재현된다.
+ *
+ * 저장할 때만 몰래 심지 않는다 — 편집 중에도 JSON 편집기에 보여야 사용자가
+ * "이 스펙에 무엇이 들어 있는지" 를 안다. 그래서 스펙이 바뀔 때마다 맞춘다.
+ */
+
+/** 스펙이 참조하는 커스텀 정의만 골라 design 블록을 만든다. 없으면 null. */
+export function collectSpecDesign(
+  spec: Spec,
+  library: CustomDesignLibrary
+): SpecDesign | null {
+  const used = GG.usedDesignNames(spec);
+  const out: SpecDesign = {};
+  let n = 0;
+  const KINDS: (keyof CustomDesignLibrary & keyof SpecDesign)[] = [
+    "themes", "skins", "icons", "arts", "marks", "decors", "frames",
+  ];
+  for (const kind of KINDS) {
+    const lib = library[kind] as Record<string, unknown>;
+    const names = (used[kind] || []).filter((k) => !!lib[k]);
+    if (!names.length) continue;
+    const bag: Record<string, unknown> = {};
+    for (const k of names) bag[k] = lib[k];
+    (out as Record<string, unknown>)[kind] = bag;
+    n += names.length;
+  }
+  return n ? out : null;
+}
+
+/**
+ * 스펙의 design 블록을 지금 참조하는 것에 맞춘다.
+ *
+ * 더 심지도, 덜 심지도 않는다 — 참조를 지우면 정의도 빠진다. 같은 결과면 원래
+ * 객체를 그대로 돌려주므로(참조 동등) 히스토리에 빈 칸이 쌓이지 않는다.
+ */
+export function syncSpecDesign(spec: Spec, library: CustomDesignLibrary): Spec {
+  const next = collectSpecDesign(spec, library);
+  const cur = (spec as { design?: SpecDesign }).design ?? null;
+  if (JSON.stringify(cur ?? null) === JSON.stringify(next)) return spec;
+  const copy = { ...spec } as Spec & { design?: SpecDesign };
+  if (next) copy.design = next;
+  else delete copy.design;
+  return copy;
 }

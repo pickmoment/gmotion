@@ -22,12 +22,16 @@ import {
 } from "../lib/design";
 import { useDesignStore } from "../lib/designStore";
 import { IconGlyph } from "./fields/IconPicker";
+import { SkinsTab } from "./SkinsTab";
+import { listSkins } from "../lib/design";
 
-export type DesignTab = "themes" | "decors" | "marks" | "arts" | "frames" | "icons" | "tokens";
+export type DesignTab = "themes" | "skins" | "decors" | "marks" | "arts" | "frames" | "icons" | "tokens";
 
 export function DesignPanel({
   onClose,
   currentTheme = "midnight",
+  currentSkin,
+  onApplySkin,
   onApplyTheme,
   onApplyDecor,
   onApplyMark,
@@ -37,6 +41,8 @@ export function DesignPanel({
 }: {
   onClose: () => void;
   currentTheme?: string;
+  currentSkin?: string;
+  onApplySkin?: (skinKey: string) => void;
   onApplyTheme?: (themeKey: string) => void;
   onApplyDecor?: (decorKey: string) => void;
   onApplyMark?: (markKey: string) => void;
@@ -129,6 +135,8 @@ export function DesignPanel({
 
     return {
       themes: defaultThemesCount + customThemesCount,
+      /* 스킨은 등록 레지스트리 하나에 기본·커스텀이 함께 들어 있다 */
+      skins: listSkins().length,
       decors: defaultDecorsCount + customDecorsCount,
       marks: defaultMarksCount + customMarksCount,
       arts: defaultArtsCount + customArtsCount,
@@ -263,6 +271,17 @@ export function DesignPanel({
           </button>
           <button
             type="button"
+            className={tab === "skins" ? "on" : ""}
+            onClick={() => {
+              setTab("skins");
+              setCat("전체");
+              setQ("");
+            }}
+          >
+            스킨 ({counts.skins})
+          </button>
+          <button
+            type="button"
             className={tab === "decors" ? "on" : ""}
             onClick={() => {
               setTab("decors");
@@ -331,6 +350,18 @@ export function DesignPanel({
 
         {/* ── Tab Content ── */}
         <main className="design-tab-content">
+          {tab === "skins" && (
+            <SkinsTab
+              q={q}
+              setQ={setQ}
+              cat={cat}
+              setCat={setCat}
+              currentTheme={currentTheme}
+              currentSkin={currentSkin}
+              onApplySkin={onApplySkin}
+              onNotify={onNotify}
+            />
+          )}
           {tab === "themes" && (
             <ThemesTab
               q={q}

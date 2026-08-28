@@ -7,6 +7,7 @@ import { ArtPicker } from "./fields/ArtPicker";
 import { DecorEditor } from "./fields/DecorEditor";
 import { FieldRenderer } from "./fields/FieldRenderer";
 import { MarkPicker } from "./fields/MarkPicker";
+import { SkinPicker } from "./fields/SkinPicker";
 
 export function SceneForm({
   scene,
@@ -22,7 +23,7 @@ export function SceneForm({
   onOpenDesign?: () => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
-  const [openDesignSlot, setOpenDesignSlot] = useState<"decor" | "mark" | "art" | null>(null);
+  const [openDesignSlot, setOpenDesignSlot] = useState<"decor" | "mark" | "art" | "skin" | null>(null);
 
   const schema = PATTERNS[scene.pattern];
 
@@ -120,6 +121,20 @@ export function SceneForm({
             <strong className="slot-value">{scene.art || "— 없음"}</strong>
           </button>
 
+          {/* 재질 (Skin) 칩 — 이 씬만 다른 스킨을 쓸 수 있다 */}
+          <button
+            type="button"
+            className={`visual-slot-chip ${scene.skin ? "active" : ""}`}
+            onClick={() => setOpenDesignSlot((cur) => (cur === "skin" ? null : "skin"))}
+            title="이 씬만 재질(표면·선·타이포) 갈아 끼우기"
+          >
+            <span className="slot-icon">🧱</span>
+            <span className="slot-label">재질</span>
+            <strong className="slot-value">
+              {typeof scene.skin === "string" ? scene.skin : scene.skin ? "커스텀" : "루트 따름"}
+            </strong>
+          </button>
+
           {/* 트랜지션 (Transition) 선택기 */}
           <div className="visual-slot-select" title="이전 씬에서 넘어오는 화면 전환 효과">
             <span className="slot-icon">🎬</span>
@@ -185,6 +200,25 @@ export function SceneForm({
               onChange={(v) => patch("mark", v)}
               theme={theme}
               hint="한 씬에 하나. 단어나 숫자에 밑줄, 원, 배지, 스탬프를 입힙니다."
+            />
+          </div>
+        )}
+
+        {openDesignSlot === "skin" && (
+          <div className="visual-slot-popover">
+            <div className="slot-popover-head">
+              <strong>이 씬의 재질 (skin) 설정</strong>
+              <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
+                ×
+              </button>
+            </div>
+            <SkinPicker
+              label=""
+              value={scene.skin}
+              theme={theme}
+              onChange={(v) => patch("skin", v)}
+              onOpenDesignPanel={onOpenDesign}
+              hint="비워두면 루트 skin 을 따릅니다. 자막 뱃지는 씬 밖 레이어라 바뀌지 않습니다."
             />
           </div>
         )}
