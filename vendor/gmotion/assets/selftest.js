@@ -314,8 +314,9 @@ function output() {
   var withCC = G.toHTML(nspec, { cues: ncues, captions: ncues });
   truthy('자막 레이어가 실린다', withCC.indexOf('id="gg-cc"') > 0);
   truthy('자막 데이터가 실린다', withCC.indexOf('"captions"') > 0);
+  truthy('씬 래퍼가 실린다', withCC.indexOf('class="gg-scenes-wrap"') > 0);
+  truthy('자막 활성 상태 data-cc 가 실린다', withCC.indexOf('data-cc="true"') > 0);
   truthy('음성 없이는 audio 태그가 없다', withCC.indexOf('id="gg-audio"') < 0);
-
   var withAudio = G.toHTML(nspec, { cues: ncues, audioSrc: 'data:audio/mpeg;base64,AAAA' });
   truthy('음성이 실린다', withAudio.indexOf('id="gg-audio"') > 0);
   truthy('음성 설정이 실린다', withAudio.indexOf('"audio"') > 0);

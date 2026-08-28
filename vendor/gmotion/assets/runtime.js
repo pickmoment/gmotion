@@ -337,6 +337,7 @@
   var ccOn = QS.get('cc') !== '0';
   function paintCCState() {
     if (CC) CC.hidden = !ccOn;
+    if (stage) stage.setAttribute('data-cc', (CC && ccOn) ? 'true' : 'false');
     var b = document.querySelector('[data-a="cc"]');
     if (b) b.setAttribute('aria-pressed', ccOn ? 'true' : 'false');
   }

@@ -2485,6 +2485,12 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
   'transform:translate(-50%,-50%)}',
 '.gg-stage{position:relative;width:100%;height:100%;overflow:hidden;transform-origin:center center;' +
   'background:radial-gradient(120% 90% at 50% 0%,' + T.bg2 + ' 0%,' + T.bg + ' 62%);isolation:isolate;perspective:1600px}',
+/* 자막이 켜져 있을 때 씬 전체를 위로 일괄 리프팅 — GSAP 트랜지션과 충돌하지 않도록 독립 래퍼를 쓴다 */
+'.gg-scenes-wrap{position:absolute;inset:0;transform-origin:center center;' +
+  'transition:transform .28s cubic-bezier(.16,1,.3,1);will-change:transform}',
+'.gg-stage[data-cc="true"] .gg-scenes-wrap{transform:translateY(-' + Math.round(A.h * (A.w < A.h ? .038 : .032)) + 'px)}',
+'.gg-stage[data-cc="false"] .gg-scenes-wrap{transform:translateY(0)}',
+'@media (prefers-reduced-motion:reduce){.gg-scenes-wrap{transition:none}}',
 '.gg-grain{position:absolute;inset:0;pointer-events:none;opacity:' + T.grain + ';z-index:60;mix-blend-mode:overlay}',
 '.gg-vig{position:absolute;inset:0;pointer-events:none;z-index:59;' +
   'background:radial-gradient(110% 80% at 50% 45%,transparent 55%,rgba(0,0,0,' + num(T.vig, .42) + ') 100%)}',
@@ -2953,8 +2959,10 @@ css(c),
 '<body>',
 '<div class="gg-fit">',
 '<div class="gg-scale">',
-'<main class="gg-stage" role="img" aria-label="' + esc(title) + (c.message ? ' — ' + esc(c.message) : '') + '">',
+'<main class="gg-stage"' + (hasCC ? ' data-cc="true"' : '') + ' role="img" aria-label="' + esc(title) + (c.message ? ' — ' + esc(c.message) : '') + '">',
+'<div class="gg-scenes-wrap">',
 scenesHTML,
+'</div>',
 '<div class="gg-flash" aria-hidden="true"></div>',
 hasCC ? '<div class="gg-captions" id="gg-cc" aria-live="off"></div>' : '',
 T.vig ? '<div class="gg-vig" aria-hidden="true"></div>' : '',

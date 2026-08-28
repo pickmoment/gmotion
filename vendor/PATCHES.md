@@ -291,3 +291,20 @@ kineticType 절에 "한 줄은 한 줄로 나온다" 규칙을 적었다.
   - 프로젝트 (AI Agents) — `<선택 폴더>/.agents/skills`
 
 **검증.** `cargo test` 7건 통과 (`install_agents_roundtrip` 통과) · `npm run build` 통과.
+
+## 13. 자막 활성화 시 씬 일괄 리프팅(Lifting)으로 하단 콘텐츠 가림 방지 (2026-08-28)
+
+**왜.** 화면 하단에 자막이 얹힐 때 카드·차트·텍스트 등 본문 내용이 자막 뱃지에 가려지는 문제를 방지. 문장별로 실시간 이동하면 레이아웃 흔들림(Layout shift/Jitter)이 발생하므로, 자막 모드(`data-cc="true"`) 활성화 시 씬 전체를 독립 래퍼(`.gg-scenes-wrap`) 단위로 일괄 상단 리프팅하여 GSAP 개별 씬 트랜지션과의 충돌 없이 안정적인 안전영역을 확보.
+
+### `assets/gsapgraph.js`
+- `.gg-scenes-wrap` 래퍼 추가: 모든 씬(`.gg-scene`)을 감싸는 컨테이너로 분리하여 GSAP 트랜지션 인라인 transform 과 충돌 없이 동작.
+- 자막 활성화 CSS: `.gg-stage[data-cc="true"] .gg-scenes-wrap` 에 화면비에 비례한 상단 이동(16:9 기준 약 -35px, 9:16 기준 약 -73px) 적용, 0.28s 부드러운 이징 트랜지션 연결 및 `prefers-reduced-motion` 대응.
+- `toHTML()`: `<main class="gg-stage">` 에 초기 `data-cc="true"` 부여 및 `<div class="gg-scenes-wrap">` 마크업 적용.
+
+### `assets/runtime.js`
+- `paintCCState()`: 자막 표시 여부(`CC && ccOn`)에 따라 `.gg-stage` 의 `data-cc` 속성을 `"true"` / `"false"` 로 동기화. `C` 키 토글, 플레이어 CC 버튼, `GGM.setCaptions()` 호출 시 씬 리프팅 상태가 즉시 연동.
+
+### `assets/selftest.js`
+- `withCC` 검사 항목에 `.gg-scenes-wrap` 래퍼 생성 및 `data-cc="true"` 초기 속성 검증 추가 (99건 테스트 전체 통과).
+
+**검증.** `node vendor/gmotion/assets/selftest.js` 99건 통과 · `cargo test` 7건 통과 · `npm run build` 통과.
