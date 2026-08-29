@@ -21,7 +21,7 @@
   "starter-charts": {
     "scenes": 13,
     "total": 51.39,
-    "tweens": 69,
+    "tweens": 70,
     "icons": 0,
     "errors": 0,
     "ats": [
@@ -278,7 +278,7 @@
   "starter-story": {
     "scenes": 7,
     "total": 28.39,
-    "tweens": 60,
+    "tweens": 61,
     "icons": 13,
     "errors": 0,
     "ats": [
@@ -301,9 +301,9 @@
     ]
   },
   "starter-vectors": {
-    "scenes": 5,
-    "total": 18.21,
-    "tweens": 29,
+    "scenes": 7,
+    "total": 24.29,
+    "tweens": 61,
     "icons": 7,
     "errors": 0,
     "ats": [
@@ -311,12 +311,16 @@
       2.87,
       5.29,
       8.39,
-      12.16
+      10.69,
+      14.47,
+      18.24
     ],
     "durs": [
       3.32,
       3,
       3.61,
+      2.88,
+      4.29,
       4.22,
       6.05
     ]

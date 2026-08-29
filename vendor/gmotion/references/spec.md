@@ -93,7 +93,7 @@
 | `skin` | **이 씬만 재질을 갈아 끼운다.** 스킨 이름 또는 인라인 정의. 생략하면 루트 `skin` |
 | `textFx` | 글자 등장 방식. `scramble`(섞이다 정렬) · `roll`(굴러 교체, `matchCut` 전용) |
 | `mark` | 제목에 붙는 강조. `"underline"` `"circle"` `"highlight"` 등. `"badge:NEW"` 처럼 값도 준다 |
-| `art` | 추상 일러스트. 패턴에 따라 아이콘 자리를 대신한다(`heroReveal`) |
+| `art` | 추상 일러스트 48종. 씬 단위로는 `heroReveal` 이 받는다 — `icon` 과 배타로 둘 중 하나만 쓴다 |
 | `notes` | **발표자 노트.** `--present` 로 빌드했을 때 발표자 창에 뜬다. 여러 줄 가능(`\n`). 없으면 `purpose` 를 대신 쓴다 |
 | `title` `kicker` `sub` | 헤더. 패턴 대부분이 지원 (`kineticType` `matchCut` `quote` 제외) |
 
@@ -136,17 +136,56 @@
 
 객체 공통 필드: `label` `icon` `note` `value` `tone` `badge` `ribbon` `art` `spark`
 `tone` 은 `good` `bad` `warn` `dim` — 테두리·아이콘·값 색이 바뀐다.
-`badge` 는 우상단 알약(`"NEW"`), `ribbon` 은 좌상단 띠(`"핵심"`), `art` 는 카드 우하단에 옅게 깔리는 일러스트,
-`spark` 는 카드 안 미니 추이선(`[3,5,4,8]`)이다.
+`badge` 는 우상단 알약(`"NEW"`), `ribbon` 은 좌상단 띠(`"핵심"`), `spark` 는 카드 안 미니 추이선(`[3,5,4,8]`)이다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 79종이 있고 한글 이름도 따로 있다:
+### `art` — 일러스트를 어디에 놓나
+
+`art` 는 자리에 따라 역할이 둘로 갈린다. **같은 이름표를 쓰지만 하는 일이 다르다.**
+
+| 자리 | 역할 | 패턴 |
+|---|---|---|
+| **아이콘 자리를 대신한다** | `icon` 대신 일러스트가 주인공이 된다. 픽토그램보다 크게 놓인다 | `heroReveal`(`art`) · `processFlow`(`steps[].art`) · `explodedDiagram`(`layers[].art`) · `beforeAfter`(`before/after.art`) · `splitCompare`(`left/right.art`) · `convergence`(`target.art`) · `divergence`(`source.art`) · `orbit`(`center.art`) · `matchCut`(`anchor.art`) · `deviceShow`(`screen.art`) |
+| **카드 뒤에 깔린다** | `icon` 과 **함께** 쓴다. 아이콘이 앞에서 뜻을 잡고 일러스트가 뒤에서 분위기를 만든다 | `cardsCascade` · `zoomDetail` 의 `items[].art` |
+
+```jsonc
+// 아이콘 자리를 대신 — 일러스트가 주인공
+{ "pattern": "convergence", "sources": ["로그","지표","추적"],
+  "target": { "label": "관측", "art": "dashboard" } }
+
+// 카드 뒤 — 아이콘과 함께 쓴다
+{ "pattern": "cardsCascade", "items": [
+  { "label": "협업", "icon": "users", "art": "collab" }] }
+```
+
+`matchCut` 의 `anchorTo`(앵커 모프)는 **아이콘 앵커에서만** 동작한다 — 일러스트는 도형이
+여러 개라 모프를 못 탄다. 대신 조각이 차례로 서는 등장을 받는다.
+
+### 이야기 축으로 고르기
+
+일러스트 48종은 서사 기능으로 나뉜다. **갈등을 그릴 그림이 있어야 이야기가 선다** —
+성장·성과만 있으면 화면이 계속 좋은 소식만 말한다.
+
+| 서사 위치 | 일러스트 |
+|---|---|
+| **문제 · 갈등** | `bottleneck`(정체) `warning`(위험) `decline`(감소) `maze`(시행착오) `fracture`(분열) |
+| **선택 · 전환** | `crossroad`(기로) `bridge`(연결) `agreement`(합의) `puzzle` `balance` |
+| **사람 · 조직** | `team` `customer` `collab` `learning` |
+| **수단 · 실행** | `gears` `flow` `pipeline` 계열 · `codeBlock` `server` `cloud` `aiBrain` |
+| **경제 · 자본** | `market`(캔들) `coinStack`(자금) `vault` `pieChart3d` |
+| **여정 · 확산** | `roadmap`(단계) `megaphone`(확산) `globe`(글로벌) `rocket` `telescope` |
+| **결과 · 성과** | `growth` `trophy` `flagPeak` `target` `sparkleMagic` |
+
+`warning` `decline` `fracture` `maze` 는 테마의 `warn`·`bad` 색을 쓴다 — 나머지가 강조색을
+쓰는 것과 달리, 색만으로도 "여기가 나쁜 대목"이 읽힌다.
+
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 95종이 있고 한글 이름도 따로 있다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 — speech(메시지·채팅·댓글)
 node <skill>/assets/gm.js info decor       # 배경 20종
 node <skill>/assets/gm.js info mark        # 강조 15종
 node <skill>/assets/gm.js info frame       # 디바이스 12종
-node <skill>/assets/gm.js info art         # 일러스트 32종
+node <skill>/assets/gm.js info art         # 일러스트 48종
 node <skill>/assets/gm.js info chart       # 차트 17종
 ```
 

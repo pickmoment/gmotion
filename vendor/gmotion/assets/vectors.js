@@ -4,7 +4,7 @@
  *   DECOR  배경·분위기 레이어 15종   씬 배경에 깔린다. 테마 색 자동, 느린 무한 드리프트
  *   FRAME  디바이스·프레임 8종        안에 콘텐츠를 넣는다
  *   MARK   데코·강조 요소 12종        글자·수치에 붙어 시선을 몬다. 드로우온 모션
- *   ART    추상 일러스트 18종         도형 조합으로 개념을 표현. 픽토그램보다 크고 구성적
+ *   ART    추상 일러스트 48종         도형 조합으로 개념을 표현. 픽토그램보다 크고 구성적
  *
  * 전부 코드로 그린다 — 테마 색을 받아 그 자리에서 SVG 를 만들고, 스펙이 실제로 쓴 것만
  * 산출물에 실린다. 좌표는 호출자가 준 박스 안에서 스스로 계산한다.
@@ -844,8 +844,10 @@ ART.gears = { label: '톱니 — 맞물린 기계. 자동화·프로세스', bui
       '" stroke-width="4" fill="none" stroke-linejoin="round"/>' +
       '<circle cx="' + cx + '" cy="' + cy + '" r="' + r2(r * .34) + '" stroke="' + col + '" stroke-width="4" fill="none"/>';
   }
-  return art('<g class="gg-artP gg-artSpin" style="transform-origin:78px 84px">' + gear(78, 84, 40, 8, T.accent) + '</g>' +
-    '<g class="gg-artP gg-artSpinR" style="transform-origin:136px 132px">' + gear(136, 132, 28, 7, T.accent2) + '</g>'); } };
+  return art('<g class="gg-artP"><g class="gg-artSpin gg-artLoop" style="transform-origin:78px 84px">' +
+    gear(78, 84, 40, 8, T.accent) + '</g></g>' +
+    '<g class="gg-artP"><g class="gg-artSpinR gg-artLoop" style="transform-origin:136px 132px">' +
+    gear(136, 132, 28, 7, T.accent2) + '</g></g>'); } };
 
 ART.cloud = { label: '클라우드 — 구름과 연결. 서비스·원격', build: function (T) { return art(
   '<g class="gg-artP"><path d="M62 108 A26 26 0 0 1 74 60 A32 32 0 0 1 132 66 A24 24 0 0 1 140 108 Z" ' + F(T, .16) + '/>' +
@@ -905,7 +907,7 @@ ART.flow = { label: '흐름 — 파이프와 이동. 처리·전달', build: fun
   'stroke="' + T.accent + '" stroke-width="16" fill="none" opacity=".14" stroke-linecap="round"/>' +
   '<path d="M24 70 L96 70 Q120 70 120 94 L120 130 Q120 154 144 154 L180 154" ' + S(T) + '/></g>' +
   '<g class="gg-artP">' + [0, 1, 2].map(function (i) {
-    return '<circle class="gg-artFlow" style="animation-delay:' + r2(i * 1.1) + 's" cx="24" cy="70" r="8" fill="' + T.accent2 + '"/>'; }).join('') + '</g>' +
+    return '<circle class="gg-artFlow gg-artLoop" style="animation-delay:' + r2(i * 1.1) + 's" cx="24" cy="70" r="8" fill="' + T.accent2 + '"/>'; }).join('') + '</g>' +
   '<g class="gg-artP"><rect x="6" y="52" width="20" height="36" rx="5" ' + F(T, .5) + '/>' +
   '<rect x="174" y="136" width="20" height="36" rx="5" ' + F2(T, .5) + '/></g>'); } };
 
@@ -1037,5 +1039,182 @@ ART.ecoLeaf = { label: '친환경 — 순환 링과 잎사귀. 지속가능성·
   '<g class="gg-artP"><path d="M100 58 C140 58, 150 96, 144 142 C98 148, 58 138, 58 98 C58 74, 78 58, 100 58 Z" fill="' + T.good + '" opacity=".2"/>' +
   '<path d="M100 58 C140 58, 150 96, 144 142 C98 148, 58 138, 58 98 C58 74, 78 58, 100 58 Z" stroke="' + T.good + '" stroke-width="4" fill="none"/>' +
   '<path d="M60 140 Q100 114 136 72 M96 116 L120 120 M82 130 L98 140" stroke="' + T.good + '" stroke-width="3.5" stroke-linecap="round"/></g>'); } };
+
+/* ------------------------------------------------------------------ *
+ * 서사용 보강 (2026-08 추가)
+ * 기존 32종은 대부분 긍정·중립이었다 — 성장·성과·연결. 이야기에는 갈등이 필요하고
+ * 갈등을 그릴 그림이 없었다. 문제(병목·경고·하락·미로·균열)와 선택(갈림길·다리)을
+ * 먼저 채우고, 사람·경제·여정을 뒤이어 붙인다.
+ * ------------------------------------------------------------------ */
+
+/* --- 문제 · 갈등 --- */
+
+ART.bottleneck = { label: '병목 — 좁은 목에 막힌 흐름. 정체·한계·지연', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M58 26 L58 78 C58 94 84 96 84 100 C84 104 58 106 58 122 L58 174" ' + S(T) + '/>' +
+  '<path d="M142 26 L142 78 C142 94 116 96 116 100 C116 104 142 106 142 122 L142 174" ' + S(T) + '/></g>' +
+  '<g class="gg-artP">' + [[80, 44], [120, 44], [100, 72], [78, 74]].map(function (c) {
+    return '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="13" ' + F2(T, .55) + '/>' +
+      '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="13" ' + S2(T) + '/>'; }).join('') + '</g>' +
+  '<g class="gg-artP"><circle cx="100" cy="140" r="12" fill="' + T.good + '" opacity=".85"/>' +
+  '<circle cx="100" cy="168" r="9" fill="' + T.good + '" opacity=".4"/></g>'); } };
+
+ART.warning = { label: '경고 — 삼각 표지와 파문. 위험·리스크·장애', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M100 30 A14 14 0 0 1 112 37 L176 150 A14 14 0 0 1 164 170 L36 170 A14 14 0 0 1 24 150 L88 37 A14 14 0 0 1 100 30Z" fill="' + T.warn + '" opacity=".18"/>' +
+  '<path d="M100 30 A14 14 0 0 1 112 37 L176 150 A14 14 0 0 1 164 170 L36 170 A14 14 0 0 1 24 150 L88 37 A14 14 0 0 1 100 30Z" stroke="' + T.warn + '" stroke-width="4" fill="none" stroke-linejoin="round"/></g>' +
+  '<g class="gg-artP"><path d="M100 76 L100 122" stroke="' + T.warn + '" stroke-width="9" stroke-linecap="round" fill="none"/>' +
+  '<circle cx="100" cy="145" r="6" fill="' + T.warn + '"/></g>' +
+  '<g class="gg-artP"><path d="M32 96 A56 56 0 0 0 32 44" stroke="' + T.warn + '" stroke-width="3" fill="none" stroke-dasharray="7 7" opacity=".45"/>' +
+  '<path d="M168 96 A56 56 0 0 1 168 44" stroke="' + T.warn + '" stroke-width="3" fill="none" stroke-dasharray="7 7" opacity=".45"/></g>'); } };
+
+ART.decline = { label: '하락 — 낮아지는 계단과 꺾인 화살. 감소·부진·손실', build: function (T) { return art(
+  '<g class="gg-artP">' + [0, 1, 2, 3].map(function (i) { var h = 92 - i * 22, x = 44 + i * 32;
+    return '<rect x="' + x + '" y="' + (162 - h) + '" width="24" height="' + h + '" rx="5" fill="' + T.bad + '" opacity="' + r2(.26 - i * .05) + '"/>' +
+      '<rect x="' + x + '" y="' + (162 - h) + '" width="24" height="' + h + '" rx="5" stroke="' + T.bad + '" stroke-width="4" fill="none"/>'; }).join('') + '</g>' +
+  '<g class="gg-artP"><path d="M34 40 C72 48, 104 82, 164 118" stroke="' + T.bad + '" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+  '<path d="M168 94 L168 122 L140 122" stroke="' + T.bad + '" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'); } };
+
+ART.maze = { label: '미로 — 막힌 길과 헤매는 점. 복잡함·시행착오', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M92 26 L26 26 L26 174 L174 174 L174 26 L120 26" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M26 62 L92 62 M120 26 L120 62 M56 62 L56 108 M56 108 L120 108 M92 62 L92 92 ' +
+  'M148 62 L148 138 M120 138 L174 138 M86 138 L86 174 M26 138 L56 138 M120 92 L148 92" ' +
+  'stroke="' + T.accent + '" stroke-width="4" fill="none" stroke-linecap="round" opacity=".75"/></g>' +
+  '<g class="gg-artP"><path d="M106 14 L106 44 L40 44 L40 84 L74 84" stroke="' + T.accent2 +
+  '" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 8"/>' +
+  '<circle cx="106" cy="14" r="6" fill="' + T.accent2 + '"/>' +
+  '<path d="M65 75 L83 93 M83 75 L65 93" stroke="' + T.bad + '" stroke-width="4.5" stroke-linecap="round" fill="none"/></g>'); } };
+
+ART.fracture = { label: '균열 — 갈라진 두 판. 분열·파손·단절', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M28 48 L92 48 L80 96 L98 120 L84 152 L28 152Z" ' + F(T, .16) + '/>' +
+  '<path d="M28 48 L92 48 L80 96 L98 120 L84 152 L28 152Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M108 48 L172 48 L172 152 L100 152 L114 120 L96 96Z" ' + F2(T, .16) + '/>' +
+  '<path d="M108 48 L172 48 L172 152 L100 152 L114 120 L96 96Z" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M100 26 L100 40 M76 30 L82 42 M124 30 L118 42" stroke="' + T.bad +
+  '" stroke-width="4" stroke-linecap="round" fill="none" opacity=".75"/></g>'); } };
+
+/* --- 선택 · 전환 --- */
+
+ART.crossroad = { label: '갈림길 — 두 갈래로 나뉘는 길. 선택·분기·기로', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M100 178 L100 122" stroke="' + T.accent + '" stroke-width="14" fill="none" stroke-linecap="round" opacity=".28"/>' +
+  '<path d="M100 178 L100 122" ' + S(T) + '/>' +
+  '<circle cx="100" cy="116" r="13" fill="' + T.bg2 + '"/>' +
+  '<circle cx="100" cy="116" r="13" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M92 106 C86 76, 62 68, 44 52" ' + S(T) + '/>' +
+  '<path d="M62 56 L44 52 L50 70" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M108 106 C114 76, 138 68, 156 52" ' + S2(T) + '/>' +
+  '<path d="M138 56 L156 52 L150 70" ' + S2(T) + '/></g>'); } };
+
+ART.bridge = { label: '다리 — 끊긴 곳을 잇는다. 연결·해결·전환', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M14 130 L62 130 L62 182 L14 182Z" ' + F(T, .18) + '/>' +
+  '<path d="M14 130 L62 130 L62 182 L14 182Z" ' + S(T) + '/>' +
+  '<path d="M138 130 L186 130 L186 182 L138 182Z" ' + F(T, .18) + '/>' +
+  '<path d="M138 130 L186 130 L186 182 L138 182Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M36 126 L164 126" stroke="' + T.accent2 + '" stroke-width="7" fill="none" stroke-linecap="round"/></g>' +
+  '<g class="gg-artP"><path d="M62 126 Q100 56 138 126" ' + S2(T) + '/>' +
+  '<path d="M76 126 L76 104 M100 126 L100 92 M124 126 L124 104" stroke="' + T.accent2 +
+  '" stroke-width="3.5" stroke-linecap="round" fill="none" opacity=".7"/></g>'); } };
+
+ART.agreement = { label: '합의 — 서명한 문서와 승인 도장. 계약·승인·확정', build: function (T) { return art(
+  '<g class="gg-artP"><rect x="44" y="26" width="104" height="136" rx="10" ' + F(T, .14) + '/>' +
+  '<rect x="44" y="26" width="104" height="136" rx="10" ' + S(T) + '/>' +
+  '<path d="M64 58 L128 58 M64 80 L128 80 M64 102 L106 102" stroke="' + T.accent +
+  '" stroke-width="4" stroke-linecap="round" fill="none" opacity=".5"/></g>' +
+  '<g class="gg-artP"><path d="M62 132 C74 120, 82 142, 94 128 C102 118, 108 136, 122 124" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP"><circle cx="146" cy="150" r="30" fill="' + T.good + '" opacity=".2"/>' +
+  '<circle cx="146" cy="150" r="30" stroke="' + T.good + '" stroke-width="4" fill="none"/>' +
+  '<path d="M132 150 L142 161 L161 139" stroke="' + T.good + '" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'); } };
+
+/* --- 사람 · 조직 --- */
+
+ART.team = { label: '팀 — 어깨를 맞댄 세 사람. 조직·구성원·함께', build: function (T) { return art(
+  '<g class="gg-artP"><circle cx="42" cy="86" r="20" ' + F(T, .2) + '/><circle cx="42" cy="86" r="20" ' + S(T) + '/>' +
+  '<path d="M10 152 A32 32 0 0 1 74 152" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><circle cx="158" cy="86" r="20" ' + F(T, .2) + '/><circle cx="158" cy="86" r="20" ' + S(T) + '/>' +
+  '<path d="M126 152 A32 32 0 0 1 190 152" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><circle cx="100" cy="64" r="26" ' + F2(T, .24) + '/><circle cx="100" cy="64" r="26" ' + S2(T) + '/>' +
+  '<path d="M56 174 A44 44 0 0 1 144 174" ' + S2(T) + '/></g>'); } };
+
+ART.customer = { label: '고객 — 사람과 별점 말풍선. 사용자·만족·후기', build: function (T) { return art(
+  '<g class="gg-artP"><circle cx="66" cy="104" r="26" ' + F(T, .2) + '/><circle cx="66" cy="104" r="26" ' + S(T) + '/>' +
+  '<path d="M20 180 A46 46 0 0 1 112 180" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M110 26 L178 26 A12 12 0 0 1 190 38 L190 78 A12 12 0 0 1 178 90 L136 90 L120 106 L122 90 A12 12 0 0 1 110 78Z" ' + F2(T, .16) + '/>' +
+  '<path d="M110 26 L178 26 A12 12 0 0 1 190 38 L190 78 A12 12 0 0 1 178 90 L136 90 L120 106 L122 90 A12 12 0 0 1 110 78Z" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP">' + [0, 1, 2].map(function (i) { var cx = 130 + i * 22;
+    /* 별이 말풍선 밖으로 나가면 세 번째가 잘린다 — 폭을 풍선 안(110~190)에 맞춘다 */
+    return '<path d="M' + cx + ' 47.4 L' + (cx + 4.3) + ' 56.5 L' + (cx + 14.1) + ' 57.8 L' + (cx + 7) + ' 64.5 L' +
+      (cx + 8.6) + ' 74.3 L' + cx + ' 69.8 L' + (cx - 8.6) + ' 74.3 L' + (cx - 7) + ' 64.5 L' +
+      (cx - 14.1) + ' 57.8 L' + (cx - 4.3) + ' 56.5Z" fill="' + T.warn + '" opacity="' + (i === 2 ? '.32' : '.9') + '"/>'; }).join('') + '</g>'); } };
+
+ART.learning = { label: '학습 — 펼친 책에서 자라는 싹. 교육·성장·습득', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M26 128 Q64 112 100 128 L100 176 Q64 160 26 176Z" ' + F(T, .16) + '/>' +
+  '<path d="M26 128 Q64 112 100 128 L100 176 Q64 160 26 176Z" ' + S(T) + '/>' +
+  '<path d="M174 128 Q136 112 100 128 L100 176 Q136 160 174 176Z" ' + F(T, .1) + '/>' +
+  '<path d="M174 128 Q136 112 100 128 L100 176 Q136 160 174 176Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M100 120 L100 62" ' + S2(T) + '/>' +
+  '<path d="M100 96 C72 96, 62 78, 62 58 C88 58, 100 72, 100 96Z" ' + F2(T, .3) + '/>' +
+  '<path d="M100 96 C72 96, 62 78, 62 58 C88 58, 100 72, 100 96Z" ' + S2(T) + '/>' +
+  '<path d="M100 84 C128 84, 138 66, 138 46 C112 46, 100 60, 100 84Z" ' + F2(T, .18) + '/>' +
+  '<path d="M100 84 C128 84, 138 66, 138 46 C112 46, 100 60, 100 84Z" ' + S2(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M154 40 L158 52 L170 56 L158 60 L154 72 L150 60 L138 56 L150 52Z" fill="' + T.warn + '" opacity=".85"/></g>'); } };
+
+/* --- 경제 · 자본 --- */
+
+ART.market = { label: '시장 — 오르내리는 캔들. 증시·변동·거래', build: function (T) { return art(
+  '<g class="gg-artP">' + [[44, 62, 118, 1], [76, 84, 140, 0], [108, 40, 104, 1]].map(function (c) {
+    var col = c[3] ? T.good : T.bad;
+    return '<path d="M' + (c[0] + 12) + ' ' + (c[1] - 14) + ' L' + (c[0] + 12) + ' ' + (c[2] + 14) + '" stroke="' + col + '" stroke-width="4" stroke-linecap="round"/>' +
+      '<rect x="' + c[0] + '" y="' + c[1] + '" width="24" height="' + (c[2] - c[1]) + '" rx="4" fill="' + col + '" opacity=".22"/>' +
+      '<rect x="' + c[0] + '" y="' + c[1] + '" width="24" height="' + (c[2] - c[1]) + '" rx="4" stroke="' + col + '" stroke-width="4" fill="none"/>'; }).join('') + '</g>' +
+  '<g class="gg-artP"><path d="M140 96 L164 96 L164 152 L140 152Z" fill="' + T.good + '" opacity=".22"/>' +
+  '<path d="M140 96 L164 96 L164 152 L140 152Z" stroke="' + T.good + '" stroke-width="4" fill="none"/>' +
+  '<path d="M152 82 L152 166" stroke="' + T.good + '" stroke-width="4" stroke-linecap="round"/></g>' +
+  '<g class="gg-artP"><path d="M32 148 C68 132, 96 96, 172 48" stroke="' + T.accent2 +
+  '" stroke-width="3.5" fill="none" stroke-dasharray="8 7" opacity=".7"/>' +
+  '<path d="M152 44 L176 42 L174 66" ' + S2(T) + '/></g>'); } };
+
+ART.coinStack = { label: '자본 — 쌓인 동전 더미. 자금·예산·적립', build: function (T) { return art(
+  '<g class="gg-artP">' + [0, 1, 2].map(function (i) { var y = 158 - i * 20;
+    return '<ellipse cx="48" cy="' + y + '" rx="30" ry="11" ' + F(T, .2) + '/>' +
+      '<ellipse cx="48" cy="' + y + '" rx="30" ry="11" ' + S(T) + '/>'; }).join('') + '</g>' +
+  '<g class="gg-artP">' + [0, 1, 2, 3, 4].map(function (i) { var y = 158 - i * 20;
+    return '<ellipse cx="112" cy="' + y + '" rx="30" ry="11" ' + F2(T, .22) + '/>' +
+      '<ellipse cx="112" cy="' + y + '" rx="30" ry="11" ' + S2(T) + '/>'; }).join('') + '</g>' +
+  '<g class="gg-artP"><circle cx="164" cy="52" r="26" fill="' + T.warn + '" opacity=".22"/>' +
+  '<circle cx="164" cy="52" r="26" stroke="' + T.warn + '" stroke-width="4" fill="none"/>' +
+  '<path d="M154 42 L160 62 L164 50 L168 62 L174 42 M152 54 L176 54" stroke="' + T.warn +
+  '" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>'); } };
+
+/* --- 여정 · 확산 --- */
+
+ART.roadmap = { label: '로드맵 — 마일스톤이 찍힌 길. 여정·계획·단계', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M26 178 C74 156, 56 116, 100 100 C146 84, 128 44, 174 26" ' +
+  'stroke="' + T.accent + '" stroke-width="16" fill="none" opacity=".14" stroke-linecap="round"/>' +
+  '<path d="M26 178 C74 156, 56 116, 100 100 C146 84, 128 44, 174 26" stroke="' + T.accent +
+  '" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="10 9"/></g>' +
+  '<g class="gg-artP">' + [[52, 166], [100, 100], [148, 44]].map(function (c, i) {
+    return '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="13" fill="' + T.bg2 + '"/>' +
+      '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="13" stroke="' + (i === 2 ? T.accent2 : T.accent) + '" stroke-width="4" fill="none"/>' +
+      '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="5" fill="' + (i === 2 ? T.accent2 : T.accent) + '"/>'; }).join('') + '</g>' +
+  '<g class="gg-artP"><path d="M168 34 L168 -2" stroke="' + T.accent2 + '" stroke-width="4" stroke-linecap="round" transform="translate(0,26)"/>' +
+  '<path d="M170 32 L170 58 L196 46Z" fill="' + T.accent2 + '" opacity=".85" transform="translate(-2,-24)"/></g>'); } };
+
+ART.megaphone = { label: '확성기 — 퍼지는 음파. 발표·홍보·확산', build: function (T) { return art(
+  '<g class="gg-artP"><path d="M28 84 L58 84 L58 116 L28 116Z" ' + F(T, .2) + '/>' +
+  '<path d="M28 84 L58 84 L58 116 L28 116Z" ' + S(T) + '/>' +
+  '<path d="M50 122 L44 168 L64 168 L66 124" ' + S(T) + '/></g>' +
+  '<g class="gg-artP"><path d="M58 82 L130 40 L130 160 L58 118Z" ' + F(T, .18) + '/>' +
+  '<path d="M58 82 L130 40 L130 160 L58 118Z" ' + S(T) + '/></g>' +
+  '<g class="gg-artP">' + [0, 1, 2].map(function (i) { var r = 22 + i * 20;
+    return '<path d="M146 ' + r2(100 - r * .78) + ' A' + r + ' ' + r + ' 0 0 1 146 ' + r2(100 + r * .78) + '" stroke="' + T.accent2 +
+      '" stroke-width="4" fill="none" stroke-linecap="round" opacity="' + r2(.85 - i * .2) + '"/>'; }).join('') + '</g>'); } };
+
+ART.globe = { label: '세계 — 지구본과 궤도. 글로벌·확장·시장', build: function (T) { return art(
+  '<g class="gg-artP"><circle cx="100" cy="102" r="60" ' + F(T, .14) + '/><circle cx="100" cy="102" r="60" ' + S(T) + '/>' +
+  '<ellipse cx="100" cy="102" rx="26" ry="60" stroke="' + T.accent + '" stroke-width="3.5" fill="none" opacity=".6"/>' +
+  '<path d="M43 82 L157 82 M40 102 L160 102 M43 122 L157 122" stroke="' + T.accent +
+  '" stroke-width="3.5" fill="none" opacity=".6" stroke-linecap="round"/></g>' +
+  '<g class="gg-artP"><ellipse cx="100" cy="102" rx="84" ry="32" stroke="' + T.accent2 +
+  '" stroke-width="4" fill="none" stroke-dasharray="9 8" opacity=".8" transform="rotate(-24 100 102)"/></g>' +
+  '<g class="gg-artP"><circle cx="176" cy="68" r="9" fill="' + T.accent2 + '"/>' +
+  '<circle cx="30" cy="140" r="7" fill="' + T.accent2 + '" opacity=".7"/></g>'); } };
 
 module.exports = { DECOR: DECOR, MARK: MARK, FRAME: FRAME, ART: ART, rng: rng };

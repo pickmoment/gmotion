@@ -29,7 +29,7 @@
           "label": "카드 일러스트",
           "icon": "chart",
           "art": "growth",
-          "note": "우하단 배경"
+          "note": "아이콘과 함께"
         },
         {
           "label": "톤",
@@ -64,6 +64,48 @@
       "title": "도형으로 개념을 말한다",
       "art": "collab",
       "sub": "픽토그램보다 크고 구성적이다",
+      "transition": "zoomIn"
+    },
+    {
+      "id": "artflow",
+      "pattern": "processFlow",
+      "purpose": "일러스트가 아이콘 자리를 대신한다",
+      "kicker": "ART · 아이콘 자리",
+      "title": "단계마다 일러스트를 세운다",
+      "steps": [
+        {
+          "label": "수집",
+          "art": "data",
+          "note": "흩어진 기록"
+        },
+        {
+          "label": "처리",
+          "art": "gears",
+          "note": "규칙으로 정리"
+        },
+        {
+          "label": "배포",
+          "art": "cloud",
+          "note": "필요한 곳으로"
+        }
+      ],
+      "transition": "pushLeft"
+    },
+    {
+      "id": "artconv",
+      "pattern": "convergence",
+      "purpose": "한 자리를 차지하는 일러스트",
+      "title": "셋이 하나로 모인다",
+      "sources": [
+        "로그",
+        "지표",
+        "추적"
+      ],
+      "target": {
+        "label": "관측",
+        "art": "telescope",
+        "note": "한 화면에서 본다"
+      },
       "transition": "zoomIn"
     },
     {

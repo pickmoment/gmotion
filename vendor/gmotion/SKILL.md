@@ -76,11 +76,11 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 
 보통은 `direction.md` 로 구성을 짜고 `spec.md` 로 스펙을 쓰면 끝난다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 79종이다:
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 95종이다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 (한글 이름 지원)
-node <skill>/assets/gm.js info decor       # 배경 20 · mark 15 · frame 12 · art 32
+node <skill>/assets/gm.js info decor       # 배경 20 · mark 15 · frame 12 · art 48
 node <skill>/assets/gm.js info fonts       # 폰트 10종 — 테마 기본을 덮어쓴다
 node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 ```
@@ -99,7 +99,7 @@ node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 | `assets/examples/starter-report.json` | 지표 축적 (5씬 19초, paper, step) — **발표자 노트가 채워진 예제** |
 | `assets/examples/starter-intro.json` | 시리즈 오프닝 (3씬 8초, ink, E3, 매치컷) |
 | `assets/examples/starter-shorts.json` | 쇼츠 (4씬 8초, neon, 9:16, E3) |
-| `assets/examples/starter-vectors.json` | **벡터 세트 쇼케이스** — 마크·배지·리본·일러스트·프레임을 한 번에 |
+| `assets/examples/starter-vectors.json` | **벡터 세트 쇼케이스** — 마크·배지·리본·프레임과 일러스트 두 쓰임(아이콘 자리 대신 · 카드 뒤 배경) |
 | `assets/examples/starter-charts.json` | **차트 쇼케이스** — 13씬, 데이터의 일마다 다른 형태 |
 | `assets/examples/starter-effects.json` | **효과 쇼케이스** — 모프·곡선 경로·스크램블·롤·마퀴·스택·곡선 와이프 |
 | `assets/examples/starter-narrated.json` | **자막 동기화** — 씬·항목에 `say` 를 단 예 (5씬 62초). 옆의 `.srt` 와 함께 쓴다 |
@@ -231,16 +231,20 @@ node <skill>/assets/gm.js build spec.json -o 발표.html --present
 
 1. **코드부터 쓰지 않는다.** 메시지 → 아크 → 씬 → 패턴 → 스펙 순서다.
 2. **한 씬에 한 메시지.** 두 개면 씬이 두 개다.
-3. **장식에도 이유가 있어야 한다.** 마크는 한 씬에 하나, 배지는 정말 다른 항목에만,
-   일러스트는 아이콘으로 부족할 때만. 전부 켜면 아무것도 강조되지 않는다.
-4. **움직임에 이유가 있어야 한다.** 리빌·설명·연결·강조·전환·방향 제시 중 하나에
+3. **장식에도 이유가 있어야 한다.** 마크는 한 씬에 하나, 배지는 정말 다른 항목에만.
+   전부 켜면 아무것도 강조되지 않는다.
+4. **픽토그램과 일러스트는 역할이 다르다.** 픽토그램은 항목을 **구별**하고(칩·목록·통계처럼
+   자리가 좁고 개수가 많은 곳), 일러스트는 개념을 **설명한다**(히어로·단계·전후·수렴처럼
+   자리가 크고 하나만 서는 곳). 큰 자리에 24px 픽토그램만 세우면 화면이 빈다 —
+   그런 자리에는 `art` 를 쓴다. `gm pattern <이름>` 의 `icon|art` 표기가 그 자리다.
+5. **움직임에 이유가 있어야 한다.** 리빌·설명·연결·강조·전환·방향 제시 중 하나에
    해당하지 않는 움직임은 넣지 않는다. 엔진이 그렇게 설계되어 있으므로,
    스펙 단계에서 **불필요한 씬을 넣지 않는 것**이 곧 이 원칙을 지키는 일이다.
-5. **없는 수치·인용·사실을 만들지 않는다.** 사용자가 준 내용만 쓴다.
-6. **정보량은 애니메이션으로 줄어들지 않는다.** 밀도 경고가 나오면 씬을 나눈다.
-7. **스크린샷을 보지 않았으면 끝난 게 아니다.** 빠른 모드는 이 원칙의 예외가 아니라
+6. **없는 수치·인용·사실을 만들지 않는다.** 사용자가 준 내용만 쓴다.
+7. **정보량은 애니메이션으로 줄어들지 않는다.** 밀도 경고가 나오면 씬을 나눈다.
+8. **스크린샷을 보지 않았으면 끝난 게 아니다.** 빠른 모드는 이 원칙의 예외가 아니라
    **미룬 것**이다 — 안 봤다는 사실을 밝히고 넘긴다.
-8. **재질은 색과 따로 고른다.** 테마가 색을, `skin` 이 표면·선·타이포의 모양을
+9. **재질은 색과 따로 고른다.** 테마가 색을, `skin` 이 표면·선·타이포의 모양을
    정한다(6종, `gm info skins`). 같은 내용을 문서 톤으로도 포스터 톤으로도 낼 수
    있으므로, 용도가 분명하면 스킨을 함께 고른다 — 기본값 `glass` 는 기존 모습이다.
 
@@ -253,7 +257,7 @@ assets/
   runtime.js       산출물에 실리는 런타임 — IR 을 타임라인으로 조립, 플레이어, 검수 API
   gsap.bundle.js   GSAP 3.15 (core + CustomEase·CustomWiggle·DrawSVG·MorphSVG·SplitText·MotionPath·ScrambleText)
   icons.js         픽토그램 191종 (mojs · scriptviz · mindmap 과 같은 세트)
-  vectors.js       벡터 세트 79종 — 배경 20 · 강조 15 · 프레임 12 · 일러스트 32. 전부 코드로 그린다
+  vectors.js       벡터 세트 95종 — 배경 20 · 강조 15 · 프레임 12 · 일러스트 48. 전부 코드로 그린다
   charts.js        차트 17종 — 형태·색·마크 스펙. 애니메이션은 지시만 하고 방법은 엔진이 정한다
   skins.js         디자인 프리미티브(인터페이스) 48종 + 스킨(구현부) 6종 — 표면·선·타이포의 재질
   examples/        스타터 스펙 13종 + 자막 동기화용 샘플 SRT

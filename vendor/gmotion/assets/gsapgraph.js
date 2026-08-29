@@ -368,12 +368,17 @@ function makeCtx(spec, sc, i) {
   var ctx = {
     W: asp.w, H: asp.h, safe: asp.safe, wide: asp.w >= asp.h, aspect: spec.aspect || '16:9',
     T: T, E: E, energy: spec.energy || 'E2', fs: fs, M: TOKENS, i: i, sid: sid,
-    /** 추상 일러스트 — 픽토그램보다 크고 구성적이다. 부분이 스태거로 등장한다. */
+    /** 추상 일러스트 — 픽토그램보다 크고 구성적이다. 부분이 스태거로 등장한다.
+     *  ART 는 200 박스에 굵기를 값으로 박아 두므로 작게 놓으면 선이 실처럼 얇아진다.
+     *  100px 아래로 내려가면 배율만 걸어 올린다 — 굵기 위계(2~16)는 비율 그대로 남는다. */
     art: function (name, size, cls) {
       if (!VEC.ART[name]) return '';
-      var z = num(size, 300);
-      return '<div class="gg-artBox ' + (cls || '') + '" style="width:' + z + 'px;height:' + z + 'px">' +
-        VEC.ART[name].build(T) + '</div>';
+      var z = num(size, 300), svg = VEC.ART[name].build(T);
+      if (z < 100) {
+        var k = 100 / z;
+        svg = svg.replace(/stroke-width="([0-9.]+)"/g, function (m, w) { return 'stroke-width="' + r2(w * k) + '"'; });
+      }
+      return '<div class="gg-artBox ' + (cls || '') + '" style="width:' + z + 'px;height:' + z + 'px">' + svg + '</div>';
     },
     cx: asp.w / 2, cy: asp.h / 2,
     /** 씬 스코프 셀렉터 */
@@ -519,6 +524,41 @@ function bodyCy(ctx, topY, headH) {
   var clampedHeadH = Math.min(headH, maxHeadH);
   return (topY + clampedHeadH + (ctx.wide ? 54 : 46) + (ctx.H - ctx.safe)) / 2;
 }
+/**
+ * 아이콘 자리의 시각물. `art` 가 있으면 일러스트, 없으면 픽토그램이다.
+ *
+ * ART 는 200 박스에 도형을 여러 개 조합한 구성물이라 24 박스 픽토그램과 같은 크기로
+ * 놓으면 뭉개진다. 아이콘 자리보다 훨씬 크게 잡아야 읽힌다 — 기본 1.9 배지만 자리마다
+ * 여유가 달라서 호출부가 artSize 로 직접 정한다. 선이 얇아지는 건 ctx.art 가 막아 주지만
+ * 형태가 뭉치는 건 못 막으니 100px 아래로는 내리지 않는다.
+ * 자리가 좁아 감당이 안 되는 패턴(칩·통계 숫자 옆)에는 이 헬퍼를 쓰지 않는다.
+ */
+function visual(ctx, x, iconSize, artSize, cls) {
+  if (!x) return '';
+  if (x.art && VEC.ART[x.art]) return ctx.art(x.art, num(artSize, Math.round(iconSize * 1.9)), 'gg-vArt ' + (cls || ''));
+  return x.icon ? ctx.icon(x.icon, iconSize, cls) : '';
+}
+/** 이 자리에 일러스트가 들어왔나 — 상자 높이를 미리 키워야 중심이 안 밀린다. */
+function hasArt(x) { return !!(x && x.art && VEC.ART[x.art]); }
+
+/**
+ * 일러스트 등장 — 조각(`gg-artP`)이 차례로 선다. 픽토그램의 드로우온에 대응한다.
+ *
+ * 일부 그림은 상시 루프를 자기 안에 갖고 있다(`gears` 반대 회전 · `flow` 점 흐름).
+ * 그건 CSS 애니메이션이라 씬이 재생되든 말든 페이지가 열린 순간부터 돈다 — 씬은 전부
+ * DOM 에 있고 `visibility` 로만 숨기기 때문이다. 조립되는 중에 이미 돌고 있으면 등장이
+ * 안 읽히므로, 기본은 멈춰 두고(`.gg-artLoop{animation-play-state:paused}`) 등장이
+ * 끝나는 시점에 타임라인이 풀어 준다. 시킹으로 되감으면 다시 멈춘다.
+ */
+function artIn(tw, ctx, host, at, o) {
+  o = o || {};
+  var dur = num(o.dur, ctx.d('fast'));
+  tw.from(ctx.q(host + ' .gg-artP'), at,
+    { scale: num(o.scale, .74), opacity: 0, transformOrigin: '50% 50%', duration: dur, ease: TOKENS.e.overshoot },
+    num(o.st, ctx.st('tight')));
+  tw.set(ctx.q(host + ' .gg-artLoop'), at + dur * 1.25, { animationPlayState: 'running' });
+}
+
 /** 카드 한 장. i 는 스태거 순서용 인덱스. */
 function card(it, g, ctx, o) {
   o = o || {};
@@ -853,7 +893,7 @@ var PATTERNS = {};
 PATTERNS.heroReveal = {
   label: '히어로 리빌',
   use: '오프닝, 클로징, 제품명·선언 공개. 한 씬에 메시지 하나.',
-  fields: 'title(필수) · kicker · sub · icon · rule(기본 true)',
+  fields: 'title(필수) · kicker · sub · icon|art(일러스트, icon 대신) · rule(기본 true)',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var w = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1500 : 940);
@@ -866,8 +906,7 @@ PATTERNS.heroReveal = {
       artH = az;
       H.push('<div class="gg-heroArt" style="left:' + Math.round((ctx.W - az) / 2) + 'px;top:' +
         Math.round(ctx.cy - az - (ctx.wide ? 130 : 200)) + 'px">' + ctx.art(sc.art, az) + '</div>');
-      tw.from(q('.gg-heroArt .gg-artP'), t, { scale: .82, opacity: 0, transformOrigin: '50% 50%',
-        duration: ctx.d('normal'), ease: TOKENS.e.overshoot }, ctx.st('normal'));
+      artIn(tw, ctx, '.gg-heroArt', t, { scale: .82, dur: ctx.d('normal'), st: ctx.st('normal') });
       t += ctx.d('normal') * .8;
     } else if (sc.icon) {
       var isz = ctx.wide ? 132 : 108;
@@ -971,7 +1010,7 @@ PATTERNS.kineticType = {
 PATTERNS.cardsCascade = {
   label: '카드 캐스케이드',
   use: '항목 나열, 기능 소개, 구성요소 열거. 3~8개가 적정. 9개 넘으면 씬을 나눈다.',
-  fields: 'items[](필수) · title · kicker · sub · cols · dir(up|left|scale)',
+  fields: 'items[](필수: {label,icon,art,note,value,badge,ribbon,spark}) · title · kicker · sub · cols · dir(up|left|scale)',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var it = items(sc.items), n = it.length;
@@ -1033,6 +1072,12 @@ PATTERNS.cardsCascade = {
     enterItems(tw, ctx, it, '.gg-cascadeCard', t, ctx.st('tight'),
       { scale: .6, opacity: 0, duration: ctx.d('fast'), ease: TOKENS.e.overshoot },
       { inner: ' .gg-ic', lead: ctx.d('micro') });
+    /* 카드 뒤 일러스트는 카드가 자리를 잡은 뒤 번지듯 올라온다 — 아이콘보다 한 박자 늦다 */
+    if (it.some(function (x) { return x.art && VEC.ART[x.art]; })) {
+      enterItems(tw, ctx, it, '.gg-cascadeCard', t, ctx.st('tight'),
+        { scale: .82, opacity: 0, transformOrigin: '100% 100%', duration: ctx.d('normal'), ease: ctx.ei },
+        { inner: ' .gg-cardArt', lead: ctx.d('fast') * .8 });
+    }
     t += appear;
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(it) + (sc.title || '')) };
   }
@@ -1128,7 +1173,7 @@ PATTERNS.networkBuild = {
 PATTERNS.processFlow = {
   label: '프로세스 플로우',
   use: '절차, 파이프라인, 단계별 흐름. 3~6단계. 7개 넘으면 두 씬으로 나눈다.',
-  fields: 'steps[](필수: {label,icon,note}) · title · kicker · vertical(기본: 화면비가 정함)',
+  fields: 'steps[](필수: {label,icon|art,note}) · title · kicker · vertical(기본: 화면비가 정함)',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var st = items(sc.steps || sc.items), n = st.length;
@@ -1168,7 +1213,7 @@ PATTERNS.processFlow = {
       H.push('<div class="gg-step" data-i="' + i + '" style="left:' + Math.round(b.x) + 'px;top:' + Math.round(b.y) +
         'px;width:' + Math.round(b.w) + 'px;min-height:' + Math.round(b.h) + 'px">' +
         '<div class="gg-stepNo">' + pad(i + 1, 2) + '</div>' +
-        (x.icon ? ctx.icon(x.icon, 54) : '') +
+        visual(ctx, x, 54, 150) +
         '<div class="gg-stepLb" style="font-size:' + Math.round(ctx.fs.body * 1.04) + 'px">' + esc(x.label) + '</div>' +
         (x.note ? '<div class="gg-stepNote">' + esc(x.note) + '</div>' : '') + '</div>');
     });
@@ -1177,6 +1222,7 @@ PATTERNS.processFlow = {
     st.forEach(function (x, i) {
       tw.from(q('.gg-step[data-i="' + i + '"]'), t, { y: ctx.px(vert ? 26 : 0), x: ctx.px(vert ? 0 : 34),
         skewX: vert ? 0 : ctx.skew('x'), skewY: vert ? ctx.skew() : 0, opacity: 0, scale: .94, duration: beat, ease: ctx.ei });
+      if (hasArt(x)) artIn(tw, ctx, '.gg-step[data-i="' + i + '"]', t + beat * .45);
       t += beat * .75;
       if (i < n - 1) {
         /* 선이 자라고 → 꺽쇠가 닫힌다. 머리를 나중에 걸어야 순서가 보인다. */
@@ -1194,7 +1240,7 @@ PATTERNS.processFlow = {
 PATTERNS.beforeAfter = {
   label: '비포 애프터',
   use: '개선 전/후, 도입 전/후, 문제/해결. 왼쪽이 흐려지며 오른쪽이 켜진다.',
-  fields: 'before{label,items[],value} · after{label,items[],value} (둘 다 필수) · title · kicker',
+  fields: 'before{label,icon|art,items[],value} · after{...} (둘 다 필수) · title · kicker',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var B = sc.before || {}, A = sc.after || {};
@@ -1220,7 +1266,7 @@ PATTERNS.beforeAfter = {
         'px;width:' + pw + 'px;min-height:' + ph + 'px">' +
         '<div class="gg-panelTag">' + esc(o.label || (side === 'bf' ? 'BEFORE' : 'AFTER')) + '</div>' +
         (o.value != null ? '<div class="gg-panelVal" style="font-size:' + Math.round(ctx.fs.num * .52) + 'px">' + esc(o.value) + '</div>' : '') +
-        (o.icon ? ctx.icon(o.icon, 56) : '') +
+        visual(ctx, o, 56, 168) +
         (it.length ? '<ul class="gg-panelList" style="font-size:' + Math.round(ctx.fs.body * .92) + 'px">' +
           it.map(function (x) { return '<li>' + esc(x.label) + (x.note ? ' <em>' + esc(x.note) + '</em>' : '') + '</li>'; }).join('') + '</ul>' : '') +
         '</div>';
@@ -1230,11 +1276,13 @@ PATTERNS.beforeAfter = {
     var dx = vert ? 0 : 30, dy = vert ? 26 : 0;
     tw.from(q('.gg-bf'), t, { x: ctx.px(-dx), y: ctx.px(-dy), opacity: 0, duration: ctx.d('normal'), ease: ctx.ei });
     tw.from(q('.gg-bf li'), t + ctx.d('fast') * .6, { x: ctx.px(16), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('normal'));
+    if (hasArt(B)) artIn(tw, ctx, '.gg-bf', t + ctx.d('fast') * .4);
     t += ctx.d('normal') + readSec(itemsText(B.items) + (B.label || ''), ctx.energy) * .55;
     /* 전환의 핵 — before 가 물러나고 after 가 켜진다. 동시에 일어나야 대비가 산다. */
     tw.to(q('.gg-bf'), t, { opacity: .34, scale: .97, filter: 'saturate(.25)', duration: ctx.d('normal'), ease: TOKENS.e.move });
     tw.from(q('.gg-af'), t, { x: ctx.px(dx), y: ctx.px(dy), opacity: 0, scale: .96, duration: ctx.d('normal') * 1.1, ease: ctx.ei });
     tw.from(q('.gg-af li'), t + ctx.d('fast') * .7, { x: ctx.px(18), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('normal'));
+    if (hasArt(A)) artIn(tw, ctx, '.gg-af', t + ctx.d('fast') * .5);
     if (A.value != null) tw.from(q('.gg-af .gg-panelVal'), t + ctx.d('fast') * .5, { scale: .7, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
     if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('fast') * .4);
     t += ctx.d('normal') * 1.1;
@@ -1246,7 +1294,7 @@ PATTERNS.beforeAfter = {
 PATTERNS.explodedDiagram = {
   label: '분해도',
   use: '스택 구조, 계층 아키텍처, 레이어드 구성. 겹쳐 있다가 위아래로 펼쳐진다.',
-  fields: 'layers[](필수: {label,icon,note}) · title · kicker · reverse(아래부터 펼침)',
+  fields: 'layers[](필수: {label,icon|art,note}) · title · kicker · reverse(아래부터 펼침)',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var ly = items(sc.layers || sc.items), n = ly.length;
@@ -1268,7 +1316,7 @@ PATTERNS.explodedDiagram = {
       var offX = (i - (n - 1) / 2) * (ctx.wide ? 26 : 16);
       H.push('<div class="gg-layer" data-i="' + i + '" style="left:' + Math.round((ctx.W - lw) / 2 + offX) + 'px;top:' +
         Math.round(y0 + i * spread) + 'px;width:' + lw + 'px;height:' + lh + 'px;z-index:' + (n - i) + '">' +
-        (x.icon ? ctx.icon(x.icon, 40) : '') +
+        visual(ctx, x, 40) +
         '<div class="gg-layerLb" style="font-size:' + Math.round(ctx.fs.body * .98) + 'px">' + esc(x.label) + '</div>' +
         (x.note ? '<div class="gg-layerNote">' + esc(x.note) + '</div>' : '') + '</div>');
     });
@@ -1278,6 +1326,7 @@ PATTERNS.explodedDiagram = {
       tw.fromTo(q('.gg-layer[data-i="' + i + '"]'), t,
         { y: collapsed - target, opacity: 0, scaleY: .6, scaleX: .94 },
         { y: 0, opacity: 1, scaleY: 1, scaleX: 1, duration: ctx.d('normal') * 1.15, ease: TOKENS.e.overshoot });
+      if (hasArt(x)) artIn(tw, ctx, '.gg-layer[data-i="' + i + '"]', t + ctx.d('fast') * .5);
       t += ctx.st('loose') * .9;
     });
     t += ctx.d('normal') * 1.15 - ctx.st('loose') * .9;
@@ -1289,7 +1338,7 @@ PATTERNS.explodedDiagram = {
 PATTERNS.zoomDetail = {
   label: '줌 디테일',
   use: '개요 -> 특정 항목 상세. 맥락을 잃지 않고 깊이 들어갈 때. 매치컷의 사촌.',
-  fields: 'items[](필수) · focus(0부터, 필수) · detail{title,points[]} · title · kicker',
+  fields: 'items[](필수: {label,icon,art,note}) · focus(0부터, 필수) · detail{title,points[]} · title · kicker',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], FX = [], t = 0;
     var it = items(sc.items), n = it.length, fi = clamp(num(sc.focus, 0), 0, n - 1);
@@ -1321,6 +1370,11 @@ PATTERNS.zoomDetail = {
 
     enterItems(tw, ctx, it, '.gg-zc', t, ctx.st('normal'),
       { y: ctx.px(36), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+    if (it.some(function (x) { return x.art && VEC.ART[x.art]; })) {
+      enterItems(tw, ctx, it, '.gg-zc', t, ctx.st('normal'),
+        { scale: .82, opacity: 0, transformOrigin: '100% 100%', duration: ctx.d('normal'), ease: ctx.ei },
+        { inner: ' .gg-cardArt', lead: ctx.d('fast') * .8 });
+    }
     t += ctx.d('fast') + ctx.st('normal') * (n - 1) + readSec(itemsText(it), ctx.energy) * .4;
     /* 카메라 — world 를 확대·이동해 초점 카드를 화면 중앙으로. 개별 카드를 움직이지 않는다. */
     var fg = g[fi], scale = ctx.wide ? 1.42 : 1.32;
@@ -1453,7 +1507,7 @@ PATTERNS.timeline = {
 PATTERNS.splitCompare = {
   label: '스플릿 비교',
   use: '두 선택지, 두 진영, 두 수치의 대비. 가운데 선이 갈라지며 양쪽이 들어온다.',
-  fields: 'left{label,value,items[],icon,tone} · right{...} (둘 다 필수) · title · kicker',
+  fields: 'left{label,value,items[],icon|art,tone} · right{...} (둘 다 필수) · title · kicker',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var L = sc.left || {}, R = sc.right || {};
@@ -1480,7 +1534,7 @@ PATTERNS.splitCompare = {
       var side = p[0], o = p[1], g = p[2], it = items(o.items);
       H.push('<div class="gg-side gg-' + side + (o.tone ? ' gg-t-' + o.tone : '') + '" style="left:' + Math.round(g.x) +
         'px;top:' + Math.round(g.y) + 'px;width:' + pw + 'px;min-height:' + ph + 'px">' +
-        (o.icon ? ctx.icon(o.icon, 58) : '') +
+        visual(ctx, o, 58, 168) +
         '<div class="gg-sideLb" style="font-size:' + Math.round(ctx.fs.sub * .96) + 'px">' + esc(o.label || '') + '</div>' +
         (o.value != null ? '<div class="gg-sideVal" style="font-size:' + Math.round(ctx.fs.num * .46) + 'px">' + esc(o.value) + '</div>' : '') +
         (it.length ? '<ul class="gg-sideList" style="font-size:' + Math.round(ctx.fs.body * .9) + 'px">' +
@@ -1490,6 +1544,8 @@ PATTERNS.splitCompare = {
     t += ctx.d('normal') * .5;
     tw.from(q('.gg-lt'), t, { x: ctx.px(vert ? 0 : -70), y: ctx.px(vert ? -30 : 0), opacity: 0, duration: ctx.d('normal'), ease: ctx.ei });
     tw.from(q('.gg-rt'), t + ctx.st('loose'), { x: ctx.px(vert ? 0 : 70), y: ctx.px(vert ? 30 : 0), opacity: 0, duration: ctx.d('normal'), ease: ctx.ei });
+    if (hasArt(L)) artIn(tw, ctx, '.gg-lt', t + ctx.d('fast') * .4);
+    if (hasArt(R)) artIn(tw, ctx, '.gg-rt', t + ctx.st('loose') + ctx.d('fast') * .4);
     t += ctx.d('normal') + ctx.st('loose');
     if (L.say || R.say) {
       /* 좌우가 각각 제 대사에 붙는다 — 한쪽을 말하는 동안 다른 쪽은 아직 없다 */
@@ -1510,7 +1566,7 @@ PATTERNS.splitCompare = {
 PATTERNS.convergence = {
   label: '수렴',
   use: '분산 -> 통합, 여러 채널 -> 단일 창구, 재료 -> 결과. 모이는 동작 자체가 메시지다.',
-  fields: 'sources[](필수) · target{label,icon}(필수) · title · kicker · sub',
+  fields: 'sources[](필수) · target{label,icon|art}(필수) · title · kicker · sub',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var src = items(sc.sources || sc.items), n = src.length;
@@ -1540,10 +1596,10 @@ PATTERNS.convergence = {
         (x.icon ? ctx.icon(x.icon, 36) : '') +
         '<div class="gg-chipLb" style="font-size:' + Math.round(ctx.fs.small * .98) + 'px">' + esc(x.label) + '</div></div>');
     });
-    var tw2 = ctx.wide ? 400 : 320, th2 = 172;
+    var tw2 = ctx.wide ? 400 : 320, th2 = hasArt(T) ? 262 : 172;
     H.push('<div class="gg-target" style="left:' + Math.round(ctx.cx - tw2 / 2) + 'px;top:' + Math.round(cy - th2 / 2) +
       'px;width:' + tw2 + 'px;min-height:' + th2 + 'px">' +
-      (T.icon ? ctx.icon(T.icon, 56) : '') +
+      visual(ctx, T, 56, 150) +
       '<div class="gg-targetLb" style="font-size:' + Math.round(ctx.fs.sub * .88) + 'px">' + esc(T.label || '') + '</div>' +
       (T.note ? '<div class="gg-targetNote">' + esc(T.note) + '</div>' : '') + '</div>');
 
@@ -1569,7 +1625,8 @@ PATTERNS.convergence = {
     /* 4) 하나가 남는다 */
     tw.to(q('.gg-target'), t, { opacity: 1, scale: 1, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
     tw.fx('impact', t + ctx.d('micro'));
-    if (T.icon) tw.draw(q('.gg-target path'), t, ctx.d('normal'), TOKENS.e.draw);
+    if (hasArt(T)) artIn(tw, ctx, '.gg-target', t, { scale: .72, st: ctx.st('normal') });
+    else if (T.icon) tw.draw(q('.gg-target path'), t, ctx.d('normal'), TOKENS.e.draw);
     t += ctx.d('normal');
     return { html: H.join(''), tw: tw, shot: r2(shotAt),
              dur: sceneDur(sc, ctx, t, T.label || '', { add: .5 }) };
@@ -1580,7 +1637,7 @@ PATTERNS.convergence = {
 PATTERNS.divergence = {
   label: '발산',
   use: '하나의 원천 -> 여러 결과, 플랫폼 -> 채널, 원칙 -> 실천. 수렴의 반대.',
-  fields: 'source{label,icon}(필수) · targets[](필수) · title · kicker',
+  fields: 'source{label,icon|art}(필수) · targets[](필수) · title · kicker',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var S = typeof sc.source === 'string' ? { label: sc.source } : (sc.source || {});
@@ -1601,9 +1658,9 @@ PATTERNS.divergence = {
     pos.forEach(function (p, i) { svg.push('<path class="gg-flow" data-i="' + i + '" d="' + curve(ctx.cx, cy, p.x, p.y, .1) + '"/>'); });
     svg.push('</svg>');
     H.push(svg.join(''));
-    var sw = ctx.wide ? 400 : 320, sh = 172;
+    var sw = ctx.wide ? 400 : 320, sh = hasArt(S) ? 262 : 172;
     H.push('<div class="gg-target gg-source" style="left:' + Math.round(ctx.cx - sw / 2) + 'px;top:' + Math.round(cy - sh / 2) +
-      'px;width:' + sw + 'px;min-height:' + sh + 'px">' + (S.icon ? ctx.icon(S.icon, 56) : '') +
+      'px;width:' + sw + 'px;min-height:' + sh + 'px">' + visual(ctx, S, 56, 150) +
       '<div class="gg-targetLb" style="font-size:' + Math.round(ctx.fs.sub * .88) + 'px">' + esc(S.label || '') + '</div></div>');
     tg.forEach(function (x, i) {
       var p = pos[i];
@@ -1612,6 +1669,7 @@ PATTERNS.divergence = {
         '<div class="gg-chipLb" style="font-size:' + Math.round(ctx.fs.small * .98) + 'px">' + esc(x.label) + '</div></div>');
     });
     tw.from(q('.gg-source'), t, { scale: .7, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
+    if (hasArt(S)) artIn(tw, ctx, '.gg-source', t + ctx.d('micro'), { scale: .72, st: ctx.st('normal') });
     t += ctx.d('normal') * .8 + readSec(S.label || '', ctx.energy) * .35;
     tw.draw(q('.gg-flow'), t, ctx.d('normal'), TOKENS.e.draw, ctx.st('tight'));
     t += ctx.d('normal') * .55;
@@ -1632,7 +1690,7 @@ PATTERNS.divergence = {
 PATTERNS.orbit = {
   label: '오빗',
   use: '중심과 위성, 생태계, 서비스를 둘러싼 요소. 회전은 루프로 남겨 앰비언트로 쓴다.',
-  fields: 'center{label,icon}(필수) · orbits[](필수: {label,icon,ring}) · title · spin(초, 기본 26)',
+  fields: 'center{label,icon|art}(필수) · orbits[](필수: {label,icon,ring}) · title · spin(초, 기본 26)',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var C = typeof sc.center === 'string' ? { label: sc.center } : (sc.center || {});
@@ -1657,9 +1715,9 @@ PATTERNS.orbit = {
     });
     svg.push('</svg>');
     H.push(svg.join(''));
-    var cw = ctx.wide ? 300 : 270, ch = ctx.wide ? 150 : 144;
+    var cw = ctx.wide ? 300 : 270, ch = hasArt(C) ? (ctx.wide ? 226 : 220) : (ctx.wide ? 150 : 144);
     H.push('<div class="gg-center" style="left:' + Math.round(ctx.cx - cw / 2) + 'px;top:' + Math.round(cy - ch / 2) +
-      'px;width:' + cw + 'px;min-height:' + ch + 'px">' + (C.icon ? ctx.icon(C.icon, 58) : '') +
+      'px;width:' + cw + 'px;min-height:' + ch + 'px">' + visual(ctx, C, 58, 124) +
       '<div class="gg-centerLb" style="font-size:' + Math.round(ctx.fs.sub * .9) + 'px">' + esc(C.label || '') + '</div></div>');
     /* 위성은 회전 컨테이너(gg-orbit)에 넣고, 라벨은 역회전시켜 글자가 눕지 않게 한다. */
     var spin = num(sc.spin, 26) * (ctx.energy === 'E3' ? .62 : ctx.energy === 'E1' ? 1.5 : 1);
@@ -1679,6 +1737,7 @@ PATTERNS.orbit = {
         }).join('') + '</div>');
     });
     tw.from(q('.gg-center'), t, { scale: .72, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
+    if (hasArt(C)) artIn(tw, ctx, '.gg-center', t + ctx.d('micro'), { st: ctx.st('normal') });
     t += ctx.d('normal') * .7;
     tw.draw(q('.gg-ring'), t, ctx.d('slow'), TOKENS.e.draw, ctx.st('loose'));
     tw.from(q('.gg-sat'), t + ctx.d('fast') * .5, { scale: .6, opacity: 0, duration: ctx.d('fast'), ease: TOKENS.e.overshoot }, ctx.st('normal'));
@@ -1692,10 +1751,15 @@ PATTERNS.orbit = {
 PATTERNS.matchCut = {
   label: '매치 컷',
   use: '두 개념을 한 형태로 잇는다. 앵커(아이콘·큰 글자)는 유지되고 주변 텍스트만 바뀐다.',
-  fields: 'anchor{icon|text}(필수) · from{title,sub} · to{title,sub}(필수) · morph(앵커 회전·스케일)',
+  fields: 'anchor{icon|art|text}(필수) · from{title,sub} · to{title,sub}(필수) · morph(앵커 회전·스케일) · anchorTo(아이콘 앵커만 모프)',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
-    var A = typeof sc.anchor === 'string' ? { icon: ICO.iconPath(sc.anchor) ? sc.anchor : null, text: ICO.iconPath(sc.anchor) ? null : sc.anchor } : (sc.anchor || {});
+    var A = typeof sc.anchor === 'string'
+      ? (VEC.ART[sc.anchor] ? { art: sc.anchor }
+         : ICO.iconPath(sc.anchor) ? { icon: sc.anchor } : { text: sc.anchor })
+      : (sc.anchor || {});
+    /* 아트 앵커는 도형이 여럿이라 드로우온·모프를 못 탄다 — 조각 스태거와 스케일로 간다. */
+    var aArt = A.art && VEC.ART[A.art] ? A.art : null;
     var F = sc.from || {}, O = sc.to || {};
     /* anchorTo 를 주면 앵커가 그 도형으로 모프한다 — 회전·확대보다 훨씬 강한 연결 */
     var morphTo = sc.anchorTo && ICO.iconPath(sc.anchorTo) ? ICO.iconPath(sc.anchorTo) : null;
@@ -1704,7 +1768,9 @@ PATTERNS.matchCut = {
     var ay = ctx.cy - (ctx.wide ? 40 : 90);
     H.push('<div class="gg-anchor" style="left:' + Math.round(ctx.cx - asz / 2) + 'px;top:' + Math.round(ay - asz / 2) +
       'px;width:' + asz + 'px;height:' + asz + 'px">' +
-      (A.icon ? ctx.icon(A.icon, asz, 'gg-drawIc') : '<span class="gg-anchorT" style="font-size:' + Math.round(asz * .62) + 'px">' + esc(A.text || '') + '</span>') +
+      (aArt ? ctx.art(aArt, asz, 'gg-anchorArt')
+        : A.icon ? ctx.icon(A.icon, asz, 'gg-drawIc')
+        : '<span class="gg-anchorT" style="font-size:' + Math.round(asz * .62) + 'px">' + esc(A.text || '') + '</span>') +
       '</div>');
     var roll = sc.textFx === 'roll';
     function block(cls, o) {
@@ -1730,13 +1796,14 @@ PATTERNS.matchCut = {
       H.push(block('gg-mcTo', O));
     }
     if (!roll) tw.set(q('.gg-mcTo'), 0, { opacity: 0 });
-    if (A.icon) tw.draw(q('.gg-anchor path'), t, ctx.d('slow'), TOKENS.e.draw);
+    if (aArt) artIn(tw, ctx, '.gg-anchor', t, { dur: ctx.d('normal'), st: ctx.st('normal') });
+    else if (A.icon) tw.draw(q('.gg-anchor path'), t, ctx.d('slow'), TOKENS.e.draw);
     tw.from(q('.gg-anchor'), t, { scale: .78, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
     t += ctx.d('slow') * .62;
     tw.from(roll ? q('.gg-mcRoll') : q('.gg-mcFrom'), t, { y: ctx.px(26), opacity: 0, duration: ctx.d('normal'), ease: ctx.ei });
     t += ctx.d('normal') + readSec((F.title || '') + (F.sub || ''), ctx.energy) * .85;
     /* 컷 — 앵커는 화면에 남고 텍스트가 교체된다. 이게 연결감의 정체. */
-    if (morphTo && A.icon) {
+    if (morphTo && A.icon && !aArt) {
       /* 도형 자체가 변형된다. 회전은 절제한다 — 모프가 이미 눈을 끌기 때문. */
       tw.morphTo(q('.gg-anchor path'), morphTo, t, ctx.d('slow') * 1.15, TOKENS.e.move);
       if (sc.morph !== false) tw.to(q('.gg-anchor'), t, { scale: 1.1, duration: ctx.d('slow'), ease: TOKENS.e.move });
@@ -1977,7 +2044,7 @@ PATTERNS.deviceShow = {
     tw.from(q('.gg-device'), t, { y: ctx.px(34), opacity: 0, scale: .96, duration: ctx.d('slow'), ease: ctx.ei });
     t += ctx.d('slow') * .6;
     if (SC.title) { tw.from(q('.gg-scT'), t, { y: ctx.px(12), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }); t += ctx.d('fast') * .5; }
-    if (SC.art) { tw.from(q('.gg-scArt .gg-artP'), t, { scale: .8, opacity: 0, transformOrigin: '50% 50%', duration: ctx.d('fast'), ease: TOKENS.e.overshoot }, ctx.st('normal')); t += ctx.d('fast'); }
+    if (SC.art) { artIn(tw, ctx, '.gg-scArt', t, { scale: .8, st: ctx.st('normal') }); t += ctx.d('fast'); }
     if (sLines.length) {
       tw.from(q('.gg-scL'), t, { x: ctx.px(-16), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('normal'));
       t += ctx.d('fast') + ctx.st('normal') * (sLines.length - 1);
@@ -2519,8 +2586,14 @@ function validate(spec, opts) {
     if (sc.art) chkVec(VEC.ART, sc.art, 'art');
     if (sc.frame) chkVec(VEC.FRAME, sc.frame, 'frame');
     if (sc.screen && sc.screen.art) chkVec(VEC.ART, sc.screen.art, 'screen.art');
-    [sc.items, sc.nodes, sc.steps, sc.stats, sc.stops].forEach(function (L) {
+    [sc.items, sc.nodes, sc.steps, sc.stats, sc.stops, sc.layers].forEach(function (L) {
       arr(L).forEach(function (x) { if (x && x.art) chkVec(VEC.ART, x.art, 'items[].art'); });
+    });
+    /* 항목이 아니라 자리 하나를 차지하는 시각물도 같은 이름표를 쓴다 */
+    [['before', sc.before], ['after', sc.after], ['left', sc.left], ['right', sc.right],
+     ['target', sc.target], ['source', sc.source], ['center', sc.center],
+     ['anchor', typeof sc.anchor === 'object' ? sc.anchor : null]].forEach(function (pair) {
+      if (pair[1] && pair[1].art) chkVec(VEC.ART, pair[1].art, pair[0] + '.art');
     });
     /* 화면 목업 밀도 */
     if (sc.pattern === 'deviceShow' && sc.screen) {
@@ -2696,6 +2769,8 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-artBox{position:relative}',
 '.gg-artBox svg{width:100%;height:100%;display:block}',
 '.gg-heroArt{position:absolute}',
+/* 아이콘 자리를 대신하는 일러스트 — 부모가 플렉스라 눌리지 않게 크기를 고정한다 */
+'.gg-vArt{flex:0 0 auto;color:var(--acc)}',
 '.gg-artP{transform-box:fill-box}',
 '@keyframes ggArtSpin{to{transform:rotate(360deg)}}',
 '@keyframes ggArtSpinR{to{transform:rotate(-360deg)}}',
@@ -2705,7 +2780,10 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-artSpin{animation:ggArtSpin 24s linear infinite}',
 '.gg-artSpinR{animation:ggArtSpinR 18s linear infinite}',
 '.gg-artFlow{animation:ggArtFlow 3.4s ease-in-out infinite}',
-'.gg-cardArt{position:absolute;right:-6px;bottom:-6px;width:44%;opacity:.16;pointer-events:none}',
+/* 상시 루프는 기본 정지 — artIn 이 등장이 끝나는 시점에 풀어 준다.
+   animation 단축 속성이 play-state 를 running 으로 되돌리므로 반드시 그 뒤에 온다. */
+'.gg-artLoop{animation-play-state:paused;transform-box:view-box}',
+'.gg-cardArt{position:absolute;right:-10px;bottom:-10px;width:52%;opacity:.28;pointer-events:none}',
 '.gg-cardArt svg{width:100%;height:auto;display:block}',
 '@media (prefers-reduced-motion:reduce){.gg-artSpin,.gg-artSpinR,.gg-artFlow,.gg-mkStar{animation:none}}',
 /* ---- 마퀴 ---- */
