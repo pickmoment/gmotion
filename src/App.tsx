@@ -12,6 +12,7 @@ import { ExamplesPanel } from "./components/ExamplesPanel";
 import { CheckPanel } from "./components/CheckPanel";
 import { RenderPanel } from "./components/RenderPanel";
 import { DesignPanel } from "./components/DesignPanel";
+import { SpecGenPanel } from "./components/SpecGenPanel";
 import { useSpecStore } from "./lib/useSpecStore";
 import { syncSpecDesign } from "./lib/design";
 import { useDesignStore } from "./lib/designStore";
@@ -22,7 +23,7 @@ import { api, ask, dialogs, shell } from "./lib/tauri";
 import type { Cue, Scene, Spec } from "./engine/types";
 
 type Tab = "form" | "doc" | "json";
-type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design";
+type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design" | "gen";
 export default function App() {
   const store = useSpecStore(EMPTY_SPEC);
   const { spec } = store;
@@ -357,6 +358,7 @@ export default function App() {
         onPickAudio={pickAudio}
         onClearSync={clearSync}
         onToggleCaptions={setCaptions}
+        onGenSpec={() => setModal("gen")}
         onExport={doExport}
         onCheck={doCheck}
         onSkill={() => setModal("skill")}
@@ -437,6 +439,26 @@ export default function App() {
       )}
       {modal === "check" && check && (
         <CheckPanel lines={check.lines} info={check.info} fail={check.fail} onClose={() => setModal(null)} />
+      )}
+      {modal === "gen" && cues && (
+        <SpecGenPanel
+          cues={cues}
+          base={{
+            aspect: spec.aspect || "16:9",
+            theme: spec.theme || "midnight",
+            skin: typeof spec.skin === "string" ? spec.skin : undefined,
+            energy: spec.energy || "E2",
+          }}
+          onClose={() => setModal(null)}
+          onApply={(next, how) => {
+            /* 초안은 파일이 아니다 — 경로를 비워 두어 저장할 때 새 파일을 묻게 한다 */
+            reset(next);
+            setFilePath(null);
+            setSelected(0);
+            setModal(null);
+            say(`자막에서 초안을 만들었다 — ${how}`);
+          }}
+        />
       )}
       {modal === "design" && (
         <DesignPanel

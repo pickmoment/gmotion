@@ -1,3 +1,4 @@
+mod agent;
 mod cdp;
 pub mod render;
 mod skill;
@@ -11,6 +12,10 @@ use tauri_plugin_opener::OpenerExt;
 /// 렌더 취소 플래그. 렌더는 한 번에 하나만 돈다.
 #[derive(Default)]
 struct RenderState(Arc<AtomicBool>);
+
+/// 에이전트 CLI 취소 플래그. 렌더와 같은 이유로 한 번에 하나만 돈다.
+#[derive(Default)]
+struct AgentState(Arc<AtomicBool>);
 
 #[derive(Serialize)]
 struct FileInfo {
@@ -196,10 +201,42 @@ fn render_cancel(state: tauri::State<'_, RenderState>) {
     state.0.store(true, Ordering::Relaxed);
 }
 
+/// 설치된 에이전트 CLI 목록. 없는 것은 빠진다.
+#[tauri::command]
+fn agent_tools() -> Vec<agent::Tool> {
+    agent::tools()
+}
+
+/// 에이전트 CLI 를 돌린다. 모델 호출이라 몇 분씩 걸리므로 렌더와 같은 구조다 —
+/// 별도 스레드에서 돌리고 로그는 이벤트로 흘린다.
+#[tauri::command]
+async fn agent_run(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AgentState>,
+    opts: agent::RunOpts,
+) -> Result<agent::RunOut, String> {
+    let cancel = state.0.clone();
+    cancel.store(false, Ordering::Relaxed);
+    tauri::async_runtime::spawn_blocking(move || {
+        let emit: agent::OnLine = Arc::new(move |l: agent::Line| {
+            let _ = tauri::Emitter::emit(&app, "agent-log", l);
+        });
+        agent::run(emit, opts, cancel)
+    })
+    .await
+    .map_err(|e| format!("에이전트 스레드 오류: {e}"))?
+}
+
+#[tauri::command]
+fn agent_cancel(state: tauri::State<'_, AgentState>) {
+    state.0.store(true, Ordering::Relaxed);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(RenderState::default())
+        .manage(AgentState::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -220,6 +257,9 @@ pub fn run() {
             render_tools,
             render_mp4,
             render_cancel,
+            agent_tools,
+            agent_run,
+            agent_cancel,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

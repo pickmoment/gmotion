@@ -44,6 +44,10 @@ src/
     types.ts         엔진 공개 표면과 스펙 타입
   lib/
     build.ts         validate · toHTML · timing · gm check
+    agents.ts        에이전트 CLI 어댑터(claude·codex·pi·omp) · 출력에서 JSON 추출
+    specPrompt.ts    자막 → 씬 표 → 스펙 프롬프트 (카탈로그는 엔진에서, 예제는 번들에서)
+    specGen.ts       CLI 호출 → 검증 → 진단을 되먹여 재요청하는 루프
+    specDraft.ts     CLI 없이 만드는 규칙 기반 뼈대 초안
     spec.ts          스펙 불변 조작 헬퍼
     useSpecStore.ts  실행 취소 / 다시 실행
     tauri.ts         Rust 커맨드 · 다이얼로그 · 렌더 진행률 래퍼
@@ -60,11 +64,13 @@ src/
     Preview          산출물 iframe + 씬 트랜스포트
     ValidatePanel    오류 · 경고 · 자막 불일치 진단
     RenderPanel      MP4 진행률 · 멈추기
+    SpecGenPanel     자막 → 스펙 초안 (CLI 선택 · 진행 로그 · 씬 표 · 검증 결과)
     CheckPanel · ExamplesPanel · DocsPanel · SkillPanel
 src-tauri/
   src/skill.rs       번들 스킬 페이로드 — 상태 비교 · 설치 · 제거
   src/cdp.rs         Chrome DevTools Protocol 최소 클라이언트 · 실행파일 탐색 · base64
   src/render.rs      MP4 렌더 — 스크린캐스트 수신 · 고정 프레임률 리샘플 · ffmpeg 파이프
+  src/agent.rs       에이전트 CLI 실행 — 실행파일 탐색 · PATH 보강 · 로그 스트림 · 취소
   src/lib.rs         파일 I/O · 음성 data URI · 파일 열기 · 커맨드 등록
   examples/rendercheck.rs   GUI 없이 렌더를 돌려 보는 도구
 ```
@@ -80,6 +86,7 @@ src-tauri/
 | 검증 | `gm validate` 와 같은 오류(✗)·경고(!). 경고는 연출에 대한 지적이라 숨기지 않는다 |
 | 자막·음성 | SRT·VTT 로 씬 타이밍을 실측 정렬, 음성을 data URI 로 산출물에 심는다. 한 씬도 못 맞추면 **다른 회차의 자막인지 짚어 준다** |
 | 화면 자막 | 화면 맨 아래에 붙는다. 보는 쪽에서 `C` 키 · 플레이어 `CC` 버튼 · `?cc=0` 으로 끌 수 있다. **발표용 산출물에는 실리지 않는다** |
+| 자막 → 스펙 초안 | 로컬 에이전트 CLI(claude·codex·pi·omp)로 **씬 표 → 스펙 JSON** 두 단계를 거쳐 받고, **앱의 검증기로 채점해 되먹인다**. 모델은 CLI 별로 골라 넣을 수 있다(비우면 CLI 기본값). CLI 가 없으면 자막을 그대로 배치한 뼈대 초안 |
 | 내보내기 | HTML(일반·발표용·클린) · 타임코드 CSV · MP4. 무엇이 실렸는지(자막·화면자막·음성) 결과에 명시한다 |
 | MP4 렌더 | 아래 절 |
 | 검수 | `gm check` 와 같은 정책 검사 |

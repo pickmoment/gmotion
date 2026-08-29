@@ -319,6 +319,44 @@ fieldset.group > legend { font-size: 11px; color: var(--ink2); padding: 0 5px; d
 .tag.miss { background: rgba(242,112,90,.18); color: var(--bad); }
 .tag.diff { background: rgba(232,184,75,.18); color: var(--warn); }
 
+/* 자막으로 스펙 초안 만들기 — 창 하나에서 고르고, 돌리고, 결과를 본다 */
+.gen { display: flex; flex-direction: column; gap: 14px; padding: 0; }
+.gen-row { display: flex; flex-direction: column; gap: 6px; }
+.gen-row h4 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.gen-tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
+.gen-tool {
+  display: grid; grid-template-columns: auto 1fr; grid-template-areas: "r n" "r h" "r b";
+  gap: 0 8px; align-items: center; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg2);
+}
+.gen-tool.on { border-color: var(--acc); }
+.gen-tool input { grid-area: r; }
+.gen-tool strong { grid-area: n; font-size: 12px; }
+.gen-tool > span:first-of-type { grid-area: h; font-size: 11px; }
+.gen-tool .tiny { grid-area: b; }
+.tiny { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.warn-text { color: var(--warn); }
+.err-text { color: var(--bad); font-size: 12px; }
+.modal-ops.start { justify-content: flex-start; align-items: center; }
+.gen-log {
+  background: var(--bg2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px; max-height: 180px; overflow: auto; font-size: 11px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-all;
+}
+.gen-scenes { list-style: none; counter-reset: gs; display: flex; flex-direction: column; gap: 3px; max-height: 260px; overflow: auto; }
+.gen-scenes li {
+  counter-increment: gs; display: grid; grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 8px; align-items: baseline; font-size: 12px; padding: 3px 0; border-bottom: 1px solid var(--line);
+}
+.gen-scenes li::before { content: counter(gs) "."; position: absolute; margin-left: -14px; color: var(--dim); font-size: 10px; }
+.gen-scenes code { font-size: 11px; color: var(--acc); }
+.gen-board { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--bg2); }
+.gen-board summary { cursor: pointer; font-size: 12px; color: var(--ink2); }
+.gen-board ol { list-style: none; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+.gen-board li { display: grid; grid-template-columns: 110px minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; font-size: 12px; align-items: baseline; }
+.gen-board code { font-size: 11px; color: var(--acc); }
+.gen-errs { list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 11px; }
+
 .example-list { display: flex; flex-direction: column; gap: 4px; }
 .example-list button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
 

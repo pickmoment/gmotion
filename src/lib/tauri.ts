@@ -35,7 +35,41 @@ export const api = {
   skillRemove: (root?: string | null) => invoke<SkillStatus>("skill_remove", { root: root ?? null }),
   skillFile: (path: string) => invoke<string>("skill_file", { path }),
   skillManifest: () => invoke<string[]>("skill_manifest"),
+  /** 설치된 에이전트 CLI 목록. 찾았다는 뜻일 뿐 — 로그인·네트워크는 돌려 봐야 안다 */
+  agentTools: () => invoke<AgentTool[]>("agent_tools"),
+  agentRun: (opts: AgentRunOpts) => invoke<AgentRunOut>("agent_run", { opts }),
+  agentCancel: () => invoke<void>("agent_cancel"),
 };
+
+export interface AgentTool {
+  id: string;
+  bin: string;
+}
+
+export interface AgentRunOpts {
+  bin: string;
+  args: string[];
+  cwd: string | null;
+  timeout_sec: number;
+}
+
+export interface AgentRunOut {
+  code: number;
+  stdout: string;
+  stderr: string;
+  ms: number;
+  timed_out: boolean;
+  canceled: boolean;
+}
+
+export interface AgentLine {
+  stream: "out" | "err";
+  text: string;
+}
+
+/** 에이전트 CLI 로그 구독. 렌더 진행률과 같은 방식이다. */
+export const onAgentLog = (fn: (l: AgentLine) => void) =>
+  listen<AgentLine>("agent-log", (e) => fn(e.payload));
 
 export interface RenderOpts {
   html_path: string;

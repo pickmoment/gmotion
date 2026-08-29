@@ -39,6 +39,7 @@ export function Toolbar({
   onPickAudio,
   onClearSync,
   onToggleCaptions,
+  onGenSpec,
   onExport,
   onCheck,
   onSkill,
@@ -67,6 +68,7 @@ export function Toolbar({
   onPickAudio: () => void;
   onClearSync: () => void;
   onToggleCaptions: (v: boolean) => void;
+  onGenSpec: () => void;
   onExport: (k: ExportKind["key"]) => void;
   onCheck: () => void;
   onSkill: () => void;
@@ -153,6 +155,14 @@ export function Toolbar({
               화면 자막 얹기 — 화면 맨 아래에 붙는다. 보는 쪽에서 <code>C</code> 키로 끌 수 있다.
               발표용 산출물에는 실리지 않는다 (말은 발표자가 한다)
             </label>
+            {/* 자막이 있으면 여기서 스펙 자체를 만들 수 있다 — 자막을 고르는 자리가
+                "이걸로 뭘 할 수 있나" 를 아는 자리이기도 하다. */}
+            <div className="menu-row">
+              <button type="button" disabled={!subsPath} onClick={() => { onGenSpec(); close(); }}>
+                자막으로 스펙 초안 만들기…
+              </button>
+              <span className="dim">로컬 에이전트 CLI(claude·codex·pi·omp) 또는 규칙 기반</span>
+            </div>
             <div className="menu-row end">
               <button type="button" className="ghost danger" disabled={!subsPath && !audioPath}
                       onClick={() => onClearSync()}>해제</button>
