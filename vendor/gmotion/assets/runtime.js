@@ -80,13 +80,28 @@
       } else if (o.fn === 'pulse' && o.t && !RM) {
         tl.fromTo(o.t, { scale: 1 }, { scale: 1.06, duration: .3, yoyo: true, repeat: 1, ease: 'sine.inOut' }, o.at);
       } else if (o.fn === 'spin') {
-        /* 궤도 회전 — 마스터 밖에서 무한 루프. 시킹과 무관하게 돈다. */
+        /* 궤도 회전 — 마스터 밖에서 무한 루프. 시킹과 무관하게 돈다.
+           위성은 놓인 타원 위를 각도로 돈다. 컨테이너 강체 회전은 타원선을 벗어난다. */
         if (RM) return;
         scope.querySelectorAll('.gg-orbit').forEach(function (el) {
           var sec = parseFloat(el.getAttribute('data-spin')) || 26;
-          gsap.to(el, { rotation: 360, duration: sec, repeat: -1, ease: 'none' });
-          el.querySelectorAll('.gg-satIn').forEach(function (s) {
-            gsap.to(s, { rotation: -360, duration: sec, repeat: -1, ease: 'none' });
+          var sats = Array.prototype.slice.call(el.querySelectorAll('.gg-sat')).map(function (s) {
+            var a0 = (parseFloat(s.getAttribute('data-oa')) || 0) * Math.PI / 180,
+                rx = parseFloat(s.getAttribute('data-orx')) || 0,
+                ry = parseFloat(s.getAttribute('data-ory')) || 0;
+            /* left/top 이 이미 시작점에 놓여 있으므로 시작점 대비 변위만 준다 */
+            return { el: s, a0: a0, rx: rx, ry: ry, x0: Math.cos(a0) * rx, y0: Math.sin(a0) * ry };
+          });
+          if (!sats.length) return;
+          var st = { a: 0 };
+          gsap.to(st, {
+            a: Math.PI * 2, duration: sec, repeat: -1, ease: 'none',
+            onUpdate: function () {
+              for (var i = 0; i < sats.length; i++) {
+                var s = sats[i], a = s.a0 + st.a;
+                gsap.set(s.el, { x: Math.cos(a) * s.rx - s.x0, y: Math.sin(a) * s.ry - s.y0 });
+              }
+            }
           });
         });
       }

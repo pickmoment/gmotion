@@ -1719,18 +1719,22 @@ PATTERNS.orbit = {
     H.push('<div class="gg-center" style="left:' + Math.round(ctx.cx - cw / 2) + 'px;top:' + Math.round(cy - ch / 2) +
       'px;width:' + cw + 'px;min-height:' + ch + 'px">' + visual(ctx, C, 58, 124) +
       '<div class="gg-centerLb" style="font-size:' + Math.round(ctx.fs.sub * .9) + 'px">' + esc(C.label || '') + '</div></div>');
-    /* 위성은 회전 컨테이너(gg-orbit)에 넣고, 라벨은 역회전시켜 글자가 눕지 않게 한다. */
+    /* 위성은 놓인 타원 위를 각도로 돈다 — 컨테이너를 통째로 회전시키면 중심에서의 거리가
+       제각각이라(rx≠ry) 각자 자기 반지름의 원을 그리며 그려 둔 궤도선을 벗어난다.
+       궤도 반지름과 시작 각도를 위성에 실어 두면 런타임이 매 프레임 타원 위 좌표를 찍는다. */
     var spin = num(sc.spin, 26) * (ctx.energy === 'E3' ? .62 : ctx.energy === 'E1' ? 1.5 : 1);
     rkeys.forEach(function (k, ri) {
       var list = rings[k], rr = baseR * (1 + ri * .58);
-      var p = ringOf(list.length, ctx.cx, cy, rr * (ctx.wide ? 1.42 : 1.0), rr * (ctx.wide ? 1 : 1.34), -90 + ri * 30);
+      var rx = rr * (ctx.wide ? 1.42 : 1.0), ry = rr * (ctx.wide ? 1 : 1.34);
+      var p = ringOf(list.length, ctx.cx, cy, rx, ry, -90 + ri * 30);
       H.push('<div class="gg-orbit" data-r="' + ri + '" data-spin="' + r2(spin * (1 + ri * .45)) + '" style="left:0;top:0;width:' +
-        ctx.W + 'px;height:' + ctx.H + 'px;transform-origin:' + ctx.cx + 'px ' + cy + 'px">' +
+        ctx.W + 'px;height:' + ctx.H + 'px">' +
         list.map(function (o, j) {
           var pp = p[j], sat = ctx.wide ? 168 : 186;
-          return '<div class="gg-sat" data-i="' + o.i + '" style="left:' + Math.round(pp.x - sat / 2) + 'px;top:' +
+          return '<div class="gg-sat" data-i="' + o.i + '" data-orx="' + r2(rx) + '" data-ory="' + r2(ry) +
+            '" data-oa="' + r2(pp.ang) + '" style="left:' + Math.round(pp.x - sat / 2) + 'px;top:' +
             Math.round(pp.y - 58) + 'px;width:' + sat + 'px">' +
-            '<div class="gg-satIn" data-spin="' + r2(spin * (1 + ri * .45)) + '">' +
+            '<div class="gg-satIn">' +
             (o.x.icon ? ctx.icon(o.x.icon, ctx.wide ? 38 : 42) : '') +
             '<div class="gg-satLb" style="font-size:' + Math.round(ctx.fs.small * (ctx.wide ? .96 : 1.1)) + 'px">' +
             esc(o.x.label) + '</div></div></div>';
@@ -2934,8 +2938,8 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-targetLb,.gg-centerLb{font-weight:800;letter-spacing:var(--tight)}',
 '.gg-targetNote{font-size:22px;color:var(--dim)}',
 '.gg-ring{fill:none;stroke:var(--line);stroke-width:var(--ring-w);stroke-dasharray:var(--ring-dash)}',
-'.gg-orbit{position:absolute;will-change:transform}',
-'.gg-sat{position:absolute}',
+'.gg-orbit{position:absolute}',
+'.gg-sat{position:absolute;will-change:transform}',
 '.gg-satIn{background:color-mix(in srgb,' + T.bg + ' 84%,' + T.ink + ');border:var(--surf-lw) solid var(--surf-line);' +
   'border-radius:var(--r-sm);padding:15px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}',
 '.gg-satLb{font-weight:700;line-height:1.24}',
