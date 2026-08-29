@@ -241,7 +241,7 @@ gm icons 서버              # 픽토그램 191종에서 검색 (한글로 찾�
 gm icons                  # 전체 목록
 gm info decor             # 배경 레이어 20종
 gm info mark              # 강조 마크 15종 (밑줄·동그라미·형광펜…)
-gm info frame             # 디바이스 프레임 12종 (브라우저·터미널·폰…)
+gm info frame             # 디바이스 프레임 19종 (브라우저·터미널·에디터·영수증…)
 gm info art               # 추상 일러스트 48종
 gm info chart             # 차트 17종과 각각의 용도
 ```
@@ -536,7 +536,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info aspects` | 화면비 4종 |
 | `gm info decor` | 배경 레이어 20종 |
 | `gm info mark` | 강조 마크 15종 |
-| `gm info frame` | 디바이스 프레임 12종 |
+| `gm info frame` | 디바이스 프레임 19종 |
 | `gm info art` | 추상 일러스트 48종 |
 | `gm info fonts` | 폰트 10종 |
 | `gm info chart` | 차트 17종 |

@@ -178,13 +178,13 @@
 `warning` `decline` `fracture` `maze` 는 테마의 `warn`·`bad` 색을 쓴다 — 나머지가 강조색을
 쓰는 것과 달리, 색만으로도 "여기가 나쁜 대목"이 읽힌다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 95종이 있고 한글 이름도 따로 있다:
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 102종이 있고 한글 이름도 따로 있다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 — speech(메시지·채팅·댓글)
 node <skill>/assets/gm.js info decor       # 배경 20종
 node <skill>/assets/gm.js info mark        # 강조 15종
-node <skill>/assets/gm.js info frame       # 디바이스 12종
+node <skill>/assets/gm.js info frame       # 디바이스·실물 프레임 19종
 node <skill>/assets/gm.js info art         # 일러스트 48종
 node <skill>/assets/gm.js info chart       # 차트 17종
 ```
@@ -436,9 +436,11 @@ waterfall slope dumbbell bullet heatmap sparkline`
 ```jsonc
 { "pattern": "deviceShow",
   "title": "한 곳에서 답이 나온다",
-  "frame": "browser",                    // browser window terminal phone tablet laptop card chat memo notepad clipboard clayBoard
+  "frame": "browser",                    // 화면: browser window terminal editor search dialog phone tablet laptop notification
+                                         // 실물: card chat memo notepad clipboard clayBoard receipt newspaper book
   "screen": {                            // 프레임 안. 셋 중 필요한 것만
-    "title": "검색 결과",
+    "title": "검색 결과",                  // search·editor·newspaper·receipt·dialog 는 프레임이 정한 자리에 앉는다
+                                         //   (검색어·파일명·제호·상호명·모달 제목)
     "items": [ { "label": "결정 로그", "icon": "doc", "value": "12" } ],
     "lines": ["$ gm build spec.json", "→ 발표.html (190KB)"],   // terminal 은 $ 로 시작하면 명령으로 본다
     "art": "search"

@@ -225,7 +225,8 @@ var FONTS = {
 /** 스펙이 고정폭을 필요로 하는가 — 터미널·코드 프레임을 쓸 때만 링크를 건다. */
 function needsMono(spec) {
   return arr(spec && spec.scenes).some(function (sc) {
-    return sc && sc.pattern === 'deviceShow' && (sc.frame === 'terminal' || sc.frame === 'window');
+    return sc && sc.pattern === 'deviceShow' &&
+      (sc.frame === 'terminal' || sc.frame === 'window' || sc.frame === 'editor');
   });
 }
 
@@ -1988,7 +1989,9 @@ PATTERNS.chart = {
 PATTERNS.deviceShow = {
   label: '디바이스 쇼케이스',
   use: '제품 화면, UI 소개, 로그·코드, 앱 흐름. 프레임이 "이건 실제 화면이다"를 말해 준다.',
-  fields: 'frame(browser|window|terminal|phone|tablet|laptop|card|chat) · screen{lines[]|items[]|art|title} · title · kicker · sub · caption',
+  fields: 'frame(browser|window|terminal|editor|search|dialog|phone|tablet|laptop|notification|' +
+          'card|chat|memo|notepad|clipboard|clayBoard|receipt|newspaper|book) · ' +
+          'screen{lines[]|items[]|art|title} · title · kicker · sub · caption',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var fname = VEC.FRAME[sc.frame] ? sc.frame : 'browser';
@@ -2014,11 +2017,13 @@ PATTERNS.deviceShow = {
     var fx = Math.round((ctx.W - fw) / 2);
     var fy = Math.round(availTop + (availH - fh) / 2);
     var built = F.build(ctx.T, fw, fh), inner = built.inner;
+    /* 프레임이 제목 자리를 정해 두었으면(검색어·제호·파일명·모달 제목) 거기에 앉힌다 */
+    var slot = built.slot && SC.title ? built.slot : null;
 
     var body = '';
     var sLines = arr(SC.lines).map(String);
     var sItems = items(SC.items);
-    if (SC.title) body += '<div class="gg-scT" style="font-size:' + Math.round(ctx.fs.sub * .82) + 'px">' + esc(SC.title) + '</div>';
+    if (SC.title && !slot) body += '<div class="gg-scT" style="font-size:' + Math.round(ctx.fs.sub * .82) + 'px">' + esc(SC.title) + '</div>';
     if (SC.art && VEC.ART[SC.art]) {
       body += '<div class="gg-scArt">' + ctx.art(SC.art, Math.round(Math.min(inner.w, inner.h) * .66)) + '</div>';
     }
@@ -2032,13 +2037,17 @@ PATTERNS.deviceShow = {
         }).join('') + '</div>';
     }
     if (sItems.length) {
-      body += '<div class="gg-scItems">' + sItems.map(function (x, i) {
+      body += '<div class="gg-scItems" style="font-size:' + Math.round(ctx.fs.body * .9) + 'px">' +
+        sItems.map(function (x, i) {
         return '<div class="gg-scI" data-i="' + i + '">' + (x.icon ? ctx.icon(x.icon, 30) : '') +
           '<span>' + esc(x.label) + '</span>' + (x.value != null ? '<b>' + esc(x.value) + '</b>' : '') + '</div>';
       }).join('') + '</div>';
     }
-    H.push('<div class="gg-device' + (fname === 'terminal' ? ' gg-devTerm' : '') + '" style="left:' + fx + 'px;top:' + fy +
+    H.push('<div class="gg-device gg-dev-' + fname + '" style="left:' + fx + 'px;top:' + fy +
       'px;width:' + fw + 'px;height:' + fh + 'px">' + built.svg +
+      (slot ? '<div class="gg-scSlot" style="left:' + Math.round(slot.x) + 'px;top:' + Math.round(slot.y) +
+        'px;width:' + Math.round(slot.w) + 'px;height:' + Math.round(slot.h) + 'px;font-size:' +
+        Math.round(slot.size) + 'px">' + esc(SC.title) + '</div>' : '') +
       '<div class="gg-screen" style="left:' + Math.round(inner.x) + 'px;top:' + Math.round(inner.y) +
       'px;width:' + Math.round(inner.w) + 'px;height:' + Math.round(inner.h) + 'px">' + body + '</div></div>');
     if (sc.caption) {
@@ -2047,7 +2056,7 @@ PATTERNS.deviceShow = {
     }
     tw.from(q('.gg-device'), t, { y: ctx.px(34), opacity: 0, scale: .96, duration: ctx.d('slow'), ease: ctx.ei });
     t += ctx.d('slow') * .6;
-    if (SC.title) { tw.from(q('.gg-scT'), t, { y: ctx.px(12), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }); t += ctx.d('fast') * .5; }
+    if (SC.title) { tw.from(q(slot ? '.gg-scSlot' : '.gg-scT'), t, { y: ctx.px(12), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }); t += ctx.d('fast') * .5; }
     if (SC.art) { artIn(tw, ctx, '.gg-scArt', t, { scale: .8, st: ctx.st('normal') }); t += ctx.d('fast'); }
     if (sLines.length) {
       tw.from(q('.gg-scL'), t, { x: ctx.px(-16), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('normal'));
@@ -2818,9 +2827,28 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-scLines{display:flex;flex-direction:column;gap:11px;color:var(--ink2);line-height:1.45}',
 '.gg-scL{display:flex;gap:9px}',
 '.gg-scP{color:var(--acc);font-weight:700}',
-'.gg-devTerm .gg-screen{font-family:var(--mono);justify-content:flex-start}',
-'.gg-devTerm .gg-scL:not(.gg-scCmd){opacity:.72;padding-left:1.4em}',
-'.gg-devTerm .gg-scLines{color:rgba(235,240,255,.82)}',
+'.gg-dev-terminal .gg-screen{font-family:var(--mono);justify-content:flex-start}',
+'.gg-dev-terminal .gg-scL:not(.gg-scCmd){opacity:.72;padding-left:1.4em}',
+'.gg-dev-terminal .gg-scLines{color:rgba(235,240,255,.82)}',
+/* 프레임이 정한 제목 자리 — 검색어·제호·파일명·모달 제목이 여기 앉는다 */
+'.gg-scSlot{position:absolute;display:flex;align-items:center;overflow:hidden;white-space:nowrap;' +
+  'text-overflow:ellipsis;font-weight:700;color:var(--ink);letter-spacing:var(--tight)}',
+'.gg-dev-search .gg-scSlot{font-weight:600}',
+'.gg-dev-search .gg-screen{justify-content:flex-start}',
+'.gg-dev-editor .gg-scSlot{font-family:var(--mono);font-weight:600;color:var(--ink2);letter-spacing:0}',
+'.gg-dev-editor .gg-screen{font-family:var(--mono);justify-content:flex-start}',
+'.gg-dev-newspaper .gg-scSlot{justify-content:center;font-weight:900;letter-spacing:.06em}',
+'.gg-dev-newspaper .gg-screen,.gg-dev-book .gg-screen,.gg-dev-notification .gg-screen{justify-content:flex-start}',
+'.gg-dev-dialog .gg-scL{justify-content:center}',
+'.gg-dev-receipt .gg-scSlot{justify-content:center;font-weight:800;letter-spacing:.18em}',
+'.gg-dev-receipt .gg-screen{gap:10px}',
+'.gg-dev-receipt .gg-scItems{gap:0}',
+/* 영수증 줄은 카드가 아니라 점선 위의 한 줄이다 */
+'.gg-dev-receipt .gg-scI{background:none;border:0;border-bottom:1px dashed var(--surf-line);' +
+  'border-radius:0;padding:11px 2px}',
+'.gg-dev-dialog .gg-scSlot{justify-content:center;font-weight:800}',
+'.gg-dev-dialog .gg-screen{text-align:center}',
+'.gg-dev-notification .gg-scI{padding:15px 16px;border-radius:var(--r-sm)}',
 '.gg-scItems{display:flex;flex-direction:column;gap:12px}',
 '.gg-scI{display:flex;align-items:center;gap:13px;padding:12px 15px;border-radius:var(--r-xs);' +
   'background:var(--surf-fill);border:1px solid var(--surf-line);font-size:.94em}',

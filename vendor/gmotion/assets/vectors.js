@@ -2,7 +2,7 @@
  * vectors — 디자인 요소 벡터 세트. 네 종류.
  *
  *   DECOR  배경·분위기 레이어 15종   씬 배경에 깔린다. 테마 색 자동, 느린 무한 드리프트
- *   FRAME  디바이스·프레임 8종        안에 콘텐츠를 넣는다
+ *   FRAME  디바이스·프레임 19종       안에 콘텐츠를 넣는다
  *   MARK   데코·강조 요소 12종        글자·수치에 붙어 시선을 몬다. 드로우온 모션
  *   ART    추상 일러스트 48종         도형 조합으로 개념을 표현. 픽토그램보다 크고 구성적
  *
@@ -772,6 +772,185 @@ FRAME.clayBoard = {
   }
 };
 
+/* --- 아래 7종은 화면 안에 제목 자리를 따로 가진다. build 가 slot 을 돌려주면
+       엔진이 screen.title 을 그 자리(검색어·제호·파일명·모달 제목)에 앉힌다. --- */
+
+FRAME.search = {
+  label: '검색창 — 검색어와 결과 목록. 사람들이 이렇게 찾는다', ratio: 16 / 9,
+  build: function (T, W, H) {
+    var bh = Math.round(H * .155), by = Math.round(H * .12), bx = Math.round(W * .09), bw = W - bx * 2;
+    var gr = r2(bh * .19), gcx = r2(bx + bh * .62), gcy = r2(by + bh / 2);
+    var iy = r2(by + bh + H * .12);
+    return {
+      svg: '<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+        '<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" rx="16" fill="' + T.bg2 + '" ' +
+        'stroke="' + T.panelLine + '" stroke-width="2"/>' +
+        '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="' + r2(bh / 2) + '" ' +
+        'fill="' + T.panel + '" stroke="' + T.panelLine + '" stroke-width="2"/>' +
+        '<circle cx="' + gcx + '" cy="' + gcy + '" r="' + gr + '" fill="none" stroke="' + T.accent + '" stroke-width="2.6"/>' +
+        '<path d="M' + r2(gcx + gr * .71) + ' ' + r2(gcy + gr * .71) + 'L' + r2(gcx + gr * 1.55) + ' ' + r2(gcy + gr * 1.55) +
+        '" stroke="' + T.accent + '" stroke-width="2.6" stroke-linecap="round"/>' +
+        '<path d="M' + bx + ' ' + r2(by + bh + H * .062) + 'H' + (bx + bw) + '" stroke="' + T.line + '" stroke-width="1.5"/></svg>',
+      slot: { x: bx + bh * 1.05, y: by, w: bw - bh * 1.75, h: bh, size: Math.round(bh * .44) },
+      inner: { x: W * .1, y: iy, w: W * .8, h: H - iy - H * .08 }
+    };
+  }
+};
+FRAME.receipt = {
+  label: '영수증 — 항목과 금액이 줄줄이. 비용·가격·구조', ratio: 3 / 5,
+  build: function (T, W, H) {
+    var teeth = 11, tw = (W - 12) / teeth, amp = Math.max(4, Math.round(H * .011));
+    var top = Math.round(H * .045), bot = H - Math.round(H * .05), i;
+    var p = ['M6 ' + (top + amp)];
+    for (i = 0; i < teeth; i++) {
+      p.push('L' + r2(6 + (i + .5) * tw) + ' ' + (top - amp) + 'L' + r2(6 + (i + 1) * tw) + ' ' + (top + amp));
+    }
+    p.push('L' + (W - 6) + ' ' + (bot - amp));
+    for (i = teeth; i > 0; i--) {
+      p.push('L' + r2(6 + (i - .5) * tw) + ' ' + (bot + amp) + 'L' + r2(6 + (i - 1) * tw) + ' ' + (bot - amp));
+    }
+    p.push('Z');
+    var s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<path d="' + p.join('') + '" fill="' + T.panel + '" stroke="' + T.panelLine + '" stroke-width="1.8"/>',
+      '<path d="M' + r2(W * .1) + ' ' + r2(H * .16) + 'H' + r2(W * .9) + '" stroke="' + T.line +
+      '" stroke-width="1.5" stroke-dasharray="5 5"/>',
+      '<path d="M' + r2(W * .1) + ' ' + r2(H * .79) + 'H' + r2(W * .9) + '" stroke="' + T.line +
+      '" stroke-width="1.5" stroke-dasharray="5 5"/>'];
+    /* 바코드 — 굵기가 불규칙해야 바코드로 읽힌다 */
+    var bx = W * .16, bw = W * .68, seed = 7;
+    for (i = 0; i < 26; i++) {
+      seed = (seed * 37 + 11) % 97;
+      s.push('<rect x="' + r2(bx + bw * (i / 26)) + '" y="' + r2(H * .845) + '" width="' + r2(bw / 26 * (seed % 3 ? .34 : .62)) +
+        '" height="' + r2(H * .06) + '" fill="' + T.ink + '" opacity=".55"/>');
+    }
+    s.push('</svg>');
+    return {
+      svg: s.join(''),
+      slot: { x: W * .1, y: H * .073, w: W * .8, h: H * .062, size: Math.round(H * .036) },
+      inner: { x: W * .11, y: H * .2, w: W * .78, h: H * .565 }
+    };
+  }
+};
+FRAME.editor = {
+  label: '코드 에디터 — 탭과 줄 거터. 코드·파일·변경점', ratio: 16 / 10,
+  build: function (T, W, H) {
+    var bar = Math.max(30, Math.round(H * .095)), gw = Math.round(W * .058), tabW = Math.round(W * .3);
+    var s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" rx="12" fill="' + T.bg2 + '" ' +
+      'stroke="' + T.panelLine + '" stroke-width="2"/>',
+      '<rect x="1" y="' + bar + '" width="' + gw + '" height="' + (H - bar - 2) + '" fill="' + T.panel + '"/>',
+      '<path d="M1 ' + bar + 'H' + (W - 1) + 'M' + gw + ' ' + bar + 'V' + (H - 2) + '" stroke="' + T.panelLine + '" stroke-width="1.5"/>',
+      '<rect x="10" y="4" width="' + tabW + '" height="' + (bar - 4) + '" rx="8" fill="' + T.panel + '"/>',
+      '<path d="M10 ' + bar + 'H' + (10 + tabW) + '" stroke="' + T.accent + '" stroke-width="2.5"/>',
+      '<rect x="' + (tabW + 22) + '" y="' + r2(bar * .34) + '" width="' + r2(W * .15) + '" height="' + r2(bar * .32) +
+      '" rx="' + r2(bar * .16) + '" fill="' + T.dim + '" opacity=".3"/>',
+      '</svg>'];
+    return {
+      svg: s.join(''),
+      slot: { x: 10 + tabW * .14, y: 4, w: tabW * .8, h: bar - 4, size: Math.round(bar * .42) },
+      inner: { x: gw + 18, y: bar + 14, w: W - gw - 36, h: H - bar - 28 }
+    };
+  }
+};
+FRAME.notification = {
+  label: '알림 — 잠금화면에 배너가 쌓인다. 푸시·인터럽션', ratio: 9 / 16,
+  build: function (T, W, H) {
+    var r = Math.round(W * .11);
+    return {
+      svg: '<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+        '<rect x="2" y="2" width="' + (W - 4) + '" height="' + (H - 4) + '" rx="' + r + '" fill="' + T.bg2 + '" ' +
+        'stroke="' + T.panelLine + '" stroke-width="3"/>' +
+        '<text x="' + r2(W / 2) + '" y="' + r2(H * .155) + '" text-anchor="middle" font-size="' + r2(W * .2) +
+        '" font-weight="300" fill="' + T.ink + '" opacity=".82">9:41</text>' +
+        '<rect x="' + r2(W * .34) + '" y="' + r2(H * .175) + '" width="' + r2(W * .32) + '" height="' + r2(H * .014) +
+        '" rx="' + r2(H * .007) + '" fill="' + T.dim + '" opacity=".4"/>' +
+        '<rect x="' + r2(W * .32) + '" y="' + r2(H - H * .028) + '" width="' + r2(W * .36) + '" height="' + r2(H * .006) +
+        '" rx="' + r2(H * .003) + '" fill="' + T.ink + '" opacity=".35"/></svg>',
+      inner: { x: W * .07, y: H * .25, w: W * .86, h: H * .63 }
+    };
+  }
+};
+FRAME.newspaper = {
+  label: '신문 — 제호와 칼럼. 보도·발표·사건', ratio: 4 / 3,
+  build: function (T, W, H) {
+    var s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      '<rect x="3" y="3" width="' + (W - 6) + '" height="' + (H - 6) + '" rx="3" fill="' + T.panel + '" ' +
+      'stroke="' + T.panelLine + '" stroke-width="2"/>',
+      '<path d="M' + r2(W * .06) + ' ' + r2(H * .162) + 'H' + r2(W * .94) + '" stroke="' + T.ink +
+      '" stroke-width="3" opacity=".7"/>',
+      '<path d="M' + r2(W * .06) + ' ' + r2(H * .182) + 'H' + r2(W * .94) + '" stroke="' + T.ink +
+      '" stroke-width="1.2" opacity=".5"/>',
+      '<path d="M' + r2(W * .64) + ' ' + r2(H * .21) + 'V' + r2(H * .92) + '" stroke="' + T.line + '" stroke-width="1.5"/>'];
+    /* 오른쪽 칼럼 — 읽히지 않는 활자 덩어리가 신문임을 말한다 */
+    var cx = W * .68, cw = W * .24, n = 16, step = (H * .68) / n;
+    for (var i = 0; i < n; i++) {
+      s.push('<rect x="' + r2(cx) + '" y="' + r2(H * .22 + i * step) + '" width="' + r2(cw * (i % 5 === 4 ? .62 : 1)) +
+        '" height="3" rx="1.5" fill="' + T.ink + '" opacity=".14"/>');
+    }
+    s.push('</svg>');
+    return {
+      svg: s.join(''),
+      slot: { x: W * .08, y: H * .04, w: W * .84, h: H * .105, size: Math.round(H * .072) },
+      inner: { x: W * .07, y: H * .225, w: W * .54, h: H * .68 }
+    };
+  }
+};
+FRAME.book = {
+  label: '펼친 책 — 왼쪽 페이지에 내용이 놓인다. 원칙·정의·기록', ratio: 3 / 2,
+  build: function (T, W, H) {
+    var m = W / 2, s = ['<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
+      /* 접힘은 어느 테마에서나 그림자다 — T.ink 를 쓰면 어두운 테마에서 빛기둥이 된다 */
+      '<defs><linearGradient id="ggBookFold" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/>' +
+      '<stop offset=".5" stop-color="#000" stop-opacity=".3"/>' +
+      '<stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient></defs>',
+      '<rect x="8" y="12" width="' + r2(m - 10) + '" height="' + (H - 24) + '" rx="5" fill="' + T.panel + '" ' +
+      'stroke="' + T.panelLine + '" stroke-width="2"/>',
+      '<rect x="' + r2(m + 2) + '" y="12" width="' + r2(m - 10) + '" height="' + (H - 24) + '" rx="5" fill="' + T.panel + '" ' +
+      'stroke="' + T.panelLine + '" stroke-width="2"/>',
+      '<rect x="' + r2(m - W * .026) + '" y="12" width="' + r2(W * .052) + '" height="' + (H - 24) + '" fill="url(#ggBookFold)"/>',
+      /* 책장 두께 — 바깥쪽으로 겹쳐 나온 종이 */
+      '<path d="M5 ' + r2(H * .06) + 'V' + r2(H * .94) + 'M' + (W - 5) + ' ' + r2(H * .06) + 'V' + r2(H * .94) +
+      '" stroke="' + T.line + '" stroke-width="2"/>',
+      '<path d="M2 ' + r2(H * .1) + 'V' + r2(H * .9) + 'M' + (W - 2) + ' ' + r2(H * .1) + 'V' + r2(H * .9) +
+      '" stroke="' + T.line + '" stroke-width="1.5" opacity=".7"/>'];
+    var cx = m + W * .07, cw = W * .34, n = 11, step = (H * .66) / n;
+    for (var i = 0; i < n; i++) {
+      s.push('<rect x="' + r2(cx) + '" y="' + r2(H * .17 + i * step) + '" width="' + r2(cw * (i % 4 === 3 ? .58 : 1)) +
+        '" height="3" rx="1.5" fill="' + T.ink + '" opacity=".13"/>');
+    }
+    s.push('</svg>');
+    return {
+      svg: s.join(''),
+      inner: { x: 8 + W * .055, y: 12 + H * .08, w: m - 10 - W * .11, h: H - 24 - H * .16 }
+    };
+  }
+};
+FRAME.dialog = {
+  label: '확인 모달 — 버튼 두 개가 붙은 팝업. 결정의 순간', ratio: 4 / 3,
+  build: function (T, W, H) {
+    var bw = W * .26, bh = H * .1, by = H * .63;
+    return {
+      svg: '<svg class="gg-frame" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+        '<defs><filter id="ggDialogSh" x="-20%" y="-20%" width="140%" height="140%">' +
+        '<feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="' + T.ink + '" flood-opacity="0.18"/></filter></defs>' +
+        '<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" rx="14" fill="' + T.bg2 + '" ' +
+        'stroke="' + T.panelLine + '" stroke-width="2"/>' +
+        /* 뒤에 화면이 있고 그 위에 딤이 깔렸다 */
+        '<path d="M' + r2(W * .1) + ' ' + r2(H * .1) + 'H' + r2(W * .62) + 'M' + r2(W * .1) + ' ' + r2(H * .18) +
+        'H' + r2(W * .82) + 'M' + r2(W * .1) + ' ' + r2(H * .9) + 'H' + r2(W * .7) +
+        '" stroke="' + T.ink + '" stroke-width="4" opacity=".1" stroke-linecap="round"/>' +
+        '<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" rx="14" fill="' + T.ink + '" opacity=".08"/>' +
+        '<rect x="' + r2(W * .1) + '" y="' + r2(H * .15) + '" width="' + r2(W * .8) + '" height="' + r2(H * .64) +
+        '" rx="18" fill="' + T.bg2 + '" stroke="' + T.panelLine + '" stroke-width="2" filter="url(#ggDialogSh)"/>' +
+        '<rect x="' + r2(W * .18) + '" y="' + r2(by) + '" width="' + r2(bw) + '" height="' + r2(bh) + '" rx="' + r2(bh / 2) +
+        '" fill="none" stroke="' + T.panelLine + '" stroke-width="2"/>' +
+        '<rect x="' + r2(W * .56) + '" y="' + r2(by) + '" width="' + r2(bw) + '" height="' + r2(bh) + '" rx="' + r2(bh / 2) +
+        '" fill="' + T.accent + '" opacity=".9"/></svg>',
+      slot: { x: W * .15, y: H * .21, w: W * .7, h: H * .09, size: Math.round(H * .062) },
+      inner: { x: W * .16, y: H * .33, w: W * .68, h: H * .26 }
+    };
+  }
+};
 
 
 /* ================================================================== *
