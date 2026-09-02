@@ -460,6 +460,9 @@
     var rates = [.5, 1, 1.5, 2], ri = 1;
     rate.addEventListener('click', function () {
       ri = (ri + 1) % rates.length; master.timeScale(rates[ri]); rate.textContent = rates[ri] + '×';
+      /* 음성이 시계를 잡고 있을 때는 timeScale 이 무시된다(tick 이 매 프레임 currentTime 으로
+         master.time 을 덮어쓴다) — 오디오 자체 속도도 같이 바꿔야 실제로 빨라/느려진다. */
+      if (AUD) AUD.playbackRate = rates[ri];
     });
     sync();
   }
