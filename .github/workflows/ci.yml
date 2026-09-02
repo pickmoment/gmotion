@@ -30,8 +30,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # find_ffmpeg_finds_binary 가 실제 탐색을 검증한다 — 러너 이미지에는 ffmpeg 이 없다
-      - uses: FedericoCarboni/setup-ffmpeg@v3
+      # find_ffmpeg_finds_binary 가 실제 탐색을 검증한다 — 러너 이미지에는 ffmpeg 이 없다.
+      # setup-ffmpeg 액션은 arm64 macOS(macos-latest 기본)를 지원하지 않아 패키지 매니저로 설치한다.
+      - name: ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg
+      - name: ffmpeg (Windows)
+        if: runner.os == 'Windows'
+        run: choco install ffmpeg -y --no-progress
       - run: cargo test
         working-directory: src-tauri
       - run: cargo build --release
