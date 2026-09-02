@@ -6,14 +6,26 @@
  */
 import { useEffect, useState } from "react";
 import { api, onRenderProgress, type RenderProgress } from "../lib/tauri";
+import { RENDER_FPS, estimateSize, formatEstimate, type Resolution } from "../lib/render";
 
 const mmss = (s: number) => {
   const t = Math.max(0, Math.round(s));
   return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`;
 };
 
-export function RenderPanel({ total, onCancel }: { total: number; onCancel: () => void }) {
+export function RenderPanel({
+  total,
+  res,
+  hasAudio,
+  onCancel,
+}: {
+  total: number;
+  res: Resolution;
+  hasAudio: boolean;
+  onCancel: () => void;
+}) {
   const [p, setP] = useState<RenderProgress | null>(null);
+  const est = estimateSize({ w: res.w, h: res.h, fps: RENDER_FPS, sec: total, audio: hasAudio });
 
   useEffect(() => {
     const un = onRenderProgress(setP);
@@ -59,6 +71,16 @@ export function RenderPanel({ total, onCancel }: { total: number; onCancel: () =
             <strong>
               {mmss(left)} / {mmss(total)}
             </strong>
+          </li>
+          <li>
+            <span>해상도</span>
+            <strong>
+              {res.w}×{res.h} · {RENDER_FPS}fps
+            </strong>
+          </li>
+          <li>
+            <span>예상 크기</span>
+            <strong>{formatEstimate(est)}</strong>
           </li>
         </ul>
 

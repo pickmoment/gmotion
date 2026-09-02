@@ -12,6 +12,7 @@ import { DocsPanel } from "./components/DocsPanel";
 import { ExamplesPanel } from "./components/ExamplesPanel";
 import { CheckPanel } from "./components/CheckPanel";
 import { RenderPanel } from "./components/RenderPanel";
+import { RenderSetupPanel } from "./components/RenderSetupPanel";
 import { DesignPanel } from "./components/DesignPanel";
 import { SpecGenPanel } from "./components/SpecGenPanel";
 import { useSpecStore } from "./lib/useSpecStore";
@@ -36,12 +37,12 @@ import {
   type CheckLine,
   type SyncInput,
 } from "./lib/build";
-import { GG } from "./engine/boot";
+import { RENDER_FPS, formatBytes, pickResolution, type Resolution } from "./lib/render";
 import { api, ask, dialogs, shell } from "./lib/tauri";
 import type { Cue, Scene, Spec } from "./engine/types";
 
 type Tab = "form" | "doc" | "json";
-type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design" | "gen";
+type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design" | "gen" | "mp4";
 export default function App() {
   const store = useSpecStore(EMPTY_SPEC);
   const { spec } = store;
@@ -81,6 +82,11 @@ export default function App() {
   const [check, setCheck] = useState<{ lines: CheckLine[]; info: string; fail: number } | null>(
     null,
   );
+
+  /* MP4 해상도는 짧은 변으로만 들고 있는다 — 화면비를 바꿔도 고른 크기가 따라간다.
+     0 이면 화면비의 기준 크기다. */
+  const [resShort, setResShort] = useState(0);
+  const renderRes = useMemo(() => pickResolution(spec.aspect, resShort), [spec.aspect, resShort]);
 
   const sync: SyncInput = useMemo(() => ({ cues, captions, audioSrc }), [cues, captions, audioSrc]);
   const result = useMemo(() => validate(spec, sync), [spec, sync]);
@@ -405,26 +411,26 @@ export default function App() {
     }
   };
 
-  /** 화면비에서 픽셀 크기를 읽는다 — 엔진의 aspects 가 "1920×1080 — …" 로 준다. */
-  const stageSize = (): { w: number; h: number } => {
-    const label = GG.aspects[(spec.aspect as string) || "16:9"] ?? "";
-    const m = label.match(/(\d+)\D+(\d+)/);
-    return m ? { w: +m[1], h: +m[2] } : { w: 1920, h: 1080 };
-  };
-
+  /** 해상도를 고르는 창을 먼저 띄운다 — 렌더는 실시간이라 잘못 고르면 그만큼 다시 기다린다. */
   const doRenderMp4 = async () => {
     if (!result.ok) return say("검증 오류를 먼저 고친다");
-    const total = result.stats?.totalSec ?? 0;
-    if (!total) return say("길이를 알 수 없다");
+    if (!(result.stats?.totalSec ?? 0)) return say("길이를 알 수 없다");
+    /* Chrome·ffmpeg 이 없으면 설정 창을 띄울 이유도 없다 */
     try {
       await api.renderTools();
     } catch (e) {
       return say(String(e));
     }
+    setModal("mp4");
+  };
+
+  const startRenderMp4 = async (res: Resolution) => {
+    const total = result.stats?.totalSec ?? 0;
     const dir = await defaultDir();
     const base = baseName();
     const defaultPath = dir ? `${dir}/${base}.mp4` : `${base}.mp4`;
     const out = await dialogs.saveAs(defaultPath, "MP4", "mp4");
+    /* 저장 위치를 접으면 설정 창에 그대로 남는다 — 고른 해상도를 잃지 않는다 */
     if (!out) return;
 
     const tmp = await api.tempPath(`gmotion-render-${Date.now()}.html`);
@@ -432,23 +438,28 @@ export default function App() {
     setModal("render");
     try {
       /* 렌더용 산출물은 미리보기·내보내기와 같은 빌드다 — 보이는 것이 곧 결과여야 한다.
-         플레이어 UI 는 렌더 쪽에서 ?clean=1 로 뺀다. */
+         플레이어 UI 는 렌더 쪽에서 ?clean=1 로 뺀다.
+         해상도는 뷰포트 크기로만 정한다 — 런타임이 스테이지를 부모 박스에 맞춰
+         scale 하므로 비율이 같으면 같은 그림이 그 해상도로 그려진다. */
       await api.writeText(tmp, build(spec, sync));
-      const { w, h } = stageSize();
       await api.renderMp4({
         html_path: tmp,
         out_path: out,
-        fps: 30,
-        width: w,
-        height: h,
+        fps: RENDER_FPS,
+        width: res.w,
+        height: res.h,
         /* 음성은 산출물에 심은 data URI 가 아니라 원본 파일을 트랙으로 붙인다 —
            다시 인코딩하지 않아 빠르고 깨끗하다. */
         audio_path: audioPath,
         total_sec: total,
         quality: 92,
       });
+      /* 추정이 아니라 실제 크기를 알려준다 — 다음 선택의 근거가 된다 */
+      const size = await api.fileSize(out).catch(() => 0);
       say(
-        `${out.split(/[/\\]/).pop()} — ${w}×${h} 30fps · ${total.toFixed(1)}초${audioPath ? " · 음성 포함" : ""}`,
+        `${out.split(/[/\\]/).pop()} — ${res.w}×${res.h} ${RENDER_FPS}fps · ${total.toFixed(1)}초${
+          size ? ` · ${formatBytes(size)}` : ""
+        }${audioPath ? " · 음성 포함" : ""}`,
       );
       await shell.revealItemInDir(out);
     } catch (e) {
@@ -653,8 +664,25 @@ export default function App() {
           }}
         />
       )}
+      {modal === "mp4" && (
+        <RenderSetupPanel
+          aspect={spec.aspect || "16:9"}
+          totalSec={result.stats?.totalSec ?? 0}
+          fps={RENDER_FPS}
+          hasAudio={!!audioPath}
+          value={renderRes}
+          onChange={(r) => setResShort(r.short)}
+          onStart={() => void startRenderMp4(renderRes)}
+          onClose={() => setModal(null)}
+        />
+      )}
       {modal === "render" && (
-        <RenderPanel total={result.stats?.totalSec ?? 0} onCancel={() => setModal(null)} />
+        <RenderPanel
+          total={result.stats?.totalSec ?? 0}
+          res={renderRes}
+          hasAudio={!!audioPath}
+          onCancel={() => setModal(null)}
+        />
       )}
       {modal === "check" && check && (
         <CheckPanel

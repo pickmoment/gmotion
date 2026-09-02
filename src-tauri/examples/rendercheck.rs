@@ -1,5 +1,6 @@
 //! MP4 렌더를 GUI 없이 돌려 본다.
-//!   cargo run --example rendercheck -- <입력.html> <출력.mp4> <길이초> [음성파일]
+//!   cargo run --example rendercheck -- <입력.html> <출력.mp4> <길이초> [음성파일] [N초뒤취소]
+//!   GMOTION_RENDER_SIZE=1280x720 으로 해상도를 바꾼다 (기본 1920x1080)
 
 use gmotion_lib::render::{render, Progress, RenderOpts};
 use std::sync::atomic::AtomicBool;
@@ -12,12 +13,19 @@ fn main() {
         std::process::exit(1);
     }
     let total: f64 = a[2].parse().expect("길이는 숫자");
+    let (width, height) = match std::env::var("GMOTION_RENDER_SIZE") {
+        Ok(s) => {
+            let (w, h) = s.split_once(['x', 'X']).expect("크기는 1280x720 꼴");
+            (w.trim().parse().expect("너비는 숫자"), h.trim().parse().expect("높이는 숫자"))
+        }
+        Err(_) => (1920, 1080),
+    };
     let opts = RenderOpts {
         html_path: a[0].clone(),
         out_path: a[1].clone(),
         fps: 30,
-        width: 1920,
-        height: 1080,
+        width,
+        height,
         audio_path: a.get(3).cloned().filter(|x| !x.is_empty()),
         total_sec: total,
         quality: 92,

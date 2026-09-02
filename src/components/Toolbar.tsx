@@ -19,7 +19,7 @@ export const EXPORTS: ExportKind[] = [
   {
     key: "mp4",
     label: "MP4 — 영상",
-    hint: "1080p 30fps · 음성까지 담는다. 실시간이라 영상 길이만큼 걸린다",
+    hint: "해상도를 골라 담는다(480p~4K) · 음성까지. 실시간이라 영상 길이만큼 걸린다",
   },
 ];
 
