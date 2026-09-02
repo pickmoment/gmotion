@@ -25,7 +25,8 @@ import { IconGlyph } from "./fields/IconPicker";
 import { SkinsTab } from "./SkinsTab";
 import { listSkins } from "../lib/design";
 
-export type DesignTab = "themes" | "skins" | "decors" | "marks" | "arts" | "frames" | "icons" | "tokens";
+export type DesignTab =
+  "themes" | "skins" | "decors" | "marks" | "arts" | "frames" | "icons" | "tokens";
 
 export function DesignPanel({
   onClose,
@@ -74,12 +75,48 @@ export function DesignPanel({
   } = useDesignStore();
 
   /* ── Sub Editor Modal States ── */
-  const [editingTheme, setEditingTheme] = useState<{ isNew: boolean; key: string; def: ThemeDefinition } | null>(null);
-  const [editingIcon, setEditingIcon] = useState<{ isNew: boolean; key: string; path: string; aliases: string[]; label: string } | null>(null);
-  const [editingArt, setEditingArt] = useState<{ isNew: boolean; key: string; label: string; svg: string } | null>(null);
-  const [editingMark, setEditingMark] = useState<{ isNew: boolean; key: string; label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw: boolean; text: boolean } | null>(null);
-  const [editingDecor, setEditingDecor] = useState<{ isNew: boolean; key: string; label: string; category: string; svg: string } | null>(null);
-  const [editingFrame, setEditingFrame] = useState<{ isNew: boolean; key: string; label: string; ratio: number; svg: string; bar?: number } | null>(null);
+  const [editingTheme, setEditingTheme] = useState<{
+    isNew: boolean;
+    key: string;
+    def: ThemeDefinition;
+  } | null>(null);
+  const [editingIcon, setEditingIcon] = useState<{
+    isNew: boolean;
+    key: string;
+    path: string;
+    aliases: string[];
+    label: string;
+  } | null>(null);
+  const [editingArt, setEditingArt] = useState<{
+    isNew: boolean;
+    key: string;
+    label: string;
+    svg: string;
+  } | null>(null);
+  const [editingMark, setEditingMark] = useState<{
+    isNew: boolean;
+    key: string;
+    label: string;
+    where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+    svg: string;
+    draw: boolean;
+    text: boolean;
+  } | null>(null);
+  const [editingDecor, setEditingDecor] = useState<{
+    isNew: boolean;
+    key: string;
+    label: string;
+    category: string;
+    svg: string;
+  } | null>(null);
+  const [editingFrame, setEditingFrame] = useState<{
+    isNew: boolean;
+    key: string;
+    label: string;
+    ratio: number;
+    svg: string;
+    bar?: number;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -104,7 +141,9 @@ export function DesignPanel({
       const text = String(evt.target?.result || "");
       const res = importLibraryJSON(text);
       if (res.success) {
-        onNotify?.(`디자인 요소 ${res.count}개를 성공적으로 불러왔습니다.`);
+        onNotify?.(
+          `디자인 요소 ${res.count}개를 불러왔다${res.skipped ? ` (형식이 맞지 않아 ${res.skipped}개는 건너뛰었다)` : ""}.`,
+        );
       } else {
         alert(`가져오기 실패: ${res.error}`);
       }
@@ -774,7 +813,9 @@ function ThemesTab({
 
               {/* Contrast and Font Info */}
               <div className="theme-meta-row" style={{ color: colors.ink2 }}>
-                <span title={`대비율 점수: ${contrast.score}% (${contrast.list.filter((x) => x.pass).length}/${contrast.list.length} 통과)`}>
+                <span
+                  title={`대비율 점수: ${contrast.score}% (${contrast.list.filter((x) => x.pass).length}/${contrast.list.length} 통과)`}
+                >
                   WCAG AA: <strong>{contrast.ok ? "100% 통과" : `${contrast.score}%`}</strong>
                 </span>
                 <span>
@@ -859,7 +900,8 @@ function DecorsTab({
   onDeleteDecor: (k: string) => void;
 }) {
   const allDecors = useMemo(() => {
-    const list: { key: string; label: string; category: string; custom: boolean; svg?: string }[] = [];
+    const list: { key: string; label: string; category: string; custom: boolean; svg?: string }[] =
+      [];
     const seen = new Set<string>();
 
     for (const [k, item] of Object.entries(VECTORS.DECOR)) {
@@ -966,7 +1008,14 @@ function DecorsTab({
                 <button
                   type="button"
                   className="action-btn"
-                  onClick={() => onCloneDecor(d.key, { label: d.label, category: d.category, svg: d.svg || `<rect width="{W}" height="{H}" fill="{accent}" opacity="0.1"/>` })}
+                  onClick={() =>
+                    onCloneDecor(d.key, {
+                      label: d.label,
+                      category: d.category,
+                      svg:
+                        d.svg || `<rect width="{W}" height="{H}" fill="{accent}" opacity="0.1"/>`,
+                    })
+                  }
                 >
                   복제하여 수정
                 </button>
@@ -975,7 +1024,13 @@ function DecorsTab({
                     <button
                       type="button"
                       className="action-btn"
-                      onClick={() => onEditDecor(d.key, { label: d.label, category: d.category, svg: d.svg || "" })}
+                      onClick={() =>
+                        onEditDecor(d.key, {
+                          label: d.label,
+                          category: d.category,
+                          svg: d.svg || "",
+                        })
+                      }
                     >
                       수정
                     </button>
@@ -1021,8 +1076,26 @@ function MarksTab({
   currentTheme: string;
   library: CustomDesignLibrary;
   onApplyMark: (k: string) => void;
-  onEditMark: (k: string, item: { label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw?: boolean; text?: boolean }) => void;
-  onCloneMark: (k: string, item: { label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw?: boolean; text?: boolean }) => void;
+  onEditMark: (
+    k: string,
+    item: {
+      label: string;
+      where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+      svg: string;
+      draw?: boolean;
+      text?: boolean;
+    },
+  ) => void;
+  onCloneMark: (
+    k: string,
+    item: {
+      label: string;
+      where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+      svg: string;
+      draw?: boolean;
+      text?: boolean;
+    },
+  ) => void;
   onDeleteMark: (k: string) => void;
 }) {
   const allMarks = useMemo(() => {
@@ -1050,7 +1123,8 @@ function MarksTab({
       list.push({
         key: k,
         label: item.label || k,
-        where: (item.where as "under" | "around" | "behind" | "point" | "corner" | "ribbon") || "under",
+        where:
+          (item.where as "under" | "around" | "behind" | "point" | "corner" | "ribbon") || "under",
         category: foundCat,
         text: !!item.text,
         draw: !!item.draw,
@@ -1247,7 +1321,7 @@ function ArtsTab({
     if (!q.trim()) return allArts;
     const query = q.toLowerCase();
     return allArts.filter(
-      (a) => a.key.toLowerCase().includes(query) || a.label.toLowerCase().includes(query)
+      (a) => a.key.toLowerCase().includes(query) || a.label.toLowerCase().includes(query),
     );
   }, [allArts, q]);
 
@@ -1293,7 +1367,9 @@ function ArtsTab({
                   onClick={() =>
                     onCloneArt(a.key, {
                       label: a.label,
-                      svg: a.svg || `<g class="gg-artP"><circle cx="100" cy="100" r="60" fill="{accent}" opacity="0.3"/></g>`,
+                      svg:
+                        a.svg ||
+                        `<g class="gg-artP"><circle cx="100" cy="100" r="60" fill="{accent}" opacity="0.3"/></g>`,
                     })
                   }
                 >
@@ -1350,8 +1426,14 @@ function FramesTab({
   currentTheme: string;
   library: CustomDesignLibrary;
   onApplyFrame: (k: string) => void;
-  onEditFrame: (k: string, item: { label: string; ratio: number; svg: string; bar?: number }) => void;
-  onCloneFrame: (k: string, item: { label: string; ratio: number; svg: string; bar?: number }) => void;
+  onEditFrame: (
+    k: string,
+    item: { label: string; ratio: number; svg: string; bar?: number },
+  ) => void;
+  onCloneFrame: (
+    k: string,
+    item: { label: string; ratio: number; svg: string; bar?: number },
+  ) => void;
   onDeleteFrame: (k: string) => void;
 }) {
   const allFrames = useMemo(() => {
@@ -1481,7 +1563,9 @@ function FramesTab({
                     onCloneFrame(f.key, {
                       label: f.label,
                       ratio: f.ratio,
-                      svg: f.svg || `<rect x="2" y="2" width="{W}-4" height="{H}-4" rx="8" fill="{bg2}" stroke="{accent}"/>`,
+                      svg:
+                        f.svg ||
+                        `<rect x="2" y="2" width="{W}-4" height="{H}-4" rx="8" fill="{bg2}" stroke="{accent}"/>`,
                       bar: f.bar,
                     })
                   }
@@ -1558,7 +1642,7 @@ function IconsTab({
         return customKeys.filter(
           (k) =>
             k.toLowerCase().includes(query) ||
-            library.icons[k].aliases.some((a) => a.toLowerCase().includes(query))
+            library.icons[k].aliases.some((a) => a.toLowerCase().includes(query)),
         );
       }
       return customKeys;
@@ -1610,9 +1694,7 @@ function IconsTab({
                 <IconGlyph name={k} size={28} />
               </div>
               <strong className="studio-icon-name">{k}</strong>
-              {aliases.length > 0 && (
-                <span className="studio-icon-alias dim">{aliases[0]}</span>
-              )}
+              {aliases.length > 0 && <span className="studio-icon-alias dim">{aliases[0]}</span>}
               {isCustom && <span className="badge-custom-sm">커스텀</span>}
 
               <div className="studio-icon-actions">
@@ -1662,15 +1744,60 @@ function TokensGuideTab({ currentTheme }: { currentTheme: string }) {
         <div className="tokens-color-table">
           {[
             { token: "bg", name: "배경 (Background)", val: colors.bg, desc: "씬 전체 배경색" },
-            { token: "bg2", name: "보조 배경 (Surface)", val: colors.bg2, desc: "카드, 패널, 레이어 컨테이너 배경" },
-            { token: "ink", name: "본문 글자 (Primary Text)", val: colors.ink, desc: "타이틀, 주요 텍스트, 라벨" },
-            { token: "ink2", name: "보조 글자 (Secondary Text)", val: colors.ink2, desc: "설명, 서브텍스트, 각주" },
-            { token: "dim", name: "흐린 글자 / 보더 (Dim)", val: colors.dim, desc: "보조선, 비활성 텍스트, 가이드라인" },
-            { token: "accent", name: "주요 강조색 (Primary Accent)", val: colors.accent, desc: "주요 시선 집중, 1차 데이터 포인트, 핵심 마크" },
-            { token: "accent2", name: "보조 강조색 (Secondary Accent)", val: colors.accent2, desc: "비교군 데이터, 2차 강조 마크, 장식 그라디언트" },
-            { token: "good", name: "긍정 / 성공 (Success)", val: colors.good, desc: "상승 지표, 통과, 체크 마크" },
-            { token: "warn", name: "주의 / 경고 (Warning)", val: colors.warn, desc: "주의 지표, 대기 상태, 별표" },
-            { token: "bad", name: "부정 / 위험 (Error)", val: colors.bad, desc: "하락 지표, 오류, 취소선" },
+            {
+              token: "bg2",
+              name: "보조 배경 (Surface)",
+              val: colors.bg2,
+              desc: "카드, 패널, 레이어 컨테이너 배경",
+            },
+            {
+              token: "ink",
+              name: "본문 글자 (Primary Text)",
+              val: colors.ink,
+              desc: "타이틀, 주요 텍스트, 라벨",
+            },
+            {
+              token: "ink2",
+              name: "보조 글자 (Secondary Text)",
+              val: colors.ink2,
+              desc: "설명, 서브텍스트, 각주",
+            },
+            {
+              token: "dim",
+              name: "흐린 글자 / 보더 (Dim)",
+              val: colors.dim,
+              desc: "보조선, 비활성 텍스트, 가이드라인",
+            },
+            {
+              token: "accent",
+              name: "주요 강조색 (Primary Accent)",
+              val: colors.accent,
+              desc: "주요 시선 집중, 1차 데이터 포인트, 핵심 마크",
+            },
+            {
+              token: "accent2",
+              name: "보조 강조색 (Secondary Accent)",
+              val: colors.accent2,
+              desc: "비교군 데이터, 2차 강조 마크, 장식 그라디언트",
+            },
+            {
+              token: "good",
+              name: "긍정 / 성공 (Success)",
+              val: colors.good,
+              desc: "상승 지표, 통과, 체크 마크",
+            },
+            {
+              token: "warn",
+              name: "주의 / 경고 (Warning)",
+              val: colors.warn,
+              desc: "주의 지표, 대기 상태, 별표",
+            },
+            {
+              token: "bad",
+              name: "부정 / 위험 (Error)",
+              val: colors.bad,
+              desc: "하락 지표, 오류, 취소선",
+            },
           ].map((item) => (
             <div key={item.token} className="token-color-row">
               <span className="token-chip" style={{ backgroundColor: item.val }} />
@@ -1690,12 +1817,36 @@ function TokensGuideTab({ currentTheme }: { currentTheme: string }) {
         <p className="dim">한글 웹폰트와 결합되어 영상의 성격을 결정합니다.</p>
         <div className="tokens-grid-2col">
           {[
-            { token: "display", font: "Pretendard ExtraBold", use: "기술 explainer, 테크 오프닝, 하이에너지" },
-            { token: "serif", font: "MaruBuri (마루부리)", use: "다큐멘터리, 스토리텔링, 롱폼 내레이션" },
-            { token: "sans", font: "Pretendard Medium", use: "지표 리포트, B2B 대시보드, 사내 공유" },
-            { token: "neo", font: "Pretendard SemiBold", use: "설계 문서, 블루프린트, 기획 보고서" },
-            { token: "soft", font: "Gowun Batang / Dodam", use: "브랜드 캠페인, 공예·아날로그 감성" },
-            { token: "round", font: "Pretendard Rounded", use: "클레이모피즘, 친근한 튜토리얼, 어린이" },
+            {
+              token: "display",
+              font: "Pretendard ExtraBold",
+              use: "기술 explainer, 테크 오프닝, 하이에너지",
+            },
+            {
+              token: "serif",
+              font: "MaruBuri (마루부리)",
+              use: "다큐멘터리, 스토리텔링, 롱폼 내레이션",
+            },
+            {
+              token: "sans",
+              font: "Pretendard Medium",
+              use: "지표 리포트, B2B 대시보드, 사내 공유",
+            },
+            {
+              token: "neo",
+              font: "Pretendard SemiBold",
+              use: "설계 문서, 블루프린트, 기획 보고서",
+            },
+            {
+              token: "soft",
+              font: "Gowun Batang / Dodam",
+              use: "브랜드 캠페인, 공예·아날로그 감성",
+            },
+            {
+              token: "round",
+              font: "Pretendard Rounded",
+              use: "클레이모피즘, 친근한 튜토리얼, 어린이",
+            },
           ].map((f) => (
             <div key={f.token} className="token-box">
               <strong>{f.token}</strong>
@@ -1711,7 +1862,9 @@ function TokensGuideTab({ currentTheme }: { currentTheme: string }) {
         <div className="tokens-grid-2col">
           <div className="token-box">
             <strong>에너지 (energy)</strong>
-            <p className="dim">E1 (여유·차분, hold 1.25x) / E2 (기본 템포) / E3 (하이에너지·쇼츠, hold 0.75x)</p>
+            <p className="dim">
+              E1 (여유·차분, hold 1.25x) / E2 (기본 템포) / E3 (하이에너지·쇼츠, hold 0.75x)
+            </p>
           </div>
           <div className="token-box">
             <strong>배경 세기 (decorLevel)</strong>
@@ -1865,9 +2018,15 @@ function ThemeEditorModal({
           </div>
 
           {/* Realtime Live Mini Mockup Preview */}
-          <div className="live-mockup-preview" style={{ backgroundColor: colors.bg, borderColor: colors.dim }}>
+          <div
+            className="live-mockup-preview"
+            style={{ backgroundColor: colors.bg, borderColor: colors.dim }}
+          >
             <div className="mockup-header" style={{ color: colors.ink }}>
-              <span className="mockup-badge" style={{ backgroundColor: colors.accent, color: colors.bg }}>
+              <span
+                className="mockup-badge"
+                style={{ backgroundColor: colors.accent, color: colors.bg }}
+              >
                 SAMPLE
               </span>
               <strong>{label || "미리보기 타이틀"}</strong>
@@ -1875,9 +2034,14 @@ function ThemeEditorModal({
             <p style={{ color: colors.ink2, margin: "3px 0", fontSize: "11px" }}>
               보조 설명 텍스트 (Secondary Text - ink2)
             </p>
-            <div className="mockup-card" style={{ backgroundColor: colors.bg2, borderColor: colors.dim }}>
+            <div
+              className="mockup-card"
+              style={{ backgroundColor: colors.bg2, borderColor: colors.dim }}
+            >
               <span style={{ color: colors.accent2 }}>보조 강조 포인트 (accent2)</span>
-              <span style={{ color: colors.good, marginLeft: "auto", fontWeight: "bold" }}>+24.5% 상승</span>
+              <span style={{ color: colors.good, marginLeft: "auto", fontWeight: "bold" }}>
+                +24.5% 상승
+              </span>
             </div>
           </div>
 
@@ -2021,7 +2185,7 @@ function DecorEditorModal({
     s = scale,
     op = opacity,
     bl = blur,
-    cm = colorMode
+    cm = colorMode,
   ) => {
     const generated = generateDecorSvg(p, {
       count: c,
@@ -2034,14 +2198,22 @@ function DecorEditorModal({
   };
 
   const previewFilled = svg
-    .split("{W}").join("320")
-    .split("{H}").join("180")
-    .split("{accent}").join("#6ea8ff")
-    .split("{accent2}").join("#a78bfa")
-    .split("{bg}").join("#0b1020")
-    .split("{bg2}").join("#141b33")
-    .split("{ink}").join("#eef2ff")
-    .split("{dim}").join("#707ca5");
+    .split("{W}")
+    .join("320")
+    .split("{H}")
+    .join("180")
+    .split("{accent}")
+    .join("#6ea8ff")
+    .split("{accent2}")
+    .join("#a78bfa")
+    .split("{bg}")
+    .join("#0b1020")
+    .split("{bg2}")
+    .join("#141b33")
+    .split("{ink}")
+    .join("#eef2ff")
+    .split("{dim}")
+    .join("#707ca5");
 
   return (
     <div className="modal sub-modal" role="dialog" aria-label="배경 편집">
@@ -2240,7 +2412,8 @@ function DecorEditorModal({
                 placeholder="예: <circle cx='{W}*0.5' cy='{H}*0.5' r='80' fill='{accent}' opacity='0.2'/>"
               />
               <p className="hint">
-                치환 변수: {"{W}"}, {"{H}"}, {"{accent}"}, {"{accent2}"}, {"{ink}"}, {"{bg}"}, {"{dim}"}
+                치환 변수: {"{W}"}, {"{H}"}, {"{accent}"}, {"{accent2}"}, {"{ink}"}, {"{bg}"},{" "}
+                {"{dim}"}
               </p>
             </div>
           )}
@@ -2269,9 +2442,26 @@ function MarkEditorModal({
   onClose,
   onSave,
 }: {
-  data: { isNew: boolean; key: string; label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw: boolean; text: boolean };
+  data: {
+    isNew: boolean;
+    key: string;
+    label: string;
+    where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+    svg: string;
+    draw: boolean;
+    text: boolean;
+  };
   onClose: () => void;
-  onSave: (key: string, item: { label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw: boolean; text: boolean }) => void;
+  onSave: (
+    key: string,
+    item: {
+      label: string;
+      where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+      svg: string;
+      draw: boolean;
+      text: boolean;
+    },
+  ) => void;
 }) {
   const [mode, setMode] = useState<"gui" | "code">("gui");
   const [key, setKey] = useState(data.key);
@@ -2295,7 +2485,7 @@ function MarkEditorModal({
     b = bend,
     d = dashed,
     col = colorTarget,
-    op = opacity
+    op = opacity,
   ) => {
     const res = generateMarkSvg(st, {
       strokeWidth: sw,
@@ -2311,14 +2501,22 @@ function MarkEditorModal({
   };
 
   const previewFilled = svg
-    .split("{accent}").join("#6ea8ff")
-    .split("{accent2}").join("#a78bfa")
-    .split("{good}").join("#4ade80")
-    .split("{warn}").join("#fbbf24")
-    .split("{bad}").join("#fb7185")
-    .split("{ink}").join("#eef2ff")
-    .split("{bg}").join("#0b1020")
-    .split("{text}").join("NEW");
+    .split("{accent}")
+    .join("#6ea8ff")
+    .split("{accent2}")
+    .join("#a78bfa")
+    .split("{good}")
+    .join("#4ade80")
+    .split("{warn}")
+    .join("#fbbf24")
+    .split("{bad}")
+    .join("#fb7185")
+    .split("{ink}")
+    .join("#eef2ff")
+    .split("{bg}")
+    .join("#0b1020")
+    .split("{text}")
+    .join("NEW");
 
   return (
     <div className="modal sub-modal" role="dialog" aria-label="마크 편집">
@@ -2364,7 +2562,7 @@ function MarkEditorModal({
                 value={where}
                 onChange={(e) =>
                   setWhere(
-                    e.target.value as "under" | "around" | "behind" | "point" | "corner" | "ribbon"
+                    e.target.value as "under" | "around" | "behind" | "point" | "corner" | "ribbon",
                   )
                 }
               >
@@ -2515,7 +2713,9 @@ function MarkEditorModal({
                 onChange={(e) => setSvg(e.target.value)}
                 placeholder="예: <path d='M0 10 L100 10' stroke='{accent}' stroke-width='4'/>"
               />
-              <p className="hint">치환 변수: {"{accent}"}, {"{accent2}"}, {"{ink}"}, {"{text}"}</p>
+              <p className="hint">
+                치환 변수: {"{accent}"}, {"{accent2}"}, {"{ink}"}, {"{text}"}
+              </p>
             </div>
           )}
         </div>
@@ -2528,7 +2728,9 @@ function MarkEditorModal({
             type="button"
             className="primary"
             disabled={!key.trim() || !svg.trim()}
-            onClick={() => onSave(key.trim(), { label: label.trim() || key.trim(), where, svg, draw, text })}
+            onClick={() =>
+              onSave(key.trim(), { label: label.trim() || key.trim(), where, svg, draw, text })
+            }
           >
             저장
           </button>
@@ -2582,12 +2784,18 @@ function ArtEditorModal({
   };
 
   const previewFilled = svg
-    .split("{accent}").join("#6ea8ff")
-    .split("{accent2}").join("#a78bfa")
-    .split("{bg}").join("#0b1020")
-    .split("{bg2}").join("#141b33")
-    .split("{ink}").join("#eef2ff")
-    .split("{dim}").join("#707ca5");
+    .split("{accent}")
+    .join("#6ea8ff")
+    .split("{accent2}")
+    .join("#a78bfa")
+    .split("{bg}")
+    .join("#0b1020")
+    .split("{bg2}")
+    .join("#141b33")
+    .split("{ink}")
+    .join("#eef2ff")
+    .split("{dim}")
+    .join("#707ca5");
 
   return (
     <div className="modal sub-modal" role="dialog" aria-label="일러스트 편집">
@@ -2758,7 +2966,9 @@ function ArtEditorModal({
                 onChange={(e) => setSvg(e.target.value)}
                 placeholder="<g class='gg-artP'><circle cx='100' cy='100' r='60' fill='{accent}'/></g>"
               />
-              <p className="hint">치환 변수: {"{accent}"}, {"{accent2}"}, {"{bg2}"}, {"{ink}"}, {"{dim}"}</p>
+              <p className="hint">
+                치환 변수: {"{accent}"}, {"{accent2}"}, {"{bg2}"}, {"{ink}"}, {"{dim}"}
+              </p>
             </div>
           )}
         </div>
@@ -2808,7 +3018,7 @@ function FrameEditorModal({
     r = radius,
     b = barHeight,
     bw = borderWidth,
-    c = controls
+    c = controls,
   ) => {
     const generated = generateFrameSvg(pr, {
       radius: r,
@@ -2820,13 +3030,20 @@ function FrameEditorModal({
   };
 
   const previewFilled = svg
-    .split("{W}").join("260")
-    .split("{H}").join("160")
-    .split("{accent}").join("#6ea8ff")
-    .split("{accent2}").join("#a78bfa")
-    .split("{bg}").join("#0b1020")
-    .split("{bg2}").join("#141b33")
-    .split("{dim}").join("#707ca5");
+    .split("{W}")
+    .join("260")
+    .split("{H}")
+    .join("160")
+    .split("{accent}")
+    .join("#6ea8ff")
+    .split("{accent2}")
+    .join("#a78bfa")
+    .split("{bg}")
+    .join("#0b1020")
+    .split("{bg2}")
+    .join("#141b33")
+    .split("{dim}")
+    .join("#707ca5");
 
   return (
     <div className="modal sub-modal" role="dialog" aria-label="프레임 편집">
@@ -2868,10 +3085,7 @@ function FrameEditorModal({
             </div>
             <div className="field">
               <label>화면비 (Ratio: {Math.round(ratio * 100) / 100})</label>
-              <select
-                value={ratio}
-                onChange={(e) => setRatio(Number(e.target.value))}
-              >
+              <select value={ratio} onChange={(e) => setRatio(Number(e.target.value))}>
                 <option value={16 / 10}>16:10 (브라우저·창)</option>
                 <option value={16 / 9}>16:9 (와이드 모니터)</option>
                 <option value={9 / 16}>9:16 (세로 모바일)</option>
@@ -3006,7 +3220,9 @@ function FrameEditorModal({
                 onChange={(e) => setSvg(e.target.value)}
                 placeholder="<rect x='2' y='2' width='{W}-4' height='{H}-4' rx='8' fill='{bg2}' stroke='{accent}'/>"
               />
-              <p className="hint">치환 변수: {"{W}"}, {"{H}"}, {"{accent}"}, {"{accent2}"}, {"{bg2}"}</p>
+              <p className="hint">
+                치환 변수: {"{W}"}, {"{H}"}, {"{accent}"}, {"{accent2}"}, {"{bg2}"}
+              </p>
             </div>
           )}
         </div>
@@ -3048,11 +3264,20 @@ function IconEditorModal({
   const ICON_SHAPES = [
     { name: "체크", path: "M20 6L9 17l-5-5" },
     { name: "별", path: "M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z" },
-    { name: "하트", path: "M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 000-7.8z" },
-    { name: "불꽃", path: "M8.5 14.5A2.5 2.5 0 0011 12c0-1.4-.5-2-1-3-1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a7 7 0 11-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 002.5 2.5z" },
+    {
+      name: "하트",
+      path: "M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1.1 1L12 21l7.7-7.6 1.1-1a5.5 5.5 0 000-7.8z",
+    },
+    {
+      name: "불꽃",
+      path: "M8.5 14.5A2.5 2.5 0 0011 12c0-1.4-.5-2-1-3-1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a7 7 0 11-14 0c0-1.2.4-2.3 1-3a2.5 2.5 0 002.5 2.5z",
+    },
     { name: "번개", path: "M13 2L4 14h7l-1 8 9-12h-7z" },
     { name: "돋보기", path: "M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3" },
-    { name: "자물쇠", path: "M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM7 11V7a5 5 0 0110 0v4" },
+    {
+      name: "자물쇠",
+      path: "M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2zM7 11V7a5 5 0 0110 0v4",
+    },
     { name: "플러스", path: "M12 5v14M5 12h14" },
     { name: "화살표", path: "M5 12h14M13 6l6 6-6 6" },
     { name: "구름", path: "M17.5 19a4.5 4.5 0 00.5-9 6.5 6.5 0 00-12.6 1.6A4 4 0 006 19z" },

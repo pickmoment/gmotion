@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Toolbar, type ExportKind } from "./components/Toolbar";
 import { SceneList } from "./components/SceneList";
 import { SceneForm } from "./components/SceneForm";
@@ -15,9 +16,17 @@ import { DesignPanel } from "./components/DesignPanel";
 import { SpecGenPanel } from "./components/SpecGenPanel";
 import { useSpecStore } from "./lib/useSpecStore";
 import { syncSpecDesign } from "./lib/design";
-import { useDesignStore } from "./lib/designStore";
+import { useDesignStore, onLibrarySaveError } from "./lib/designStore";
 import { EMPTY_SPEC, insertScene, moveScene, removeScene, replaceScene } from "./lib/spec";
-import { build, checkOutput, parseSubtitles, timingCsv, validate, type CheckLine, type SyncInput } from "./lib/build";
+import {
+  build,
+  checkOutput,
+  parseSubtitles,
+  timingCsv,
+  validate,
+  type CheckLine,
+  type SyncInput,
+} from "./lib/build";
 import { GG } from "./engine/boot";
 import { api, ask, dialogs, shell } from "./lib/tauri";
 import type { Cue, Scene, Spec } from "./engine/types";
@@ -34,11 +43,11 @@ export default function App() {
      저장할 때 몰래 넣지 않고 편집 중에 맞춘다 — JSON 편집기에 보여야 한다. */
   const update = useCallback(
     (fn: (s: Spec) => Spec) => store.update((cur) => syncSpecDesign(fn(cur), library)),
-    [store, library]
+    [store, library],
   );
   const reset = useCallback(
     (next: Spec) => store.reset(syncSpecDesign(next, library)),
-    [store, library]
+    [store, library],
   );
 
   /* 라이브러리에서 커스텀 요소를 고치면 스펙에 심긴 사본도 따라가야 한다 */
@@ -60,7 +69,9 @@ export default function App() {
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [captions, setCaptions] = useState(false);
 
-  const [check, setCheck] = useState<{ lines: CheckLine[]; info: string; fail: number } | null>(null);
+  const [check, setCheck] = useState<{ lines: CheckLine[]; info: string; fail: number } | null>(
+    null,
+  );
 
   const sync: SyncInput = useMemo(() => ({ cues, captions, audioSrc }), [cues, captions, audioSrc]);
   const result = useMemo(() => validate(spec, sync), [spec, sync]);
@@ -72,6 +83,42 @@ export default function App() {
 
   const fail = useCallback((e: unknown) => say(`실패: ${String(e)}`), [say]);
 
+  /* 디자인 라이브러리 저장 실패(예: localStorage 가득 참)를 토스트로 알린다 */
+  useEffect(() => onLibrarySaveError(say), [say]);
+
+  /* 창을 닫으려 할 때 저장하지 않은 편집이 있으면 확인을 받는다 */
+  const dirtyRef = useRef(store.dirty);
+  dirtyRef.current = store.dirty;
+
+  useEffect(() => {
+    const win = getCurrentWindow();
+    let unlisten: (() => void) | undefined;
+    void win
+      .onCloseRequested(async (event) => {
+        if (!dirtyRef.current) return;
+        event.preventDefault();
+        if (await ask("저장하지 않은 편집이 있다. 그래도 닫을까?", "닫기")) {
+          await win.destroy();
+        }
+      })
+      .then((u) => {
+        unlisten = u;
+      });
+    return () => unlisten?.();
+  }, []);
+
+  /* 웹뷰 리로드·OS 강제종료 대비 안전망 */
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
   /* 선택한 씬이 목록 밖으로 나가지 않게 붙든다 */
   useEffect(() => {
     if (selected >= spec.scenes.length) setSelected(Math.max(0, spec.scenes.length - 1));
@@ -80,6 +127,7 @@ export default function App() {
   /* ── 파일 ───────────────────────────────────────────────────── */
 
   const doOpen = async () => {
+    if (store.dirty && !(await ask("저장하지 않은 편집이 있다. 그래도 열까?", "열기"))) return;
     try {
       const p = await dialogs.openSpec();
       if (!p) return;
@@ -92,6 +140,52 @@ export default function App() {
       fail(e);
     }
   };
+
+  /* 자동저장 + 크래시 복구 — 데이터 유실을 막는 안전망 */
+  const autosavePath = useRef<string | null>(null);
+  const specRef = useRef(spec);
+  specRef.current = spec;
+
+  /* 마운트 시 한 번 — 이전 실행이 남긴 자동저장이 있으면 복구를 제안한다.
+     StrictMode 는 개발 모드에서 마운트 이펙트를 일부러 두 번 부른다 — 가드 없이 두면
+     복구 확인 대화상자가 두 번 뜬다(하나를 눌러도 곧바로 또 뜨는 것처럼 보인다). */
+  const recoveryChecked = useRef(false);
+  useEffect(() => {
+    if (recoveryChecked.current) return;
+    recoveryChecked.current = true;
+    void (async () => {
+      const dir = await api.appDataDir();
+      const path = `${dir}/autosave.json`;
+      autosavePath.current = path;
+      try {
+        const raw = await api.readText(path);
+        if (raw.trim() && (await ask("이전에 저장하지 못한 편집이 있다. 복구할까?", "복구"))) {
+          reset(JSON.parse(raw) as Spec);
+          setFilePath(null);
+          say("자동복구 파일을 불러왔다");
+        }
+      } catch {
+        /* 자동저장 파일이 없다 — 정상이다 */
+      }
+      void api.removeFile(path);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* dirty 인 동안 20초마다 스냅샷 */
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (dirtyRef.current && autosavePath.current) {
+        void api.writeText(autosavePath.current, JSON.stringify(specRef.current));
+      }
+    }, 20000);
+    return () => clearInterval(id);
+  }, []);
+
+  /* 저장·새로·열기 등으로 dirty 가 풀리면 자동저장 파일도 치운다 — 다음 실행에서 헛되이 복구를 묻지 않게 */
+  useEffect(() => {
+    if (!store.dirty && autosavePath.current) void api.removeFile(autosavePath.current);
+  }, [store.dirty]);
 
   const writeSpec = async (path: string) => {
     setBusy(true);
@@ -114,15 +208,24 @@ export default function App() {
 
   const baseName = (): string => {
     if (filePath) {
-      const stem = filePath.split(/[/\\]/).pop()?.replace(/\.json$/i, "");
+      const stem = filePath
+        .split(/[/\\]/)
+        .pop()
+        ?.replace(/\.json$/i, "");
       if (stem) return stem;
     }
     if (subsPath) {
-      const stem = subsPath.split(/[/\\]/).pop()?.replace(/\.(srt|vtt)$/i, "");
+      const stem = subsPath
+        .split(/[/\\]/)
+        .pop()
+        ?.replace(/\.(srt|vtt)$/i, "");
       if (stem) return stem;
     }
     if (audioPath) {
-      const stem = audioPath.split(/[/\\]/).pop()?.replace(/\.(mp3|m4a|wav|ogg|aac|webm|opus)$/i, "");
+      const stem = audioPath
+        .split(/[/\\]/)
+        .pop()
+        ?.replace(/\.(mp3|m4a|wav|ogg|aac|webm|opus)$/i, "");
       if (stem) return stem;
     }
     return slug(spec.title);
@@ -196,12 +299,14 @@ export default function App() {
 
   /** 산출물에 실제로 무엇이 실렸는지 — 내보낸 뒤 이걸 그대로 알려준다. */
   const embedded = (kind: ExportKind["key"]): string => {
-    if (kind === "csv") return sync.cues ? `자막 타이밍 ${sync.cues.length}cue 기준` : "추정 타이밍";
+    if (kind === "csv")
+      return sync.cues ? `자막 타이밍 ${sync.cues.length}cue 기준` : "추정 타이밍";
     const parts: string[] = [];
     if (sync.cues) parts.push(`자막 정렬 ${sync.cues.length}cue`);
     /* 발표용에는 화면 자막이 빠진다 — 실리지 않은 것을 실렸다고 적으면 안 된다. */
-    if (sync.captions && sync.cues) parts.push(kind === "present" ? "화면 자막 제외(발표용)" : "화면 자막");
-    if (sync.audioSrc) parts.push(`음성 ${(sync.audioSrc.length * 0.75 / 1048576).toFixed(1)}MB`);
+    if (sync.captions && sync.cues)
+      parts.push(kind === "present" ? "화면 자막 제외(발표용)" : "화면 자막");
+    if (sync.audioSrc) parts.push(`음성 ${((sync.audioSrc.length * 0.75) / 1048576).toFixed(1)}MB`);
     return parts.length ? parts.join(" · ") : "자막·음성 없음";
   };
 
@@ -211,7 +316,11 @@ export default function App() {
     const dir = await defaultDir();
     const base = baseName();
     const csv = kind === "csv";
-    const name = csv ? `${base}-타임코드.csv` : kind === "present" ? `${base}-발표.html` : `${base}.html`;
+    const name = csv
+      ? `${base}-타임코드.csv`
+      : kind === "present"
+        ? `${base}-발표.html`
+        : `${base}.html`;
     const defaultPath = dir ? `${dir}/${name}` : name;
     const p = await dialogs.saveAs(defaultPath, csv ? "CSV" : "HTML", csv ? "csv" : "html");
     if (!p) return;
@@ -280,7 +389,9 @@ export default function App() {
         total_sec: total,
         quality: 92,
       });
-      say(`${out.split(/[/\\]/).pop()} — ${w}×${h} 30fps · ${total.toFixed(1)}초${audioPath ? " · 음성 포함" : ""}`);
+      say(
+        `${out.split(/[/\\]/).pop()} — ${w}×${h} 30fps · ${total.toFixed(1)}초${audioPath ? " · 음성 포함" : ""}`,
+      );
       await shell.revealItemInDir(out);
     } catch (e) {
       say(`렌더 실패: ${String(e)}`);
@@ -338,11 +449,12 @@ export default function App() {
         subsPath={subsPath}
         audioPath={audioPath}
         cueCount={cues?.length ?? 0}
-        audioMB={sync.audioSrc ? sync.audioSrc.length * 0.75 / 1048576 : 0}
+        audioMB={sync.audioSrc ? (sync.audioSrc.length * 0.75) / 1048576 : 0}
         captions={captions}
         busy={busy}
         onNew={async () => {
-          if (store.dirty && !(await ask("저장하지 않은 편집이 있다. 버릴까?", "새로 만들기"))) return;
+          if (store.dirty && !(await ask("저장하지 않은 편집이 있다. 버릴까?", "새로 만들기")))
+            return;
           reset(EMPTY_SPEC);
           setFilePath(null);
           setSelected(0);
@@ -363,6 +475,9 @@ export default function App() {
         onCheck={doCheck}
         onSkill={() => setModal("skill")}
         onDocs={() => setModal("docs")}
+        onOpenLogs={() => {
+          void api.appLogDir().then((d) => shell.revealItemInDir(d));
+        }}
       />
 
       <main className="cols">
@@ -370,21 +485,51 @@ export default function App() {
           scenes={spec.scenes}
           selected={selected}
           result={result}
-          onSelect={(i) => { setSelected(i); setTab("form"); }}
-          onAdd={(s, at) => { update((cur) => insertScene(cur, at, s)); setSelected(at); setTab("form"); }}
+          onSelect={(i) => {
+            setSelected(i);
+            setTab("form");
+          }}
+          onAdd={(s, at) => {
+            update((cur) => insertScene(cur, at, s));
+            setSelected(at);
+            setTab("form");
+          }}
           onRemove={(i) => update((cur) => removeScene(cur, i))}
           onDuplicate={(i) => {
-            update((cur) => insertScene(cur, i + 1, JSON.parse(JSON.stringify(cur.scenes[i])) as Scene));
+            update((cur) =>
+              insertScene(cur, i + 1, JSON.parse(JSON.stringify(cur.scenes[i])) as Scene),
+            );
             setSelected(i + 1);
           }}
-          onMove={(from, to) => { update((cur) => moveScene(cur, from, to)); setSelected(to); }}
+          onMove={(from, to) => {
+            update((cur) => moveScene(cur, from, to));
+            setSelected(to);
+          }}
         />
 
         <section className="pane editor">
           <div className="tabs">
-            <button type="button" className={tab === "form" ? "on" : ""} onClick={() => setTab("form")}>씬 편집</button>
-            <button type="button" className={tab === "doc" ? "on" : ""} onClick={() => setTab("doc")}>문서 설정</button>
-            <button type="button" className={tab === "json" ? "on" : ""} onClick={() => setTab("json")}>JSON</button>
+            <button
+              type="button"
+              className={tab === "form" ? "on" : ""}
+              onClick={() => setTab("form")}
+            >
+              씬 편집
+            </button>
+            <button
+              type="button"
+              className={tab === "doc" ? "on" : ""}
+              onClick={() => setTab("doc")}
+            >
+              문서 설정
+            </button>
+            <button
+              type="button"
+              className={tab === "json" ? "on" : ""}
+              onClick={() => setTab("json")}
+            >
+              JSON
+            </button>
           </div>
           {tab === "form" &&
             (scene ? (
@@ -398,7 +543,8 @@ export default function App() {
             ) : (
               <div className="pane-body">
                 <p className="dim pad">
-                  씬이 없다. 왼쪽에서 씬을 추가하거나 툴바의 <strong>예제</strong>에서 가장 가까운 걸 열어 갈아끼운다.
+                  씬이 없다. 왼쪽에서 씬을 추가하거나 툴바의 <strong>예제</strong>에서 가장 가까운
+                  걸 열어 갈아끼운다.
                 </p>
               </div>
             ))}
@@ -413,7 +559,13 @@ export default function App() {
         </section>
 
         <section className="side">
-          <Preview spec={spec} sync={sync} result={result} scene={selected} onSceneChange={setSelected} />
+          <Preview
+            spec={spec}
+            sync={sync}
+            result={result}
+            scene={selected}
+            onSceneChange={setSelected}
+          />
           <ValidatePanel result={result} spec={spec} cues={cues} />
         </section>
       </main>
@@ -425,7 +577,12 @@ export default function App() {
       {modal === "examples" && (
         <ExamplesPanel
           onClose={() => setModal(null)}
-          onPick={(s, name) => {
+          onPick={async (s, name) => {
+            if (
+              store.dirty &&
+              !(await ask("저장하지 않은 편집이 있다. 그래도 예제를 열까?", "예제 열기"))
+            )
+              return;
             reset(s);
             setFilePath(null);
             setSelected(0);
@@ -438,7 +595,12 @@ export default function App() {
         <RenderPanel total={result.stats?.totalSec ?? 0} onCancel={() => setModal(null)} />
       )}
       {modal === "check" && check && (
-        <CheckPanel lines={check.lines} info={check.info} fail={check.fail} onClose={() => setModal(null)} />
+        <CheckPanel
+          lines={check.lines}
+          info={check.info}
+          fail={check.fail}
+          onClose={() => setModal(null)}
+        />
       )}
       {modal === "gen" && cues && (
         <SpecGenPanel
@@ -450,7 +612,12 @@ export default function App() {
             energy: spec.energy || "E2",
           }}
           onClose={() => setModal(null)}
-          onApply={(next, how) => {
+          onApply={async (next, how) => {
+            if (
+              store.dirty &&
+              !(await ask("저장하지 않은 편집이 있다. 그래도 초안을 적용할까?", "초안 적용"))
+            )
+              return;
             /* 초안은 파일이 아니다 — 경로를 비워 두어 저장할 때 새 파일을 묻게 한다 */
             reset(next);
             setFilePath(null);
@@ -514,6 +681,9 @@ export default function App() {
 
 /** 파일 이름에 쓸 수 있게 다듬는다. 한글은 그대로 둔다. */
 function slug(title?: string): string {
-  const t = (title ?? "").trim().replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, "-");
+  const t = (title ?? "")
+    .trim()
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "-");
   return t || "motion";
 }

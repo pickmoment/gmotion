@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use std::os::windows::process::CommandExt;
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
-use tungstenite::{stream::MaybeTlsStream, Message, WebSocket};
+use tungstenite::{Message, WebSocket};
 
 /// Windows 에서 자식 프로세스(ffmpeg, chrome, where.exe) 실행 시 콘솔 창이 깜빡이거나
 /// 뜨지 않도록 CREATE_NO_WINDOW 플래그를 설정한 Command 를 만든다.
@@ -23,7 +23,7 @@ pub fn new_command<S: AsRef<std::ffi::OsStr>>(program: S) -> Command {
     cmd
 }
 
-pub type Ws = WebSocket<MaybeTlsStream<TcpStream>>;
+pub type Ws = WebSocket<TcpStream>;
 
 /// Chrome / Chromium / Edge 실행 파일을 찾는다.
 /// 앱이 Finder 또는 시작 메뉴에서 실행되면 PATH 가 빈약하므로
@@ -356,8 +356,11 @@ impl Browser {
             std::thread::sleep(Duration::from_millis(80));
         };
 
-        let (ws, _) = tungstenite::connect(format!("ws://127.0.0.1:{port}{path}"))
-            .map_err(|e| format!("CDP 연결 실패: {e}"))?;
+        let stream = TcpStream::connect(("127.0.0.1", port)).map_err(|e| format!("CDP 연결 실패: {e}"))?;
+        stream.set_read_timeout(Some(Duration::from_secs(5))).map_err(|e| e.to_string())?;
+        let _ = stream.set_nodelay(true);
+        let (ws, _) = tungstenite::client(format!("ws://127.0.0.1:{port}{path}"), stream)
+            .map_err(|e| format!("CDP 핸드셰이크 실패: {e}"))?;
 
         let mut b = Browser { child, ws, session: String::new(), next_id: 1, profile };
 
@@ -388,7 +391,10 @@ impl Browser {
             if t0.elapsed() > Duration::from_secs(60) {
                 return Err(format!("{method} 응답 없음"));
             }
-            let v = self.read()?;
+            let v = match self.read()? {
+                Some(v) => v,
+                None => continue, /* 소켓 타임아웃 — 60초 시한을 다시 검사한다 */
+            };
             if v["id"].as_u64() == Some(id) {
                 if let Some(e) = v.get("error") {
                     return Err(format!("{method}: {e}"));
@@ -404,14 +410,23 @@ impl Browser {
         self.call(Some(&s), method, params)
     }
 
-    pub fn read(&mut self) -> Result<Value, String> {
+    /// 소켓에 읽기 타임아웃을 걸어 뒀다 — 응답이 없어도 주기적으로 돌아와야
+    /// 바깥 루프가 취소·시한을 다시 검사할 수 있다. `Ok(None)` = 타임아웃(재시도),
+    /// `Ok(Some(v))` = 메시지 도착, `Err` = 진짜 연결 오류.
+    pub fn read(&mut self) -> Result<Option<Value>, String> {
         loop {
-            match self.ws.read().map_err(|e| format!("CDP 읽기 실패: {e}"))? {
-                Message::Text(t) => {
-                    return serde_json::from_str(&t).map_err(|e| format!("CDP 파싱 실패: {e}"))
+            match self.ws.read() {
+                Ok(Message::Text(t)) => {
+                    return serde_json::from_str(&t).map(Some).map_err(|e| format!("CDP 파싱 실패: {e}"));
                 }
-                Message::Close(_) => return Err("CDP 연결이 끊겼다".into()),
-                _ => continue,
+                Ok(Message::Close(_)) => return Err("CDP 연결이 끊겼다".into()),
+                Ok(_) => continue,
+                Err(tungstenite::Error::Io(e))
+                    if e.kind() == std::io::ErrorKind::WouldBlock || e.kind() == std::io::ErrorKind::TimedOut =>
+                {
+                    return Ok(None);
+                }
+                Err(e) => return Err(format!("CDP 읽기 실패: {e}")),
             }
         }
     }
@@ -431,6 +446,18 @@ impl Drop for Browser {
         let _ = self.child.kill();
         let _ = self.child.wait();
         let _ = std::fs::remove_dir_all(&self.profile);
+    }
+}
+
+/// 이전 실행이 비정상 종료(강제 종료·크래시)해 남은 Chrome 프로필을 정리한다.
+/// 앱 시작 시 한 번만 부른다 — 이 시점엔 이 프로세스가 띄운 렌더가 아직 없다.
+pub fn cleanup_stale_profiles() {
+    let dir = std::env::temp_dir();
+    let Ok(entries) = std::fs::read_dir(&dir) else { return };
+    for e in entries.flatten() {
+        if e.file_name().to_string_lossy().starts_with("gmotion-chrome-") {
+            let _ = std::fs::remove_dir_all(e.path());
+        }
     }
 }
 

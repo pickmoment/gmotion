@@ -31,6 +31,7 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
   const [note, setNote] = useState("");
   const [retries, setRetries] = useState(2);
   const [model, setModel] = useState("");
+  const [timeoutMin, setTimeoutMin] = useState(15);
   /* 씬 표를 먼저 받는 두 단계가 기본이다 — 한 번에 시키면 자막 문장이 그대로 화면에 올라온다 */
   const [storyboard, setStoryboard] = useState(true);
   const [running, setRunning] = useState(false);
@@ -85,11 +86,13 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
         model: model.trim() || undefined,
         storyboard,
         retries,
-        timeoutSec: 900,
+        timeoutSec: timeoutMin * 60,
         onStage: setStage,
       });
       setOut(r);
-      setStage(r.result.ok ? "받았다 — 검증 통과" : `받았다 — 검증 오류 ${r.result.errors.length}건`);
+      setStage(
+        r.result.ok ? "받았다 — 검증 통과" : `받았다 — 검증 오류 ${r.result.errors.length}건`,
+      );
     } catch (e) {
       setErr(String(e instanceof Error ? e.message : e));
       setStage("");
@@ -113,16 +116,20 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
       <div className="modal-box wide">
         <div className="pane-head">
           <h2>자막으로 스펙 초안 만들기</h2>
-          <button type="button" className="ghost" onClick={onClose} disabled={running}>닫기</button>
+          <button type="button" className="ghost" onClick={onClose} disabled={running}>
+            닫기
+          </button>
         </div>
 
         <div className="pane-body gen">
           <p className="hint">
-            자막 <strong>{cues.length}</strong>개 cue · 총 <strong>{mmss(total)}</strong> · 씬은 대략{" "}
-            <strong>{groups.length}</strong>개로 나뉜다. 화면 내용은 자막에서만 나온다 — 없는 수치는 만들지 않는다.
+            자막 <strong>{cues.length}</strong>개 cue · 총 <strong>{mmss(total)}</strong> · 씬은
+            대략 <strong>{groups.length}</strong>개로 나뉜다. 화면 내용은 자막에서만 나온다 — 없는
+            수치는 만들지 않는다.
             <br />
             <span className="warn-text">
-              선택한 CLI 를 통해 자막 전문이 그 CLI 가 쓰는 모델로 전송된다. 음성 파일은 보내지 않는다(텍스트만 읽는다).
+              선택한 CLI 를 통해 자막 전문이 그 CLI 가 쓰는 모델로 전송된다. 음성 파일은 보내지
+              않는다(텍스트만 읽는다).
             </span>
           </p>
 
@@ -131,7 +138,8 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
             {tools === null && <p className="dim">찾는 중…</p>}
             {tools && tools.length === 0 && (
               <p className="dim">
-                설치된 에이전트 CLI 를 찾지 못했다. 아래 <strong>규칙 기반 초안</strong>으로도 뼈대는 만들 수 있다.
+                설치된 에이전트 CLI 를 찾지 못했다. 아래 <strong>규칙 기반 초안</strong>으로도
+                뼈대는 만들 수 있다.
               </p>
             )}
             <div className="gen-tools">
@@ -200,14 +208,38 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
               />
               검증에 걸리면 진단을 붙여 다시 묻는다 (최대 2회) — 오류·자막 매칭률을 그대로 되먹인다
             </label>
+            <label className="inline-check">
+              호출 1회 시간 제한
+              <select
+                value={timeoutMin}
+                disabled={running}
+                onChange={(e) => setTimeoutMin(Number(e.target.value))}
+              >
+                <option value={5}>5분</option>
+                <option value={10}>10분</option>
+                <option value={15}>15분</option>
+                <option value={30}>30분</option>
+                <option value={60}>60분</option>
+              </select>
+              최악의 경우 최대 {timeoutMin * (1 + retries)}분까지 기다릴 수 있다
+            </label>
           </section>
 
           <div className="modal-ops start">
-            <button type="button" className="primary" disabled={!tool || running} onClick={() => void run()}>
+            <button
+              type="button"
+              className="primary"
+              disabled={!tool || running}
+              onClick={() => void run()}
+            >
               {running ? "만드는 중…" : "스펙 만들기"}
             </button>
-            <button type="button" disabled={running} onClick={drafted}
-                    title="모델을 쓰지 않는다 — 자막 문구를 그대로 배치한 뼈대다">
+            <button
+              type="button"
+              disabled={running}
+              onClick={drafted}
+              title="모델을 쓰지 않는다 — 자막 문구를 그대로 배치한 뼈대다"
+            >
               뼈대만 (자막 그대로)
             </button>
             {running && (
@@ -224,7 +256,11 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
             <section className="gen-row">
               <h4>진행 로그</h4>
               <div className="gen-log mono" ref={logBox}>
-                {logs.length === 0 ? <span className="dim">응답을 기다린다…</span> : logs.map((l, i) => <div key={i}>{l}</div>)}
+                {logs.length === 0 ? (
+                  <span className="dim">응답을 기다린다…</span>
+                ) : (
+                  logs.map((l, i) => <div key={i}>{l}</div>)
+                )}
               </div>
             </section>
           )}
@@ -247,7 +283,8 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
                 <li>
                   <span>자막 정렬</span>
                   <strong className={rate >= 0.8 ? "" : "warn-text"}>
-                    {out.result.stats?.scenes ?? 0}씬 중 {out.result.sync?.matched ?? 0}씬 ({Math.round(rate * 100)}%)
+                    {out.result.stats?.scenes ?? 0}씬 중 {out.result.sync?.matched ?? 0}씬 (
+                    {Math.round(rate * 100)}%)
                   </strong>
                 </li>
                 <li>
@@ -278,7 +315,14 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
                 {(out.spec.scenes ?? []).map((s, i) => (
                   <li key={i}>
                     <code>{s.pattern}</code>
-                    <strong>{String(s.title ?? s.text ?? (Array.isArray(s.lines) ? s.lines.join(" / ") : "") ?? "")}</strong>
+                    <strong>
+                      {String(
+                        s.title ??
+                          s.text ??
+                          (Array.isArray(s.lines) ? s.lines.join(" / ") : "") ??
+                          "",
+                      )}
+                    </strong>
                     <span className="dim tiny">{String(s.say ?? "").slice(0, 60)}</span>
                   </li>
                 ))}
@@ -287,24 +331,34 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
               {!out.result.ok && (
                 <ul className="gen-errs">
                   {out.result.errors.slice(0, 6).map((e, i) => (
-                    <li key={i} className="err-text">{e}</li>
+                    <li key={i} className="err-text">
+                      {e}
+                    </li>
                   ))}
                 </ul>
               )}
 
               <div className="modal-ops">
-                <button type="button" className="ghost" onClick={() => setOut(null)}>버리기</button>
+                <button type="button" className="ghost" onClick={() => setOut(null)}>
+                  버리기
+                </button>
                 <button
                   type="button"
                   className="primary"
-                  onClick={() => onApply(out.spec, `${out.spec.scenes?.length ?? 0}씬 · 자막 정렬 ${Math.round(rate * 100)}%`)}
+                  onClick={() =>
+                    onApply(
+                      out.spec,
+                      `${out.spec.scenes?.length ?? 0}씬 · 자막 정렬 ${Math.round(rate * 100)}%`,
+                    )
+                  }
                 >
                   이 초안 열기
                 </button>
               </div>
               {!out.result.ok && (
                 <p className="hint">
-                  오류가 있어도 열 수 있다 — 검증 패널이 같은 오류를 짚어 주므로 씬 편집기에서 고치면 된다.
+                  오류가 있어도 열 수 있다 — 검증 패널이 같은 오류를 짚어 주므로 씬 편집기에서
+                  고치면 된다.
                 </p>
               )}
             </section>

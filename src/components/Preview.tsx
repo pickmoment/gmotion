@@ -40,6 +40,7 @@ export function Preview({
   const [err, setErr] = useState("");
   const [live, setLive] = useState(true);
   const [stamp, setStamp] = useState(0);
+  const [stalled, setStalled] = useState(false);
   /* 자막 표시는 산출물 안의 상태다 — 다시 빌드해도 보던 대로 유지한다 */
   const [ccOn, setCcOn] = useState(true);
   const pending = useRef(scene);
@@ -49,22 +50,38 @@ export function Preview({
 
   pending.current = scene;
 
+  /** 산출물이 실제로 바뀌었을 때만 iframe 을 다시 로드시킨다 — 자동 갱신에서까지 매번
+   * 리로드하면 내용이 같아도 React 가 srcDoc 을 다시 쓰지 않아 load 이벤트가 안 오고,
+   * 그 이벤트를 기다리는 스톨 타이머가 8초 뒤 "응답하지 않는다" 오탐을 낸다.
+   * `force` 는 수동 "다시 빌드"·스톨 복구용 — 내용이 같아도 무조건 다시 로드시킨다
+   * (iframe 을 `key={stamp}` 로 통째로 새로 만들어, 값이 같아 속성만 바꿔서는 안 오는
+   * load 이벤트를 리마운트로 확실히 받는다). */
+  const lastHtml = useRef("");
+
+  const rebuild = useCallback(
+    (force = false) => {
+      try {
+        const next = build(spec, sync, { clean: false });
+        setErr("");
+        if (force || next !== lastHtml.current) {
+          lastHtml.current = next;
+          setHtml(next);
+          setStamp((s) => s + 1);
+        }
+      } catch (e) {
+        setErr((e as Error).message);
+      }
+    },
+    [spec, sync],
+  );
+
   /* 검증을 통과한 스펙만 다시 그린다. 편집 중간 상태로 미리보기가 깨지지 않게. */
   useEffect(() => {
     if (!live) return;
     if (!result.ok || !spec.scenes.length) return;
-    const t = setTimeout(() => {
-      try {
-        setHtml(build(spec, sync, { clean: false }));
-        setErr("");
-        setStamp((n) => n + 1);
-      } catch (e) {
-        setErr((e as Error).message);
-      }
-    }, 450);
+    const t = setTimeout(rebuild, 450);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(spec), sync.cues, sync.captions, sync.audioSrc, result.ok, live]);
+  }, [spec, sync.cues, sync.captions, sync.audioSrc, result.ok, live, rebuild]);
 
   const ggm = () => (frame.current?.contentWindow as unknown as { GGM?: GGMApi })?.GGM;
 
@@ -95,8 +112,15 @@ export function Preview({
     g.play();
     const tick = () => {
       const cur = ggm();
-      if (!cur) { watch.current = 0; return; }
-      if (cur.master.time() >= end) { cur.seek(end); watch.current = 0; return; }
+      if (!cur) {
+        watch.current = 0;
+        return;
+      }
+      if (cur.master.time() >= end) {
+        cur.seek(end);
+        watch.current = 0;
+        return;
+      }
       watch.current = requestAnimationFrame(tick);
     };
     watch.current = requestAnimationFrame(tick);
@@ -110,7 +134,11 @@ export function Preview({
   useEffect(() => {
     const f = frame.current;
     if (!f) return;
+    setStalled(false);
+    const timer = setTimeout(() => setStalled(true), 8000);
     const onLoad = () => {
+      clearTimeout(timer);
+      setStalled(false);
       const g = ggm();
       if (!g) return;
       stopWatch();
@@ -120,7 +148,10 @@ export function Preview({
       });
     };
     f.addEventListener("load", onLoad);
-    return () => f.removeEventListener("load", onLoad);
+    return () => {
+      f.removeEventListener("load", onLoad);
+      clearTimeout(timer);
+    };
   }, [stamp]);
 
   /* 씬을 바꾸면 그 씬의 모션을 처음부터 보여준다 */
@@ -139,16 +170,7 @@ export function Preview({
           <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
           자동 갱신
         </label>
-        <button type="button" className="ghost"
-                onClick={() => {
-                  try {
-                    setHtml(build(spec, sync, { clean: false }));
-                    setErr("");
-                    setStamp((s) => s + 1);
-                  } catch (e) {
-                    setErr((e as Error).message);
-                  }
-                }}>
+        <button type="button" className="ghost" onClick={() => rebuild(true)}>
           다시 빌드
         </button>
       </div>
@@ -156,6 +178,7 @@ export function Preview({
       <div className="stage-host">
         {html ? (
           <iframe
+            key={stamp}
             ref={frame}
             title="미리보기"
             srcDoc={html}
@@ -174,15 +197,66 @@ export function Preview({
 
       {err && <p className="warn-inline">{err}</p>}
 
+      {stalled && (
+        <p className="warn-inline">
+          미리보기가 응답하지 않는다 —{" "}
+          <button type="button" className="ghost" onClick={() => rebuild(true)}>
+            다시 그리기
+          </button>
+        </p>
+      )}
+
       <div className="transport">
-        <button type="button" onClick={() => onSceneChange(Math.max(0, scene - 1))} disabled={scene === 0}>←</button>
-        <span className="pos">{n ? scene + 1 : 0} / {n}</span>
-        <button type="button" onClick={() => onSceneChange(Math.min(n - 1, scene + 1))} disabled={scene >= n - 1}>→</button>
+        <button
+          type="button"
+          onClick={() => onSceneChange(Math.max(0, scene - 1))}
+          disabled={scene === 0}
+        >
+          ←
+        </button>
+        <span className="pos">
+          {n ? scene + 1 : 0} / {n}
+        </span>
+        <button
+          type="button"
+          onClick={() => onSceneChange(Math.min(n - 1, scene + 1))}
+          disabled={scene >= n - 1}
+        >
+          →
+        </button>
         <span className="sep" />
-        <button type="button" onClick={() => playScene(scene)} title="이 씬을 처음부터">씬 다시</button>
-        <button type="button" onClick={() => { stopWatch(); ggm()?.play(); }} title="씬 경계를 넘어 계속 재생">재생</button>
-        <button type="button" onClick={() => { stopWatch(); ggm()?.pause(); }}>정지</button>
-        <button type="button" onClick={() => { stopWatch(); ggm()?.replay(); }} title="전체를 처음부터">전체</button>
+        <button type="button" onClick={() => playScene(scene)} title="이 씬을 처음부터">
+          씬 다시
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            stopWatch();
+            ggm()?.play();
+          }}
+          title="씬 경계를 넘어 계속 재생"
+        >
+          재생
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            stopWatch();
+            ggm()?.pause();
+          }}
+        >
+          정지
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            stopWatch();
+            ggm()?.replay();
+          }}
+          title="전체를 처음부터"
+        >
+          전체
+        </button>
         {sync.captions && sync.cues && (
           <button
             type="button"

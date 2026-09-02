@@ -16,6 +16,8 @@ export interface SkillStatus {
 }
 
 export const api = {
+  appDataDir: () => invoke<string>("app_data_dir"),
+  appLogDir: () => invoke<string>("app_log_dir"),
   readText: (path: string) => invoke<string>("read_text", { path }),
   writeText: (path: string, contents: string) =>
     invoke<{ path: string; name: string }>("write_text", { path, contents }),
@@ -30,9 +32,12 @@ export const api = {
   renderTools: () => invoke<string[]>("render_tools"),
   renderMp4: (opts: RenderOpts) => invoke<string>("render_mp4", { opts }),
   renderCancel: () => invoke<void>("render_cancel"),
-  skillStatus: (root?: string | null) => invoke<SkillStatus>("skill_status", { root: root ?? null }),
-  skillInstall: (root?: string | null) => invoke<SkillStatus>("skill_install", { root: root ?? null }),
-  skillRemove: (root?: string | null) => invoke<SkillStatus>("skill_remove", { root: root ?? null }),
+  skillStatus: (root?: string | null) =>
+    invoke<SkillStatus>("skill_status", { root: root ?? null }),
+  skillInstall: (root?: string | null) =>
+    invoke<SkillStatus>("skill_install", { root: root ?? null }),
+  skillRemove: (root?: string | null) =>
+    invoke<SkillStatus>("skill_remove", { root: root ?? null }),
   skillFile: (path: string) => invoke<string>("skill_file", { path }),
   skillManifest: () => invoke<string[]>("skill_manifest"),
   /** 설치된 에이전트 CLI 목록. 찾았다는 뜻일 뿐 — 로그인·네트워크는 돌려 봐야 안다 */
@@ -96,9 +101,13 @@ export const onRenderProgress = (fn: (p: RenderProgress) => void) =>
 
 export const dialogs = {
   openSpec: () =>
-    open({ multiple: false, filters: [{ name: "스펙 JSON", extensions: ["json"] }] }) as Promise<string | null>,
+    open({ multiple: false, filters: [{ name: "스펙 JSON", extensions: ["json"] }] }) as Promise<
+      string | null
+    >,
   openSubs: () =>
-    open({ multiple: false, filters: [{ name: "자막", extensions: ["srt", "vtt"] }] }) as Promise<string | null>,
+    open({ multiple: false, filters: [{ name: "자막", extensions: ["srt", "vtt"] }] }) as Promise<
+      string | null
+    >,
   openAudio: () =>
     open({
       multiple: false,

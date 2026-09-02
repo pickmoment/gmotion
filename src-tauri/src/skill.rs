@@ -196,11 +196,9 @@ pub fn remove(root: Option<&str>) -> Result<SkillStatus, String> {
     if !target.is_dir() {
         return status(root);
     }
-    let ok = target.ends_with(SKILL_NAME)
-        && target
-            .parent()
-            .map(|p| p.ends_with("skills"))
-            .unwrap_or(false);
+    let canon = std::fs::canonicalize(&target).unwrap_or_else(|_| target.clone());
+    let ok = canon.ends_with(SKILL_NAME)
+        && canon.parent().map(|p| p.ends_with("skills")).unwrap_or(false);
     if !ok {
         return Err(format!("예상치 못한 경로라 지우지 않았다: {}", target.display()));
     }

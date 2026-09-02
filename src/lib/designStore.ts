@@ -10,6 +10,30 @@ import type { CustomDesignLibrary, SkinDefinition, ThemeDefinition } from "../en
 
 const STORAGE_KEY = "gmotion_custom_design_v1";
 
+const SCHEMA_VERSION = 1;
+
+interface StoredLibrary extends CustomDesignLibrary {
+  schemaVersion?: number;
+}
+
+/** 버전 n → n+1 로 올리는 함수만 채운다. 다음 스키마 변경 때 여기에 추가한다. */
+const MIGRATIONS: Record<number, (lib: StoredLibrary) => StoredLibrary> = {
+  0: (lib) => ({ ...lib, skins: lib.skins || {}, schemaVersion: 1 }),
+};
+
+function migrate(lib: StoredLibrary): CustomDesignLibrary {
+  let cur = lib;
+  let v = cur.schemaVersion ?? 0;
+  while (v < SCHEMA_VERSION) {
+    const step = MIGRATIONS[v];
+    if (!step) break; /* 처리할 마이그레이션이 없으면 있는 그대로 둔다 — 데이터를 버리지 않는다 */
+    cur = step(cur);
+    v = cur.schemaVersion ?? v + 1;
+  }
+  const { schemaVersion: _drop, ...lib2 } = cur;
+  return lib2 as CustomDesignLibrary;
+}
+
 const EMPTY_LIBRARY: CustomDesignLibrary = {
   themes: {},
   skins: {},
@@ -22,6 +46,13 @@ const EMPTY_LIBRARY: CustomDesignLibrary = {
 
 let currentLibrary: CustomDesignLibrary = loadInitialLibrary();
 const listeners = new Set<() => void>();
+
+type SaveErrorListener = (message: string) => void;
+const saveErrorListeners = new Set<SaveErrorListener>();
+export function onLibrarySaveError(fn: SaveErrorListener): () => void {
+  saveErrorListeners.add(fn);
+  return () => saveErrorListeners.delete(fn);
+}
 
 function syncLibraryToEngine(lib: CustomDesignLibrary): void {
   for (const [k, v] of Object.entries(lib.themes)) {
@@ -60,17 +91,17 @@ function loadInitialLibrary(): CustomDesignLibrary {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...EMPTY_LIBRARY };
-    const parsed = JSON.parse(raw) as Partial<CustomDesignLibrary>;
-    const lib: CustomDesignLibrary = {
+    const parsed = JSON.parse(raw) as StoredLibrary;
+    const lib = migrate({
       themes: parsed.themes || {},
-      /* 스킨은 나중에 들어온 갈래다 — 예전 저장본에는 없으므로 빈 것으로 채운다 */
       skins: parsed.skins || {},
       icons: parsed.icons || {},
       arts: parsed.arts || {},
       marks: parsed.marks || {},
       decors: parsed.decors || {},
       frames: parsed.frames || {},
-    };
+      schemaVersion: parsed.schemaVersion,
+    });
     syncLibraryToEngine(lib);
     return lib;
   } catch (err) {
@@ -83,10 +114,13 @@ function saveLibrary(lib: CustomDesignLibrary): void {
   currentLibrary = lib;
   try {
     if (typeof window !== "undefined" && window.localStorage) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(lib));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...lib, schemaVersion: SCHEMA_VERSION }));
     }
   } catch (err) {
     console.error("Failed to save custom design library to localStorage:", err);
+    const msg =
+      "디자인 라이브러리를 저장하지 못했다 — 저장 공간이 가득 찼을 수 있다. 내보내기로 백업한 뒤 오래된 항목을 지운다.";
+    saveErrorListeners.forEach((l) => l(msg));
   }
   listeners.forEach((l) => l());
 }
@@ -100,6 +134,47 @@ function subscribe(listener: () => void): () => void {
 
 function getSnapshot(): CustomDesignLibrary {
   return currentLibrary;
+}
+
+const MARK_WHERE: Record<string, true> = {
+  under: true,
+  around: true,
+  behind: true,
+  point: true,
+  corner: true,
+  ribbon: true,
+};
+const MAX_SVG_LEN = 200_000;
+
+function isValidEntry(kind: keyof CustomDesignLibrary, v: unknown): boolean {
+  if (!v || typeof v !== "object") return false;
+  const o = v as Record<string, unknown>;
+  const str = (x: unknown): x is string => typeof x === "string";
+  const svgOk = (x: unknown) => str(x) && x.length > 0 && x.length <= MAX_SVG_LEN;
+  switch (kind) {
+    case "themes":
+      return (
+        str(o.label) &&
+        ["bg", "bg2", "ink", "ink2", "dim", "accent", "accent2", "good", "warn", "bad"].every((k) =>
+          str(o[k]),
+        )
+      );
+    case "skins":
+      return true;
+    case "icons":
+      return str(o.path) && Array.isArray(o.aliases) && (o.aliases as unknown[]).every(str);
+    case "arts":
+    case "decors":
+      return str(o.label) && svgOk(o.svg);
+    case "marks":
+      return str(o.label) && svgOk(o.svg) && !!MARK_WHERE[o.where as string];
+    case "frames":
+      return (
+        str(o.label) && svgOk(o.svg) && typeof o.ratio === "number" && Number.isFinite(o.ratio)
+      );
+    default:
+      return false;
+  }
 }
 
 /* ── Store Actions ─────────────────────────────────────────────────── */
@@ -204,7 +279,7 @@ export const designStore = {
     where: "under" | "around" | "behind" | "point" | "corner" | "ribbon",
     svg: string,
     draw: boolean = true,
-    text: boolean = false
+    text: boolean = false,
   ): void {
     const next: CustomDesignLibrary = {
       ...currentLibrary,
@@ -267,38 +342,48 @@ export const designStore = {
     return JSON.stringify(currentLibrary, null, 2);
   },
 
-  importLibraryJSON(jsonStr: string): { success: boolean; count: number; error?: string } {
+  importLibraryJSON(jsonStr: string): {
+    success: boolean;
+    count: number;
+    skipped: number;
+    error?: string;
+  } {
     try {
       const parsed = JSON.parse(jsonStr) as Partial<CustomDesignLibrary>;
       if (typeof parsed !== "object" || parsed === null) {
-        return { success: false, count: 0, error: "유효한 JSON 객체가 아닙니다." };
+        return { success: false, count: 0, skipped: 0, error: "유효한 JSON 객체가 아닙니다." };
       }
-      const themes = { ...currentLibrary.themes, ...(parsed.themes || {}) };
-      const skins = { ...currentLibrary.skins, ...(parsed.skins || {}) };
-      const icons = { ...currentLibrary.icons, ...(parsed.icons || {}) };
-      const arts = { ...currentLibrary.arts, ...(parsed.arts || {}) };
-      const marks = { ...currentLibrary.marks, ...(parsed.marks || {}) };
-      const decors = { ...currentLibrary.decors, ...(parsed.decors || {}) };
-      const frames = { ...currentLibrary.frames, ...(parsed.frames || {}) };
-
-      const next: CustomDesignLibrary = { themes, skins, icons, arts, marks, decors, frames };
-      syncLibraryToEngine(next);
-      saveLibrary(next);
-
-      const count =
-        Object.keys(parsed.themes || {}).length +
-        Object.keys(parsed.skins || {}).length +
-        Object.keys(parsed.icons || {}).length +
-        Object.keys(parsed.arts || {}).length +
-        Object.keys(parsed.marks || {}).length +
-        Object.keys(parsed.decors || {}).length +
-        Object.keys(parsed.frames || {}).length;
-
-      return { success: true, count };
+      const KINDS: (keyof CustomDesignLibrary)[] = [
+        "themes",
+        "skins",
+        "icons",
+        "arts",
+        "marks",
+        "decors",
+        "frames",
+      ];
+      let count = 0;
+      let skipped = 0;
+      const merged: CustomDesignLibrary = { ...currentLibrary };
+      for (const kind of KINDS) {
+        const incoming = (parsed[kind] || {}) as Record<string, unknown>;
+        const next = { ...merged[kind] } as Record<string, unknown>;
+        for (const [k, v] of Object.entries(incoming)) {
+          if (isValidEntry(kind, v)) {
+            next[k] = v;
+            count++;
+          } else skipped++;
+        }
+        (merged as unknown as Record<string, unknown>)[kind] = next;
+      }
+      syncLibraryToEngine(merged);
+      saveLibrary(merged);
+      return { success: true, count, skipped };
     } catch (err) {
       return {
         success: false,
         count: 0,
+        skipped: 0,
         error: err instanceof Error ? err.message : "JSON 파싱 오류",
       };
     }

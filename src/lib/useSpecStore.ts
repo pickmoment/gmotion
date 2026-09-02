@@ -4,6 +4,7 @@ import type { Spec } from "../engine/types";
 import { EMPTY_SPEC, cloneSpec } from "./spec";
 
 const LIMIT = 120;
+const BURST_MS = 400;
 
 export function useSpecStore(initial: Spec = EMPTY_SPEC) {
   const [spec, setSpecRaw] = useState<Spec>(initial);
@@ -12,14 +13,20 @@ export function useSpecStore(initial: Spec = EMPTY_SPEC) {
   const future = useRef<string[]>([]);
   const [, bump] = useState(0);
 
-  /** 편집 한 번 = 히스토리 한 칸. */
+  const lastEditAt = useRef(0);
+
+  /** 편집 한 번 = 히스토리 한 칸. 400ms 이내 연속 편집은 한 칸으로 묶는다. */
   const update = useCallback((fn: (s: Spec) => Spec) => {
     setSpecRaw((cur) => {
       const next = fn(cur);
       if (next === cur) return cur;
-      past.current.push(JSON.stringify(cur));
-      if (past.current.length > LIMIT) past.current.shift();
-      future.current = [];
+      const now = Date.now();
+      if (now - lastEditAt.current > BURST_MS) {
+        past.current.push(JSON.stringify(cur));
+        if (past.current.length > LIMIT) past.current.shift();
+        future.current = [];
+      }
+      lastEditAt.current = now;
       setDirty(true);
       bump((n) => n + 1);
       return next;

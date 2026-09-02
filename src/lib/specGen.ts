@@ -19,6 +19,13 @@ import {
 } from "./specPrompt";
 import type { Cue, Spec, ValidateResult } from "../engine/types";
 
+export class CanceledError extends Error {
+  constructor() {
+    super("취소했다");
+    this.name = "CanceledError";
+  }
+}
+
 export interface GenOpts extends PromptOpts {
   cues: Cue[];
   /** `agent_tools` 가 준 것 */
@@ -81,7 +88,7 @@ export async function generateSpec(o: GenOpts): Promise<GenResult> {
       cwd,
       timeout_sec: o.timeoutSec,
     });
-    if (run.canceled) throw new Error("취소했다");
+    if (run.canceled) throw new CanceledError();
     if (run.timed_out) throw new Error(`${o.timeoutSec}초 안에 끝나지 않아 멈췄다`);
     return run;
   };
@@ -95,9 +102,13 @@ export async function generateSpec(o: GenOpts): Promise<GenResult> {
       const run = await call(buildStoryboardPrompt(o.cues, po));
       const got = extractJson(run.stdout || run.stderr);
       if (got) board = got.value as Storyboard;
-      o.onStage(board ? `씬 표 ${board.scenes?.length ?? 0}개를 받았다 — 이걸 근거로 스펙을 만든다` : "씬 표를 받지 못해 한 번에 만든다");
+      o.onStage(
+        board
+          ? `씬 표 ${board.scenes?.length ?? 0}개를 받았다 — 이걸 근거로 스펙을 만든다`
+          : "씬 표를 받지 못해 한 번에 만든다",
+      );
     } catch (e) {
-      if (String(e).includes("취소")) throw e;
+      if (e instanceof CanceledError) throw e;
       o.onStage("씬 표 단계를 건너뛴다 — 한 번에 만든다");
     }
   }
@@ -108,7 +119,11 @@ export async function generateSpec(o: GenOpts): Promise<GenResult> {
   const t0 = Date.now();
 
   for (let attempt = 1; attempt <= 1 + Math.max(0, o.retries); attempt++) {
-    o.onStage(attempt === 1 ? `${ad.label} 에 스펙을 요청했다 — 응답을 기다린다` : `${attempt}번째 시도 — 진단을 붙여 다시 묻는다`);
+    o.onStage(
+      attempt === 1
+        ? `${ad.label} 에 스펙을 요청했다 — 응답을 기다린다`
+        : `${attempt}번째 시도 — 진단을 붙여 다시 묻는다`,
+    );
     const run = await call(prompt);
 
     const found = extractJson(run.stdout || run.stderr);
@@ -142,7 +157,7 @@ export async function generateSpec(o: GenOpts): Promise<GenResult> {
     o.onStage(
       result.ok
         ? `문법은 통과했지만 자막 매칭이 ${Math.round(rate * 100)}% 다 — 다시 묻는다`
-        : `검증 오류 ${result.errors.length}건 — 진단을 붙여 다시 묻는다`
+        : `검증 오류 ${result.errors.length}건 — 진단을 붙여 다시 묻는다`,
     );
     prompt = base + retrySuffix(found.raw, [...result.errors, ...extra], result.warnings);
   }

@@ -7,15 +7,22 @@ use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
-/// 렌더 취소 플래그. 렌더는 한 번에 하나만 돈다.
+/// running: 이미 도는 렌더가 있는지. cancel: 멈추기 신호.
 #[derive(Default)]
-struct RenderState(Arc<AtomicBool>);
+struct RenderState { running: Arc<AtomicBool>, cancel: Arc<AtomicBool> }
+#[derive(Default)]
+struct AgentState { running: Arc<AtomicBool>, cancel: Arc<AtomicBool> }
 
-/// 에이전트 CLI 취소 플래그. 렌더와 같은 이유로 한 번에 하나만 돈다.
-#[derive(Default)]
-struct AgentState(Arc<AtomicBool>);
+/// 스레드가 끝나거나 패닉해도 running 플래그를 반드시 되돌린다.
+struct RunGuard(Arc<AtomicBool>);
+impl Drop for RunGuard {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::SeqCst);
+    }
+}
 
 #[derive(Serialize)]
 struct FileInfo {
@@ -118,8 +125,12 @@ fn reveal_file(app: tauri::AppHandle, path: String) -> Result<(), String> {
 
 /// 렌더에 쓸 임시 파일 경로. 산출물 HTML 을 여기 써 두고 Chrome 이 연다.
 #[tauri::command]
-fn temp_path(name: String) -> String {
-    std::env::temp_dir().join(name).to_string_lossy().into()
+fn temp_path(name: String) -> Result<String, String> {
+    let p = std::path::Path::new(&name);
+    if p.components().count() != 1 || matches!(p.components().next(), Some(std::path::Component::ParentDir)) {
+        return Err(format!("잘못된 임시 파일 이름: {name}"));
+    }
+    Ok(std::env::temp_dir().join(name).to_string_lossy().into())
 }
 
 /// 임시 파일 치우기. 없으면 조용히 넘어간다.
@@ -131,6 +142,20 @@ fn remove_file(path: String) {
 #[tauri::command]
 fn home_dir() -> Option<String> {
     dirs::home_dir().map(|p| p.to_string_lossy().into())
+}
+
+/// 앱 전용 데이터 디렉토리 — 자동저장 스냅샷을 여기 둔다. 없으면 만든다.
+#[tauri::command]
+fn app_data_dir(app: tauri::AppHandle) -> Result<String, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.to_string_lossy().into())
+}
+
+/// 앱 로그 디렉토리 — `tauri-plugin-log` 가 여기 로그 파일을 남긴다.
+#[tauri::command]
+fn app_log_dir(app: tauri::AppHandle) -> Result<String, String> {
+    Ok(app.path().app_log_dir().map_err(|e| e.to_string())?.to_string_lossy().into())
 }
 
 #[tauri::command]
@@ -182,11 +207,16 @@ async fn render_mp4(
     state: tauri::State<'_, RenderState>,
     opts: render::RenderOpts,
 ) -> Result<String, String> {
-    let cancel = state.0.clone();
+    if state.running.swap(true, Ordering::SeqCst) {
+        return Err("이미 렌더링 중이다".into());
+    }
+    let running = state.running.clone();
+    let cancel = state.cancel.clone();
     cancel.store(false, Ordering::Relaxed);
     /* 렌더는 몇 분씩 걸린다. std::thread 로 띄우고 join 하면 async 워커를 그동안
        붙잡아 render_cancel 같은 다른 커맨드가 처리되지 못한다 — 멈추기 버튼이 죽는다. */
     tauri::async_runtime::spawn_blocking(move || {
+        let _guard = RunGuard(running);
         let emit = move |p: render::Progress| {
             let _ = tauri::Emitter::emit(&app, "mp4-progress", p);
         };
@@ -198,7 +228,7 @@ async fn render_mp4(
 
 #[tauri::command]
 fn render_cancel(state: tauri::State<'_, RenderState>) {
-    state.0.store(true, Ordering::Relaxed);
+    state.cancel.store(true, Ordering::Relaxed);
 }
 
 /// 설치된 에이전트 CLI 목록. 없는 것은 빠진다.
@@ -215,9 +245,22 @@ async fn agent_run(
     state: tauri::State<'_, AgentState>,
     opts: agent::RunOpts,
 ) -> Result<agent::RunOut, String> {
-    let cancel = state.0.clone();
+    let bin_path = std::fs::canonicalize(&opts.bin)
+        .map_err(|_| format!("허용되지 않은 실행 파일: {}", opts.bin))?;
+    let allowed = agent::tools().iter().any(|t| {
+        std::fs::canonicalize(&t.bin).map(|p| p == bin_path).unwrap_or(false)
+    });
+    if !allowed {
+        return Err(format!("허용되지 않은 실행 파일: {}", opts.bin));
+    }
+    let running = state.running.clone();
+    let cancel = state.cancel.clone();
     cancel.store(false, Ordering::Relaxed);
+    if running.swap(true, Ordering::SeqCst) {
+        return Err("이미 실행 중이다".into());
+    }
     tauri::async_runtime::spawn_blocking(move || {
+        let _guard = RunGuard(running);
         let emit: agent::OnLine = Arc::new(move |l: agent::Line| {
             let _ = tauri::Emitter::emit(&app, "agent-log", l);
         });
@@ -229,14 +272,33 @@ async fn agent_run(
 
 #[tauri::command]
 fn agent_cancel(state: tauri::State<'_, AgentState>) {
-    state.0.store(true, Ordering::Relaxed);
+    state.cancel.store(true, Ordering::Relaxed);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    cdp::cleanup_stale_profiles();
+    let log_level = if std::env::var("GMOTION_RENDER_DEBUG").is_ok() {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Info
+    };
     tauri::Builder::default()
         .manage(RenderState::default())
         .manage(AgentState::default())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("gmotion".into()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
+                ])
+                .level(log_level)
+                .max_file_size(5_000_000)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -260,6 +322,8 @@ pub fn run() {
             agent_tools,
             agent_run,
             agent_cancel,
+            app_data_dir,
+            app_log_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -288,22 +352,20 @@ mod tests {
     /// 실제 크기의 음성을 data URI 로 만드는 데 걸리는 시간과 크기를 재 둔다.
     #[test]
     fn read_data_uri_real_size() {
-        let path = "/Users/al03230166/projects/tube-store/scripts/마크-미너비니-사고방식/미너비니_01.mp3";
-        if !std::path::Path::new(path).is_file() {
-            eprintln!("샘플 음성이 없어 건너뛴다");
-            return;
-        }
+        let dir = std::env::temp_dir().join("gmotion-test-fixtures");
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("sample.mp3");
+        let data = vec![0xABu8; 5 * 1024 * 1024]; /* 실제 음성 파일 규모(5MB)를 흉내낸 더미 */
+        std::fs::write(&path, &data).unwrap();
         let t = std::time::Instant::now();
-        let uri = super::read_data_uri(path.to_string()).expect("data URI 변환 실패");
+        let uri = super::read_data_uri(path.to_string_lossy().into()).expect("data URI 변환 실패");
         let ms = t.elapsed().as_millis();
-        let src = std::fs::metadata(path).unwrap().len();
         eprintln!(
             "원본 {:.1}MB → data URI {:.1}MB · {}ms",
-            src as f64 / 1048576.0,
-            uri.len() as f64 / 1048576.0,
-            ms
+            data.len() as f64 / 1048576.0, uri.len() as f64 / 1048576.0, ms
         );
         assert!(uri.starts_with("data:audio/mpeg;base64,"));
-        assert_eq!(uri.len() - "data:audio/mpeg;base64,".len(), (src as usize + 2) / 3 * 4);
+        assert_eq!(uri.len() - "data:audio/mpeg;base64,".len(), (data.len() + 2) / 3 * 4);
+        let _ = std::fs::remove_file(&path);
     }
 }

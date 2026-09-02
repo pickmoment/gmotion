@@ -30,24 +30,35 @@ function evalCJS(src: string, name: string, deps: Record<string, Mod> = {}): Mod
     if (!hit) throw new Error(`${name} 이 ${id} 를 요구한다 — 브라우저에서는 제공하지 않는다`);
     return hit;
   };
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval
   new Function("module", "exports", "require", body)(module, module.exports, require);
   return module.exports;
 }
 
-const ICO = evalCJS(iconsSrc, "icons.js");
-const VEC = evalCJS(vectorsSrc, "vectors.js");
-const CH = evalCJS(chartsSrc, "charts.js");
-const SK = evalCJS(skinsSrc, "skins.js");
-const DS = evalCJS(designSrc, "design.js");
+/** boot.ts 는 절대 던지지 않는다 — 흰 화면 대신 부팅 실패를 기록하고 빈 모듈로 계속한다 */
+export let bootError: Error | null = null;
+
+function safeEval(src: string, name: string, deps: Record<string, Mod> = {}): Mod {
+  try {
+    return evalCJS(src, name, deps);
+  } catch (e) {
+    bootError ??= e instanceof Error ? e : new Error(String(e));
+    return {};
+  }
+}
+
+const ICO = safeEval(iconsSrc, "icons.js");
+const VEC = safeEval(vectorsSrc, "vectors.js");
+const CH = safeEval(chartsSrc, "charts.js");
+const SK = safeEval(skinsSrc, "skins.js");
+const DS = safeEval(designSrc, "design.js");
 
 /** 엔진. 앱 전체가 이 하나만 쓴다. */
 const patchedGraphSrc = graphSrc.replace(
   /return\s*\{\s*version:\s*VERSION/m,
-  "return {\n  _THEMES: THEMES,\n  version: VERSION"
+  "return {\n  _THEMES: THEMES,\n  version: VERSION",
 );
 
-export const GG = evalCJS(patchedGraphSrc, "gsapgraph.js", {
+export const GG = safeEval(patchedGraphSrc, "gsapgraph.js", {
   "./icons.js": ICO,
   "./vectors.js": VEC,
   "./charts.js": CH,
@@ -77,10 +88,41 @@ export const ICONS = {
 };
 
 export const VECTORS = VEC as {
-  DECOR: Record<string, { label: string; build: (W: number, H: number, T: ThemeColors, lv: number) => string; category?: string; custom?: boolean }>;
-  MARK: Record<string, { label: string; where: string; build: (T: ThemeColors, text?: string) => string; draw?: boolean; text?: boolean; custom?: boolean }>;
+  DECOR: Record<
+    string,
+    {
+      label: string;
+      build: (W: number, H: number, T: ThemeColors, lv: number) => string;
+      category?: string;
+      custom?: boolean;
+    }
+  >;
+  MARK: Record<
+    string,
+    {
+      label: string;
+      where: string;
+      build: (T: ThemeColors, text?: string) => string;
+      draw?: boolean;
+      text?: boolean;
+      custom?: boolean;
+    }
+  >;
   ART: Record<string, { label: string; build: (T: ThemeColors) => string; custom?: boolean }>;
-  FRAME: Record<string, { label: string; ratio: number; build: (W: number, H: number, T: ThemeColors) => { svg: string; inner: { x: number; y: number; w: number; h: number } } | string; bar?: number; custom?: boolean }>;
+  FRAME: Record<
+    string,
+    {
+      label: string;
+      ratio: number;
+      build: (
+        W: number,
+        H: number,
+        T: ThemeColors,
+      ) => { svg: string; inner: { x: number; y: number; w: number; h: number } } | string;
+      bar?: number;
+      custom?: boolean;
+    }
+  >;
   rng: (seed?: number) => () => number;
 };
 
@@ -103,7 +145,12 @@ export function registerCustomSkin(key: string, def: SkinDefinition): void {
   (GG.registerSkin as (k: string, d: SkinDefinition) => void)(key, { ...def, custom: true });
 }
 
-export function registerCustomIcon(key: string, path: string, aliases: string[] = [], label?: string): void {
+export function registerCustomIcon(
+  key: string,
+  path: string,
+  aliases: string[] = [],
+  label?: string,
+): void {
   const icons = ICO.ICONS as Record<string, string>;
   const aliasMap = ICO.ALIAS as Record<string, string>;
   icons[key] = path;
@@ -134,14 +181,17 @@ export function registerCustomVector(
     category?: string;
     draw?: boolean;
     text?: boolean;
-  }
+  },
 ): void {
   const makers = (DS as unknown as { makers: Record<string, (d: unknown) => unknown> }).makers;
   const kind = { DECOR: "decor", MARK: "mark", ART: "art", FRAME: "frame" }[type];
   (VECTORS[type] as Record<string, unknown>)[key] = makers[kind]({ ...item, custom: true });
 }
 
-export function unregisterCustomItem(type: "theme" | "skin" | "icon" | "DECOR" | "MARK" | "ART" | "FRAME", key: string): void {
+export function unregisterCustomItem(
+  type: "theme" | "skin" | "icon" | "DECOR" | "MARK" | "ART" | "FRAME",
+  key: string,
+): void {
   if (type === "theme") {
     delete THEMES_REGISTRY[key];
   } else if (type === "skin") {

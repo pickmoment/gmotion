@@ -47,6 +47,9 @@ pub struct Progress {
 pub type OnProgress<'a> = &'a (dyn Fn(Progress) + Send + Sync);
 
 pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Result<String, String> {
+    if !o.total_sec.is_finite() || o.total_sec <= 0.0 || o.total_sec > 6.0 * 3600.0 {
+        return Err(format!("영상 길이가 올바르지 않다: {}", o.total_sec));
+    }
     let ffmpeg = find_ffmpeg()?;
     /* 빈 문자열이 넘어오면 ffmpeg 이 -i "" 로 즉사한다 — 없는 것으로 본다 */
     let audio = o.audio_path.as_deref().filter(|p| !p.trim().is_empty());
@@ -57,6 +60,7 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
     }
     let fps = o.fps.clamp(1, 60);
     let target_frames = (o.total_sec * fps as f64).ceil().max(1.0) as u64;
+    log::info!("render 시작: {}x{} {fps}fps · 목표 {target_frames}프레임 · {:.1}초", o.width, o.height, o.total_sec);
 
     emit(Progress { phase: "브라우저 준비".into(), frame: 0, frames: target_frames, sec: 0.0, total_sec: o.total_sec });
 
@@ -162,7 +166,8 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
         }
 
         let v = match b.read() {
-            Ok(v) => v,
+            Ok(Some(v)) => v,
+            Ok(None) => continue, /* 소켓 타임아웃 — 취소·시한을 다시 검사한다 */
             Err(e) => {
                 err = Some(e);
                 break;
@@ -217,10 +222,10 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
         }
         prev = Some(bytes);
 
-        if std::env::var("GMOTION_RENDER_DEBUG").is_ok() && written % 60 == 0 {
+        if written % 60 == 0 {
             let m = b.eval("GGM.master.time()").unwrap_or_default().as_f64().unwrap_or(-1.0);
-            eprintln!(
-                "[dbg] written={written} idx={idx} ts-base={:.2} wall={:.2} master={:.2}",
+            log::debug!(
+                "written={written} idx={idx} ts-base={:.2} wall={:.2} master={:.2}",
                 ts - t, started.elapsed().as_secs_f64(), m
             );
         }
@@ -255,15 +260,19 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
 
     let out = ff.wait_with_output().map_err(|e| format!("ffmpeg 종료 실패: {e}"))?;
     if let Some(e) = err {
+        log::error!("render 실패: {e}");
         let _ = std::fs::remove_file(&o.out_path);
         return Err(e);
     }
     if !out.status.success() {
         let msg = String::from_utf8_lossy(&out.stderr);
+        log::error!("ffmpeg 실패 전문:\n{msg}");
         return Err(format!("ffmpeg 실패: {}", msg.lines().last().unwrap_or("알 수 없는 오류")));
     }
     if written == 0 {
+        log::error!("render 실패: 프레임을 한 장도 받지 못했다");
         return Err("프레임을 한 장도 받지 못했다".into());
     }
+    log::info!("render 완료: {written}프레임 → {}", o.out_path);
     Ok(o.out_path)
 }

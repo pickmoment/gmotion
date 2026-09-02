@@ -172,6 +172,7 @@ fn kill(child: &mut Child) {
 }
 
 pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, String> {
+    log::info!("agent 실행: {} {:?} timeout={}s", o.bin, o.args, o.timeout_sec);
     if !PathBuf::from(&o.bin).is_file() {
         return Err(format!("실행 파일이 없다: {}", o.bin));
     }
@@ -225,11 +226,13 @@ pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, 
         }
         if cancel.load(Ordering::Relaxed) {
             canceled = true;
+            log::info!("agent {} 취소됨", o.bin);
             kill(&mut child);
             break -1;
         }
         if started.elapsed() > deadline {
             timed_out = true;
+            log::warn!("agent {} 시한 초과", o.bin);
             kill(&mut child);
             break -1;
         }
@@ -242,6 +245,7 @@ pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, 
 
     let stdout = out_buf.lock().map(|s| s.clone()).unwrap_or_default();
     let stderr = err_buf.lock().map(|s| s.clone()).unwrap_or_default();
+    log::info!("agent {} 종료 code={code}", o.bin);
     Ok(RunOut {
         code,
         stdout,
