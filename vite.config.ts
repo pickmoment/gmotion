@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -10,6 +11,11 @@ export default defineConfig(async () => ({
 
   // gsap.bundle.js 등 큰 문자열을 ?raw 로 인라인한다 — 산출물은 완전 오프라인이어야 한다
   build: { chunkSizeWarningLimit: 4096 },
+
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts"],
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
