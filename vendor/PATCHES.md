@@ -1167,3 +1167,47 @@ HEAD 보다 이전, 나머지는 HEAD 와 동일) — vendor 로 덮어 동기�
 1.000 을 유지하고(피사체에 `camCover` 를 걸지 않는다) 배경만 1.017 로 덮으며, 밝은 테마
 9:16 에서 네 변 모두 배경이 프레임을 넘어 덮는다. 감소 모션에서는 두 레이어 모두
 `transform: none` 이다. `gm test` 202건 통과 · `npx tsc --noEmit` 오류 0 · 콘솔 오류 0.
+
+## 30. beforeAfter — before 를 흐리게 죽이지 않고 after 를 강조한다 (2026-09-03)
+
+**왜.** 대비를 before 의 `opacity .34` · `saturate(.25)` 로 만들고 있었다. 흐려진 쪽은
+읽히지 않으므로 "무엇이 어떻게 바뀌었는가" 를 나란히 비교할 수 없고, 캡처한 정지
+프레임에서는 절반이 죽은 화면으로 보였다. 대비는 한쪽을 지워서가 아니라 한쪽을
+세워서 만든다.
+
+### `assets/gsapgraph.js`
+- `PATTERNS.beforeAfter` — `.gg-bf` 를 흐리게 만드는 `to` 트윈 삭제. before 는 등장한
+  상태 그대로 남는다(불투명도 1 · 필터 없음 · 변형 없음).
+- after 강조 3종 추가. 등장 트윈이 **끝난 시점**에 붙인다 — 겹치면 같은 `scale`·`y` 를
+  두 트윈이 다투어 떨림이 생긴다.
+  `.gg-afHi` 링이 `scale .94 → 1` 로 감기고(`overshoot`), `.gg-af` 가 `scale 1.03` ·
+  `y -8` 로 한 단계 올라서고, `.gg-af .gg-panelTag` 가 `--good` 으로 불이 들어온다.
+- `E3` 임팩트를 등장 직후가 아니라 강조 시점으로 옮겼다 — 씬의 핵이 그 지점이다.
+- `.gg-afHi` CSS 추가 — 패널의 자식이고 `inset -9px` 이라 패널 높이가 내용에 따라
+  늘어나도 링이 그대로 따라간다(`rkHi`·`fmHi` 처럼 좌표를 따로 계산하지 않는다).
+  판정색은 액센트가 아니라 `T.good` 이다(`qzHi` 와 같은 규칙). 반경·테두리 굵기·링
+  그림자는 스킨 토큰(`--r-lg` `--surf-lw2` `--target-ring`)을 쓴다.
+- `syncScenes()` — before 를 흐리게 만드는 트윈이 없어졌으므로 그 트윈을 after 그룹으로
+  끌어오던 분기와 before 의 `to` 배제 분기를 삭제했다. 이제 셀렉터만 본다. `.gg-afHi`
+  는 문자열에 `.gg-af` 를 포함하므로 강조까지 after 대사에 함께 붙는다.
+- 패턴 `use` 문구 수정("왼쪽이 흐려지며" → "before 는 그대로 남고 after 가 링과 함께
+  올라선다") — `gm info patterns` · `gm pattern beforeAfter` 가 이 문구를 찍는다.
+
+### 문서 · 기준값
+- `references/spec.md` 의 `beforeAfter` 절.
+- `assets/selftest.baseline.json` — beforeAfter 를 쓰는 예제 3종의 트윈 수 +2
+  (흐리게 1개 삭제 · 강조 3개 추가), 씬 길이 +0.54s.
+
+### 앱
+- `src/engine/schema.ts` — `beforeAfter` 의 `use` 와 두 쪽의 힌트("물러나는 쪽" →
+  "그대로 남는 쪽", "켜지는 쪽" → "링이 감기며 강조되는 쪽").
+
+**실측 확인.** 산출물 정지 프레임에서 강조가 끝난 뒤 `.gg-bf` 는 `opacity 1` ·
+`filter none` · `transform none` 이고 `.gg-af` 는 `matrix(1.03,0,0,1.03,0,-8)`, 링은
+`opacity 1` · 테두리 `rgb(74,222,128)`(midnight `good`), `AFTER` 라벨도 같은 색이다.
+감소 모션에서도 같은 최종 상태다. 자막 동기화 검증 — before·after 에 `say` 를 준
+스펙에서 before 그룹은 첫 cue(0s), after 그룹(등장 · 목록 · 링 · 리프트 · 라벨)은 전부
+두 번째 cue(8s)로 옮겨졌고 경고 0건. 9:16 clay · ink 테마 paper 스킨에서도 링이 패널을
+정확히 감싸고 프레임을 벗어나지 않는다(1080 기준 좌우 여백 28px).
+`gm test` 202건 통과 · `npx vitest run` 80건 통과 · `npx tsc --noEmit` 오류 0 ·
+`gm check` 통과.

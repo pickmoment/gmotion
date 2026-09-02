@@ -223,12 +223,12 @@ export const PATTERNS: Record<string, PatternSchema> = {
   },
   beforeAfter: {
     label: "비포 애프터",
-    use: "대비. before 가 물러나며 after 가 켜진다",
+    use: "대비. before 는 그대로 남고 after 가 강조되며 올라선다",
     max: null,
     fields: [
       { k: "text", key: "title", label: "제목" },
-      side("before", "BEFORE", "물러나는 쪽"),
-      side("after", "AFTER", "켜지는 쪽"),
+      side("before", "BEFORE", "그대로 남는 쪽"),
+      side("after", "AFTER", "링이 감기며 강조되는 쪽"),
     ],
   },
   explodedDiagram: {

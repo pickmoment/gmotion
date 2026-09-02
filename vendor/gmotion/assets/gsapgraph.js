@@ -1299,7 +1299,7 @@ PATTERNS.processFlow = {
 /* --- 6. beforeAfter — 대비. 바뀐 것을 눈으로 보게 만든다. --- */
 PATTERNS.beforeAfter = {
   label: '비포 애프터',
-  use: '개선 전/후, 도입 전/후, 문제/해결. 왼쪽이 흐려지며 오른쪽이 켜진다.',
+  use: '개선 전/후, 도입 전/후, 문제/해결. before 는 그대로 남고 after 가 링과 함께 올라선다.',
   fields: 'before{label,icon|art,items[],value} · after{...} (둘 다 필수) · title · kicker',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
@@ -1324,6 +1324,7 @@ PATTERNS.beforeAfter = {
       var it = items(o.items);
       return '<div class="gg-panel gg-' + side + '" style="left:' + Math.round(p.x) + 'px;top:' + Math.round(p.y) +
         'px;width:' + pw + 'px;min-height:' + ph + 'px">' +
+        (side === 'af' ? '<div class="gg-afHi"></div>' : '') +
         '<div class="gg-panelTag">' + esc(o.label || (side === 'bf' ? 'BEFORE' : 'AFTER')) + '</div>' +
         (o.value != null ? '<div class="gg-panelVal" style="font-size:' + Math.round(ctx.fs.num * .52) + 'px">' + esc(o.value) + '</div>' : '') +
         visual(ctx, o, 56, 168) +
@@ -1338,14 +1339,21 @@ PATTERNS.beforeAfter = {
     tw.from(q('.gg-bf li'), t + ctx.d('fast') * .6, { x: ctx.px(16), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('normal'));
     if (hasArt(B)) artIn(tw, ctx, '.gg-bf', t + ctx.d('fast') * .4);
     t += ctx.d('normal') + readSec(itemsText(B.items) + (B.label || ''), ctx.energy) * .55;
-    /* 전환의 핵 — before 가 물러나고 after 가 켜진다. 동시에 일어나야 대비가 산다. */
-    tw.to(q('.gg-bf'), t, { opacity: .34, scale: .97, filter: 'saturate(.25)', duration: ctx.d('normal'), ease: TOKENS.e.move });
+    /* 전환의 핵 — before 를 흐리게 지워서 대비를 만들지 않는다. before 는 그대로 읽히게 두고
+       after 를 강조한다. 대비는 한쪽을 죽여서가 아니라 한쪽을 세워서 생긴다. */
     tw.from(q('.gg-af'), t, { x: ctx.px(dx), y: ctx.px(dy), opacity: 0, scale: .96, duration: ctx.d('normal') * 1.1, ease: ctx.ei });
     tw.from(q('.gg-af li'), t + ctx.d('fast') * .7, { x: ctx.px(18), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('normal'));
     if (hasArt(A)) artIn(tw, ctx, '.gg-af', t + ctx.d('fast') * .5);
     if (A.value != null) tw.from(q('.gg-af .gg-panelVal'), t + ctx.d('fast') * .5, { scale: .7, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
-    if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('fast') * .4);
     t += ctx.d('normal') * 1.1;
+    /* after 가 다 들어온 뒤 한 단계 올라선다 — 링이 감기고 패널이 커지고 라벨에 불이 들어온다.
+       등장 트윈이 끝난 시점에 붙인다. 겹치면 같은 scale·y 를 두 트윈이 다투게 된다. */
+    tw.from(q('.gg-afHi'), t, { scale: .94, opacity: 0, transformOrigin: '50% 50%',
+      duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
+    tw.to(q('.gg-af'), t, { scale: 1.03, y: ctx.px(-8), duration: ctx.d('normal') * .9, ease: TOKENS.e.overshoot });
+    tw.to(q('.gg-af .gg-panelTag'), t, { color: 'var(--good)', duration: ctx.d('fast'), ease: TOKENS.e.move });
+    if (ctx.energy === 'E3') tw.fx('impact', t);
+    t += ctx.d('normal') * .9;
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(A.items) + (A.label || '')) };
   }
 };
@@ -3047,9 +3055,7 @@ function syncScenes(out, spec, cues, warnings) {
         var sel = SIDE_SEL[side];
         moveGroup(function (o) {
           if (typeof o.t !== 'string') return false;
-          /* after 는 제 등장과 함께 before 를 흐리게 만든다 — 같이 옮긴다 */
-          if (side === 'after' && o.t.indexOf('.gg-bf') >= 0 && o.k === 'to') return true;
-          if (side === 'before' && o.k === 'to') return false;
+          /* after 그룹에는 등장뿐 아니라 강조(.gg-afHi 링·패널 리프트)까지 함께 들어온다 */
           return o.t.indexOf(sel) >= 0;
         }, w);
       });
@@ -3798,6 +3804,10 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-panelTag{font-size:23px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:700}',
 '.gg-panelVal{font-weight:800;color:var(--acc);letter-spacing:-.02em}',
 '.gg-af .gg-panelVal{color:var(--good)}',
+/* after 강조 링 — 패널에 붙어 크기를 그대로 따라간다(inset). 판정색은 액센트가 아니라 good */
+'.gg-afHi{position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;' +
+  'border:var(--surf-lw2) solid ' + T.good + ';border-radius:var(--r-lg);' +
+  'box-shadow:var(--target-ring);pointer-events:none}',
 '.gg-panelList,.gg-sideList,.gg-detailL{list-style:none;display:flex;flex-direction:column;gap:13px}',
 '.gg-panelList li,.gg-sideList li,.gg-detailL li{position:relative;padding-left:30px;color:var(--ink2);line-height:1.44}',
 '.gg-panelList li:before,.gg-sideList li:before,.gg-detailL li:before{content:"";position:absolute;left:6px;top:.52em;' +

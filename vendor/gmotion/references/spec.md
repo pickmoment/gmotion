@@ -335,7 +335,8 @@ node <skill>/assets/gm.js info chart       # 차트 17종
 ```
 
 ## beforeAfter — 비포 애프터
-대비. before 가 물러나며 after 가 켜진다 — **동시에 일어나야 대비가 산다.**
+대비. before 는 그대로 남고 after 가 들어온 뒤 **good 색 링이 감기며 한 단계 올라선다** —
+한쪽을 흐리게 죽이지 않는다. 대비는 after 를 강조해서 만든다.
 
 ```jsonc
 { "pattern": "beforeAfter",
