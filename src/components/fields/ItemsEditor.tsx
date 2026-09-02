@@ -29,6 +29,8 @@ const LABELS: Record<ItemFieldKey, string> = {
   scale: "배율",
   values: "값들",
   highlight: "주인공 열",
+  correct: "정답",
+  rank: "순위",
 };
 
 const TONES = ["", "good", "bad", "warn", "dim"];
@@ -242,7 +244,7 @@ export function ItemsEditor({
                         />
                       );
                     }
-                    if (f === "hub" || f === "emphasis" || f === "highlight") {
+                    if (f === "hub" || f === "emphasis" || f === "highlight" || f === "correct") {
                       return (
                         <div className="field check" key={f}>
                           <label>
@@ -273,7 +275,13 @@ export function ItemsEditor({
                         </div>
                       );
                     }
-                    if (f === "value" || f === "dec" || f === "ring" || f === "scale") {
+                    if (
+                      f === "value" ||
+                      f === "dec" ||
+                      f === "ring" ||
+                      f === "scale" ||
+                      f === "rank"
+                    ) {
                       return (
                         <div className="field" key={f}>
                           <label>{LABELS[f]}</label>

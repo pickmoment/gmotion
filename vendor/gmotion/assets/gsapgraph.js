@@ -530,6 +530,20 @@ function bodyCy(ctx, topY, headH) {
   return (topY + clampedHeadH + (ctx.wide ? 54 : 46) + (ctx.H - ctx.safe)) / 2;
 }
 /**
+ * 접혀서 늘어난 헤더 높이. `head` 의 `h` 는 `\n` 으로 나눈 줄만 센다 — 한 줄로 적은 긴
+ * 문장이 폭을 넘겨 브라우저가 접으면 그 한 줄만큼을 못 센다. 헤더 아래에 블록을
+ * **붙여** 놓는 패턴(질문+선택지, 제목+CTA 처럼 한 덩어리로 배치하는 것들)은 그 차이가
+ * 곧 겹침이라 이 값을 더한다. bodyCy 처럼 남은 공간의 중심을 쓰는 패턴은 필요 없다.
+ */
+function headWrapExtra(text, size, w) {
+  var add = 0;
+  splitLines(text).forEach(function (l) {
+    var need = Math.ceil(estEm(l) * size / w);
+    if (need > 1) add += (need - 1) * size * 1.08;
+  });
+  return Math.round(add);
+}
+/**
  * 아이콘 자리의 시각물. `art` 가 있으면 일러스트, 없으면 픽토그램이다.
  *
  * ART 는 200 박스에 도형을 여러 개 조합한 구성물이라 24 박스 픽토그램과 같은 크기로
@@ -664,7 +678,8 @@ function relCurveTo(x1, y1, x2, y2, bow) {
  * 안 더하면 밀도 경고와 자막 앵커링이 조용히 그 패턴만 건너뛴다.
  * ------------------------------------------------------------------ */
 var ITEM_KEYS = ['items', 'stats', 'steps', 'nodes', 'layers', 'events',
-                 'lines', 'stops', 'sources', 'targets', 'orbits', 'stages', 'parts'];
+                 'lines', 'stops', 'sources', 'targets', 'orbits', 'stages', 'parts',
+                 'options', 'chapters', 'next'];
 
 /** 씬이 가진 항목 배열 — 차트는 data 안에 한 겹 더 들어 있다. */
 function itemListOf(sc) {
@@ -2441,6 +2456,341 @@ PATTERNS.featureMatrix = {
   }
 };
 
+/* --- 25. chapterCard — 영상의 장이 바뀐다. 번호가 서고 레일이 지금 어디인지 말한다. --- */
+PATTERNS.chapterCard = {
+  label: '챕터 카드',
+  use: '유튜브 영상의 장 구분. 큰 번호와 진행 레일이 "전체 중 지금 여기"를 말해 준다.',
+  fields: 'title(필수) · no(장 번호 — 숫자면 01 로 채운다) · chapters[](전체 장 이름, 현재 장이 켜진다) · of(전체 장 수, chapters 대신) · current(1부터, 기본 no) · sub · kicker',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var chs = items(sc.chapters);
+    var total = chs.length || Math.max(Math.round(num(sc.of, 0)), 0);
+    /* 숫자로 준 장 번호는 01 로 채운다 — 자리수가 흔들리면 장마다 글자 크기가 달라 보인다.
+       "PART 3" 처럼 글자로 주면 그대로 쓴다. */
+    var noNum = typeof sc.no === 'number' ? sc.no : (sc.no == null ? Math.round(num(sc.current, 1)) : null);
+    var noTxt = noNum == null ? String(sc.no) : pad(Math.max(noNum, 0), 2);
+    var cur = clamp(Math.round(num(sc.current, noNum == null ? 1 : noNum)), 1, Math.max(total, 1));
+    var hasRail = total > 1;
+    var railTop = ctx.H - ctx.safe - (ctx.wide ? 92 : 128);
+    /* 레일이 아래를 차지하므로 본문은 남은 공간의 중심에 선다 */
+    var mid = Math.round((ctx.safe + (hasRail ? railTop - 40 : ctx.H - ctx.safe)) / 2);
+    var numSize = Math.round(ctx.fs.num * (ctx.wide ? .82 : .68));
+    var tSize = Math.round(ctx.fs.title * (ctx.wide ? .8 : .76));
+    var numW = Math.round(estEm(noTxt) * numSize);
+    var align = ctx.wide ? 'left' : 'center', textW, textX, numX, headY, numTop;
+    if (ctx.wide) {
+      textW = Math.min(ctx.W - ctx.safe * 2 - numW - 72, 1080);
+      numX = Math.round((ctx.W - (numW + 72 + textW)) / 2);
+      textX = numX + numW + 72;
+    } else {
+      textW = ctx.W - ctx.safe * 2;
+      textX = ctx.safe;
+      numX = Math.round(ctx.cx - numW / 2);
+    }
+    /* 헤더 높이를 먼저 재고 배치한다 — 타이틀이 두 줄이 되면 중심이 밀린다.
+       재는 방법은 한 번 만들어 보는 것뿐이므로 트윈은 버리는 TW 로 받는다. */
+    var probe = head(sc, ctx, new TW(), 0, { x: textX, y: 0, w: textW, align: align }, { title: tSize });
+    var probeH = probe.h + headWrapExtra(sc.title || '', tSize, textW);
+    if (ctx.wide) {
+      headY = Math.round(mid - probeH / 2);
+      numTop = Math.round(headY + probeH / 2 - numSize * .58);
+    } else {
+      numTop = Math.round(mid - (numSize + 34 + probeH) / 2);
+      headY = Math.round(numTop + numSize + 34);
+    }
+    H.push('<div class="gg-chNo" style="left:' + numX + 'px;top:' + numTop + 'px;width:' + numW +
+      'px;font-size:' + numSize + 'px">' + esc(noTxt) + '</div>');
+    tw.from(q('.gg-chNo'), t, { scale: .64, opacity: 0, y: ctx.px(22), transformOrigin: '50% 50%',
+      duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
+    if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('micro'));
+    t += ctx.d('fast') * .75;
+    var hd = head(sc, ctx, tw, t, { x: textX, y: headY, w: textW, align: align }, { title: tSize });
+    H.push(hd.html);
+    t = hd.end;
+    if (hasRail) {
+      var railW = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1440 : 900);
+      var rx0 = Math.round((ctx.W - railW) / 2), segGap = ctx.wide ? 16 : 12;
+      var segW = (railW - segGap * (total - 1)) / total, lbSize = ctx.wide ? 22 : 21;
+      /* 장 이름은 칸에 들어갈 때만 다 적는다 — 넘치면 접히거나 옆 칸과 부딪히므로
+         지금 장 하나만 레일 아래 가운데에 적는다. */
+      var fits = chs.length === total && chs.every(function (c) {
+        return estEm(c.label || '') * lbSize <= segW - 12;
+      });
+      for (var i = 0; i < total; i++) {
+        var state = i + 1 < cur ? ' gg-chDone' : (i + 1 === cur ? ' gg-chNow' : '');
+        H.push('<div class="gg-chSeg' + state + '" data-i="' + i + '" style="left:' +
+          Math.round(rx0 + i * (segW + segGap)) + 'px;top:' + railTop + 'px;width:' + Math.round(segW) + 'px">' +
+          '<div class="gg-chTrack"><div class="gg-chFill"></div></div>' +
+          (fits && chs[i] ? '<div class="gg-chSegLb" style="font-size:' + lbSize + 'px">' +
+            esc(chs[i].label || '') + '</div>' : '') + '</div>');
+      }
+      if (!fits && chs[cur - 1]) {
+        H.push('<div class="gg-chCur" style="left:' + rx0 + 'px;top:' + (railTop + 28) + 'px;width:' + railW +
+          'px;font-size:' + (ctx.wide ? 25 : 24) + 'px">' + esc(chs[cur - 1].label || '') + '</div>');
+      }
+      tw.from(q('.gg-chSeg'), t, { y: ctx.px(14), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('tight'));
+      t += ctx.d('fast') * .8 + ctx.st('tight') * (total - 1);
+      /* 지난 장은 이미 채워져 있고, 지금 장만 왼쪽에서 채워진다 — "여기까지 왔다" */
+      tw.from(q('.gg-chNow .gg-chFill'), t, { scaleX: 0, duration: ctx.d('normal'), ease: TOKENS.e.move });
+      tw.from(q('.gg-chNow .gg-chSegLb'), t + ctx.d('micro'), { y: ctx.px(8), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+      tw.from(q('.gg-chCur'), t + ctx.d('micro'), { y: ctx.px(8), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+      t += ctx.d('normal') * .8;
+    }
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, (sc.title || '') + (sc.sub || ''), { min: 2.2 }) };
+  }
+};
+
+/* --- 26. rankList — 순위. 아래에서부터 열려 1위에서 멈춘다. --- */
+PATTERNS.rankList = {
+  label: '랭킹',
+  use: 'Top N 순위. 카운트다운으로 낮은 순위부터 열고 1위에 링이 감기며 멈춘다.',
+  fields: 'items[](필수: {label,note,value,unit,icon|art,rank,tone}) · order(countdown|up, 기본 countdown) · unit(공통 단위) · top(1위 강조, 기본 true) · title · kicker',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var it = items(sc.items), n = Math.max(it.length, 1);
+    var hasHead = !!(sc.title || sc.kicker), topY = ctx.safe + (ctx.wide ? 30 : 92), hd;
+    if (hasHead) {
+      hd = head(sc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: ctx.wide ? 'left' : 'center' },
+        { title: Math.round(ctx.fs.title * .7) });
+      H.push(hd.html);
+      t = hd.end;
+    }
+    var mid = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
+    var rowW = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1200 : 940);
+    var gap = ctx.wide ? 14 : 12;
+    /* 행 높이는 남은 높이를 나눠 갖는다 — 6행이 들어와도 아래로 넘치지 않는다 */
+    var room = (ctx.H - ctx.safe) - (mid - (ctx.H - ctx.safe - mid));
+    var rowH = clamp(Math.floor((room - gap * (n - 1)) / n), 76, ctx.wide ? 124 : 134);
+    var totalH = n * rowH + (n - 1) * gap;
+    var x0 = Math.round((ctx.W - rowW) / 2), y0 = Math.round(mid - totalH / 2);
+    var noSize = Math.round(rowH * .5), lbSize = Math.round(ctx.fs.body * .98), valSize = Math.round(rowH * .36);
+    var unit = sc.unit || '', topIdx = -1;
+    it.forEach(function (x, i) {
+      var rank = Math.round(num(x.rank, i + 1));
+      var isTop = rank === 1 && sc.top !== false;
+      if (isTop && topIdx < 0) topIdx = i;
+      var vis = visual(ctx, x, Math.round(rowH * .42), Math.round(rowH * .84));
+      H.push('<div class="gg-rkRow' + (isTop ? ' gg-rkTop' : '') + (x.tone ? ' gg-t-' + x.tone : '') +
+        '" data-i="' + i + '" style="left:' + x0 + 'px;top:' + (y0 + i * (rowH + gap)) +
+        'px;width:' + rowW + 'px;height:' + rowH + 'px">' +
+        '<div class="gg-rkNo" style="font-size:' + noSize + 'px;min-width:' + Math.round(noSize * 1.4) + 'px">' +
+        rank + '</div>' +
+        (vis ? '<div class="gg-rkVis">' + vis + '</div>' : '') +
+        '<div class="gg-rkBody">' +
+        '<div class="gg-rkLb" style="font-size:' + (isTop ? Math.round(lbSize * 1.12) : lbSize) + 'px">' +
+        esc(x.label || '') + '</div>' +
+        (x.note ? '<div class="gg-rkNote">' + esc(x.note) + '</div>' : '') + '</div>' +
+        (x.value != null ? '<div class="gg-rkVal" style="font-size:' + valSize + 'px">' + esc(String(x.value)) +
+          (x.unit || unit ? '<span class="gg-rkUnit">' + esc(x.unit || unit) + '</span>' : '') + '</div>' : '') +
+        '</div>');
+    });
+    if (topIdx >= 0) {
+      H.push('<div class="gg-rkHi" style="left:' + (x0 - 9) + 'px;top:' + (y0 + topIdx * (rowH + gap) - 9) +
+        'px;width:' + (rowW + 18) + 'px;height:' + (rowH + 18) + 'px"></div>');
+    }
+    /* 공개 순서. 자리는 순위가 정하고 순서만 뒤집히므로, 카운트다운이면 아래에서 위로 채워진다 */
+    var order = it.map(function (x, i) { return i; });
+    if ((sc.order || 'countdown') === 'countdown') {
+      order.sort(function (a, b) {
+        return Math.round(num(it[b].rank, b + 1)) - Math.round(num(it[a].rank, a + 1));
+      });
+    }
+    var beat = ctx.d('fast') * 1.1;
+    order.forEach(function (i) {
+      var s = '.gg-rkRow[data-i="' + i + '"]';
+      tw.from(q(s), t, { y: ctx.px(24), x: ctx.px(26), opacity: 0, duration: ctx.d('fast') * 1.15, ease: ctx.ei });
+      tw.from(q(s + ' .gg-rkNo'), t + ctx.d('micro') * .8,
+        { scale: .6, opacity: 0, transformOrigin: '50% 50%', duration: ctx.d('fast'), ease: TOKENS.e.overshoot });
+      if (hasArt(it[i])) artIn(tw, ctx, s, t + beat * .3);
+      t += beat;
+    });
+    if (topIdx >= 0) {
+      /* 1위의 링은 표가 다 찬 뒤에 감긴다 — 결론은 마지막에 */
+      tw.from(q('.gg-rkHi'), t, { scale: .96, opacity: 0, transformOrigin: '50% 50%',
+        duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
+      if (ctx.energy === 'E3') tw.fx('impact', t);
+      t += ctx.d('fast');
+    }
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(it) + (sc.title || '')) };
+  }
+};
+
+/* --- 27. quizReveal — 질문을 던지고, 생각할 틈을 두고, 답을 연다. --- */
+PATTERNS.quizReveal = {
+  label: '퀴즈',
+  use: '질문 → 선택지 → 정답. 선택지 뒤의 정지가 이 패턴의 핵이다 — 답을 바로 열면 시청자가 스스로 꺼내지 않는다.',
+  fields: 'question(필수) · options[]({label,correct,note,icon}) · answer(문자열 또는 {label,note}) · beat(생각할 틈, 초 기본 1.2) · reveal(기본 true) · kicker · sub',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var op = items(sc.options), n = op.length;
+    var A = typeof sc.answer === 'string' ? { label: sc.answer } : (sc.answer || null);
+    var reveal = sc.reveal !== false;
+    /* 질문이 곧 타이틀이다 — 마스크 리빌·마크·textFx 를 헤더에서 그대로 물려받는다 */
+    var hsc = copy(sc);
+    hsc.title = sc.question || sc.title;
+    var tSize = Math.round(ctx.fs.title * .8);
+    var ansH = (reveal && A) ? (ctx.wide ? 124 : 146) : 0;
+    var cols = ctx.wide ? (n <= 2 ? Math.max(n, 1) : 2) : 1;
+    var gapX = ctx.wide ? 28 : 22, gapY = ctx.wide ? 20 : 18;
+    var maxW = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1240 : 900);
+    var optW = Math.floor((maxW - (cols - 1) * gapX) / cols), optH = ctx.wide ? 116 : 124;
+    var rows = Math.max(Math.ceil(n / cols), 1);
+    var blockH = n ? rows * optH + (rows - 1) * gapY : 0;
+    /* 질문 · 선택지 · 정답 띠는 한 덩어리다 — 덩어리째 화면 중앙에 놓는다.
+       헤더 아래 남은 공간의 중심(bodyCy)에 선택지만 놓으면, 선택지가 두 개뿐일 때
+       질문과 선택지 사이가 화면 높이만큼 벌어져 둘이 다른 씬처럼 읽힌다. */
+    var gapQ = ctx.wide ? 72 : 84, gapA = ctx.wide ? 40 : 44;
+    var probe = head(hsc, ctx, new TW(), 0, { x: ctx.safe, y: 0, w: ctx.W - ctx.safe * 2, align: 'center' },
+      { title: tSize });
+    var probeH = probe.h + headWrapExtra(hsc.title || '', tSize, ctx.W - ctx.safe * 2);
+    var stackH = probeH + (n ? gapQ + blockH : 0) + (ansH ? gapA + ansH : 0);
+    var topY = clamp(Math.round((ctx.H - stackH) / 2), ctx.safe + (ctx.wide ? 20 : 60),
+      Math.max(ctx.safe, ctx.H - ctx.safe - stackH));
+    var hd = head(hsc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: 'center' },
+      { title: tSize });
+    H.push(hd.html);
+    t = hd.end;
+    var blockTop = Math.round(topY + probeH + gapQ);
+    var ci = -1;
+    op.forEach(function (x, i) { if (x.correct && ci < 0) ci = i; });
+    if (n) {
+      var g = gridOf(n, cols, ctx.W, optW, optH, gapX, gapY, blockTop + blockH / 2);
+      op.forEach(function (x, i) {
+        H.push('<div class="gg-qzOpt" data-i="' + i + '" style="left:' + Math.round(g[i].x) + 'px;top:' +
+          Math.round(g[i].y) + 'px;width:' + optW + 'px;height:' + optH + 'px">' +
+          '<div class="gg-qzKey">' + 'ABCDEF'.charAt(i) + '</div>' +
+          (x.icon ? ctx.icon(x.icon, Math.round(optH * .38)) : '') +
+          '<div class="gg-qzBody">' +
+          '<div class="gg-qzLb" style="font-size:' + Math.round(ctx.fs.body * .98) + 'px">' + esc(x.label || '') + '</div>' +
+          (x.note ? '<div class="gg-qzNote">' + esc(x.note) + '</div>' : '') + '</div></div>');
+      });
+      if (reveal && ci >= 0) {
+        H.push('<div class="gg-qzHi" style="left:' + Math.round(g[ci].x - 9) + 'px;top:' + Math.round(g[ci].y - 9) +
+          'px;width:' + (optW + 18) + 'px;height:' + (optH + 18) + 'px"></div>');
+      }
+    }
+    if (reveal && A) {
+      var bandW = Math.min(maxW, ctx.wide ? 1020 : 880);
+      var bandY = Math.round(n ? blockTop + blockH + gapA : topY + probeH + gapA);
+      H.push('<div class="gg-qzAns" style="left:' + Math.round((ctx.W - bandW) / 2) + 'px;top:' + bandY +
+        'px;width:' + bandW + 'px;min-height:' + ansH + 'px">' + ctx.icon('check', ctx.wide ? 46 : 42) +
+        '<div><div class="gg-qzAnsT" style="font-size:' + Math.round(ctx.fs.sub * .96) + 'px">' +
+        esc(A.label || '') + '</div>' +
+        (A.note ? '<div class="gg-qzAnsN">' + esc(A.note) + '</div>' : '') + '</div></div>');
+    }
+    if (n) {
+      enterItems(tw, ctx, op, '.gg-qzOpt', t, ctx.st('normal'),
+        { y: ctx.px(26), scale: .96, opacity: 0, duration: ctx.d('fast') * 1.15, ease: ctx.ei });
+      t += ctx.d('fast') * 1.15 + ctx.st('normal') * (n - 1);
+    }
+    /* 생각할 틈 — 화면이 멈춰 있는 이 구간이 인출을 만든다. 에너지 배율을 따른다 */
+    t += r2(Math.max(0, num(sc.beat, 1.2)) * ctx.E.dm);
+    if (reveal) {
+      if (ci >= 0) {
+        op.forEach(function (x, i) {
+          if (i === ci) return;
+          tw.to(q('.gg-qzOpt[data-i="' + i + '"]'), t, { opacity: .34, duration: ctx.d('fast'), ease: TOKENS.e.soft });
+        });
+        tw.from(q('.gg-qzHi'), t + ctx.d('micro'), { scale: .94, opacity: 0, transformOrigin: '50% 50%',
+          duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
+        if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('micro'));
+        t += ctx.d('fast') * 1.1;
+      }
+      if (A) {
+        tw.from(q('.gg-qzAns'), t, { y: ctx.px(22), scale: .96, opacity: 0,
+          duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
+        t += ctx.d('normal') * .8;
+      }
+    }
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, (hsc.title || '') + itemsText(op) + (A ? A.label : '')) };
+  }
+};
+
+/* --- 28. endCard — 아웃트로. 구독을 청하고 다음 볼 것을 건넨다. --- */
+PATTERNS.endCard = {
+  label: '엔드카드',
+  use: '영상의 마지막 씬. 구독·알림 청하기와 다음 영상 권하기를 한 화면에서 끝낸다.',
+  fields: 'title(필수) · sub · cta[]({label,icon} — 생략하면 구독·좋아요·알림) · next[]({label,note,icon|art,badge} — 다음 볼 것, 2개까지) · handle(채널 이름) · kicker',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    /* CTA 를 안 적으면 유튜브의 세 가지를 그대로 쓴다 — 라벨은 스펙에서 바꿀 수 있다 */
+    var cta = items(has(sc, 'cta') ? sc.cta : [
+      { label: '구독', icon: 'user' }, { label: '좋아요', icon: 'thumbup' }, { label: '알림', icon: 'bell' }
+    ]);
+    var nx = items(sc.next).slice(0, 2), m = cta.length, k = nx.length;
+    var tSize = Math.round(ctx.fs.title * (ctx.wide ? .9 : .84));
+    var w = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1400 : 940), x = Math.round((ctx.W - w) / 2);
+    var chipH = ctx.wide ? 92 : 104, chipW = ctx.wide ? 250 : 230, chipGap = ctx.wide ? 26 : 20;
+    /* 세로 프레임에서는 다음 볼 것을 한 열로 세운다 — 좁은 폭에 두 장을 나란히 놓으면
+       제목이 두 줄로 접히고 카드가 납작해진다. 가로는 나란히가 낫다(눈이 한 번에 견준다). */
+    var nxCols = ctx.wide ? Math.max(k, 1) : 1;
+    /* 카드 높이는 카드 규칙(.gg-card 의 여백 36·간격 16)과 안에 실제로 든 것에서 계산한다.
+       상수로 박으면 카드가 그 높이를 넘겨 자라 다음 카드·채널 이름과 겹친다. */
+    var nxIcon = ctx.wide ? 72 : 64, nxRow = [];
+    if (nx.some(function (v) { return v.icon || hasArt(v); })) nxRow.push(nxIcon + 4);
+    if (nx.some(function (v) { return v.value != null; })) nxRow.push(53);
+    nxRow.push(46);
+    if (nx.some(function (v) { return v.note; })) nxRow.push(34);
+    var cardH = k ? 72 + nxRow.reduce(function (a, b) { return a + b; }, 0) + 16 * (nxRow.length - 1) : 0;
+    var cardW = k ? Math.min(ctx.wide ? 520 : 820, Math.floor((w - (nxCols - 1) * 32) / nxCols)) : 0;
+    var nxRows = Math.ceil(k / nxCols), cardGapY = 20;
+    var nxH = k ? nxRows * cardH + (nxRows - 1) * cardGapY : 0;
+    var gapA = ctx.wide ? 56 : 96, gapB = ctx.wide ? 44 : 60, gapC = ctx.wide ? 44 : 62;
+    /* 네 층(제목 · CTA · 다음 볼 것 · 채널 이름)을 한 덩어리로 보고 그 덩어리를 화면 중앙에 놓는다.
+       층마다 제자리를 따로 잡으면 층이 빠진 경우(다음 영상이 없을 때)에 가운데가 텅 빈다. */
+    var probe = head(sc, ctx, new TW(), 0, { x: x, y: 0, w: w, align: 'center' }, { title: tSize });
+    var probeH = probe.h + headWrapExtra(sc.title || '', tSize, w);
+    var footH = sc.handle ? gapC + 34 : 0;
+    var stackH = probeH + gapA + chipH + (k ? gapB + nxH : 0) + footH;
+    var headY = clamp(Math.round((ctx.H - stackH) / 2), ctx.safe, ctx.H - ctx.safe - stackH);
+    var ctaY = Math.round(headY + probeH + gapA);
+    var cardY = ctaY + chipH + gapB;
+    var handleY = (k ? cardY + nxH : ctaY + chipH) + gapC;
+    var hd = head(sc, ctx, tw, t, { x: x, y: headY, w: w, align: 'center' }, { title: tSize });
+    H.push(hd.html);
+    t = hd.end;
+    var cg = rowOf(m, ctx.W, chipW, chipGap);
+    cta.forEach(function (c, i) {
+      H.push('<div class="gg-ecCta" data-i="' + i + '" style="left:' + Math.round(cg[i].x) + 'px;top:' + ctaY +
+        'px;width:' + chipW + 'px;height:' + chipH + 'px;font-size:' + Math.round(ctx.fs.body * .96) + 'px">' +
+        (c.icon ? ctx.icon(c.icon, Math.round(chipH * .42)) : '') + '<span>' + esc(c.label || '') + '</span></div>');
+    });
+    if (k) {
+      var g = gridOf(k, nxCols, ctx.W, cardW, cardH, 32, cardGapY, cardY + nxH / 2);
+      nx.forEach(function (v, i) {
+        H.push(card(v, g[i], ctx, { cls: 'gg-ecNext', idx: i, iconSize: ctx.wide ? 72 : 64,
+          labelSize: Math.round(ctx.fs.body * 1.02), noteSize: 23 }));
+      });
+    }
+    if (sc.handle) {
+      H.push('<div class="gg-ecHandle" style="left:' + x + 'px;top:' + handleY + 'px;width:' + w +
+        'px;font-size:' + (ctx.wide ? 26 : 25) + 'px">' + esc(sc.handle) + '</div>');
+    }
+    enterItems(tw, ctx, cta, '.gg-ecCta', t, ctx.st('normal'),
+      { scale: .74, opacity: 0, transformOrigin: '50% 50%', duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
+    t += ctx.d('fast') * 1.2 + ctx.st('normal') * (m - 1);
+    if (k) {
+      enterItems(tw, ctx, nx, '.gg-ecNext', t, ctx.st('loose'),
+        { y: ctx.px(32), scale: .97, opacity: 0, duration: ctx.d('fast') * 1.25, ease: ctx.ei });
+      enterItems(tw, ctx, nx, '.gg-ecNext', t, ctx.st('loose'),
+        { scale: .6, opacity: 0, duration: ctx.d('fast'), ease: TOKENS.e.overshoot },
+        { inner: ' .gg-ic', lead: ctx.d('micro') });
+      nx.forEach(function (v, i) {
+        if (hasArt(v)) artIn(tw, ctx, '.gg-ecNext[data-i="' + i + '"]', t + ctx.d('fast') * .8);
+      });
+      t += ctx.d('fast') * 1.25 + ctx.st('loose') * (k - 1);
+    }
+    if (sc.handle) {
+      tw.from(q('.gg-ecHandle'), t, { y: ctx.px(12), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+      t += ctx.d('fast') * .5;
+    }
+    /* 마지막에 CTA 가 한 번 맥동한다 — 이 화면에서 시청자가 할 일이 그것이다 */
+    tw.fx('pulse', t, q('.gg-ecCta'));
+    t += ctx.d('fast');
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, (sc.title || '') + (sc.sub || '') + itemsText(nx), { add: .4 }) };
+  }
+};
+
 /* 패턴별 필수 필드 — validate 가 쓴다. 없으면 만들 수 없는 것만 넣는다. */
 var REQUIRED = {
   heroReveal: ['title'], kineticType: ['lines|title'], cardsCascade: ['items'],
@@ -2451,15 +2801,18 @@ var REQUIRED = {
   matchCut: ['anchor', 'to'], cameraJourney: ['stops|items'], quote: ['text|title'],
   deviceShow: ['frame|screen'], chart: ['chart', 'data|items|series'], marquee: ['items'],
   funnel: ['stages|items'], cycle: ['steps|items'],
-  anatomy: ['parts|items', 'art|icon'], featureMatrix: ['rows|items', 'cols']
+  anatomy: ['parts|items', 'art|icon'], featureMatrix: ['rows|items', 'cols'],
+  chapterCard: ['title'], rankList: ['items'], quizReveal: ['question|title'], endCard: ['title']
 };
-/* 씬 길이 상한(초) — 카메라 순회처럼 여러 지점을 훑는 패턴은 원래 길다 */
-var MAXSEC = { cameraJourney: 20, timeline: 16, zoomDetail: 15, convergence: 14 };
+/* 씬 길이 상한(초) — 카메라 순회처럼 여러 지점을 훑는 패턴은 원래 길다.
+   퀴즈는 선택지 뒤에 일부러 멈추므로 그 정지까지가 씬 길이다. */
+var MAXSEC = { cameraJourney: 20, timeline: 16, zoomDetail: 15, quizReveal: 15, convergence: 14 };
 /* 밀도 상한 — 넘으면 씬을 나누라고 경고한다. 애니메이션은 정보량을 줄여주지 않는다. */
 var MAXITEMS = {
   cardsCascade: 9, networkBuild: 8, processFlow: 6, explodedDiagram: 6, zoomDetail: 8,
   dataCounter: 4, timeline: 6, convergence: 7, divergence: 7, orbit: 10, cameraJourney: 5, kineticType: 6,
-  funnel: 6, cycle: 6, anatomy: 6, featureMatrix: 10
+  funnel: 6, cycle: 6, anatomy: 6, featureMatrix: 10,
+  chapterCard: 6, rankList: 6, quizReveal: 4, endCard: 2
 };
 /* 프레임 안에 들어가는 줄·항목 수 상한 — 화면 목업은 정보 밀도가 금방 넘친다 */
 var MAXSCREEN = 7;
@@ -2919,7 +3272,8 @@ function validate(spec, opts) {
       arr(v).forEach(function (x) { if (x && typeof x === 'object' && x.icon) names.push(x.icon); });
     }
     if (sc.icon) names.push(sc.icon);
-    [sc.items, sc.nodes, sc.steps, sc.layers, sc.stats, sc.events, sc.sources, sc.targets, sc.orbits, sc.stops].forEach(collect);
+    [sc.items, sc.nodes, sc.steps, sc.layers, sc.stats, sc.events, sc.sources, sc.targets, sc.orbits, sc.stops,
+     sc.options, sc.cta, sc.next].forEach(collect);
     [sc.target, sc.source, sc.center, sc.left, sc.right, sc.before, sc.after, sc.anchor].forEach(function (o) {
       if (o && typeof o === 'object' && o.icon) names.push(o.icon);
       if (o && typeof o === 'object') collect(o.items);
@@ -2966,7 +3320,7 @@ function validate(spec, opts) {
     if (sc.art) chkVec(VEC.ART, sc.art, 'art');
     if (sc.frame) chkVec(VEC.FRAME, sc.frame, 'frame');
     if (sc.screen && sc.screen.art) chkVec(VEC.ART, sc.screen.art, 'screen.art');
-    [sc.items, sc.nodes, sc.steps, sc.stats, sc.stops, sc.layers].forEach(function (L) {
+    [sc.items, sc.nodes, sc.steps, sc.stats, sc.stops, sc.layers, sc.next].forEach(function (L) {
       arr(L).forEach(function (x) { if (x && x.art) chkVec(VEC.ART, x.art, 'items[].art'); });
     });
     /* 항목이 아니라 자리 하나를 차지하는 시각물도 같은 이름표를 쓴다 */
@@ -2986,6 +3340,19 @@ function validate(spec, opts) {
       var fmC = arr(sc.cols).length;
       var bad = items(sc.rows || sc.items).filter(function (r) { return arr(r.values).length !== fmC; }).length;
       if (fmC && bad) warnings.push(tag + 'values 개수가 열 수(' + fmC + ')와 다른 행이 ' + bad + '개다 — 빈 칸이 생긴다.');
+    }
+    /* 퀴즈 — 정답 표시가 둘이면 하나는 잉여다. 링이 이미 답을 가리키므로 띠는 부연일 때만 쓴다 */
+    if (sc.pattern === 'quizReveal') {
+      var qOpt = items(sc.options);
+      var qCor = qOpt.filter(function (o) { return o.correct; });
+      var qAns = typeof sc.answer === 'string' ? sc.answer : (sc.answer && sc.answer.label) || '';
+      if (qOpt.length && !qCor.length && sc.reveal !== false && !qAns) {
+        warnings.push(tag + '선택지에 correct 가 없고 answer 도 없다 — 정답이 열리지 않는다. 정답 선택지에 correct 를 켠다.');
+      }
+      if (qCor.length > 1) warnings.push(tag + 'correct 가 ' + qCor.length + '개다 — 첫 번째만 정답으로 열린다.');
+      if (qAns && qCor.length && qAns === (qCor[0].label || '')) {
+        warnings.push(tag + 'answer 가 정답 선택지와 같은 글자다 — 링이 이미 그 선택지를 가리킨다. answer 는 "왜 그런가"를 적을 때만 쓴다.');
+      }
     }
   });
 
@@ -3413,6 +3780,60 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-fmTxt{font-weight:700;color:var(--ink)}',
 '.gg-fmHi{position:absolute;border:var(--surf-lw2) solid var(--acc);border-radius:var(--r-md);' +
   'box-shadow:var(--target-ring);pointer-events:none;z-index:25}',
+/* 챕터 카드 — 번호와 진행 레일. 레일 칸은 scaleX 로 채워진다(transform 만 애니메이션한다) */
+'.gg-chNo{position:absolute;font-weight:900;line-height:1;letter-spacing:-.05em;color:var(--acc);' +
+  'font-variant-numeric:tabular-nums;text-align:center;' + glow + '}',
+'.gg-chSeg{position:absolute;display:flex;flex-direction:column;align-items:center;gap:14px}',
+'.gg-chTrack{width:100%;height:8px;border-radius:4px;background:var(--surf-line);overflow:hidden}',
+'.gg-chFill{width:100%;height:100%;border-radius:4px;background:var(--acc);' +
+  'transform-origin:0 50%;transform:scaleX(0)}',
+'.gg-chDone .gg-chFill{transform:scaleX(1);opacity:.42}',
+'.gg-chNow .gg-chFill{transform:scaleX(1)}',
+'.gg-chSegLb{color:var(--dim);font-weight:600;line-height:1.3;text-align:center;word-break:keep-all}',
+'.gg-chNow .gg-chSegLb{color:var(--ink);font-weight:700}',
+'.gg-chCur{position:absolute;text-align:center;color:var(--ink);font-weight:700;' +
+  'letter-spacing:var(--tight);word-break:keep-all}',
+/* 랭킹 */
+'.gg-rkRow{position:absolute;display:flex;align-items:center;gap:22px;padding:0 30px;' +
+  'background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);' +
+  'backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}',
+'.gg-rkNo{flex:0 0 auto;font-weight:900;color:var(--dim);font-variant-numeric:tabular-nums;' +
+  'letter-spacing:-.04em;line-height:1;text-align:center}',
+'.gg-rkTop .gg-rkNo{color:var(--acc)}',
+'.gg-rkVis{flex:0 0 auto;display:flex;align-items:center}',
+'.gg-rkBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}',
+'.gg-rkLb{font-weight:700;color:var(--ink);letter-spacing:var(--tight);line-height:1.24;' +
+  'overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+'.gg-rkNote{font-size:22px;color:var(--dim);line-height:1.4;overflow:hidden;' +
+  'text-overflow:ellipsis;white-space:nowrap}',
+'.gg-rkVal{flex:0 0 auto;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;' +
+  'letter-spacing:-.02em}',
+'.gg-rkUnit{font-size:.6em;font-weight:700;margin-left:.14em;opacity:.85}',
+'.gg-rkHi{position:absolute;border:var(--surf-lw2) solid var(--acc);border-radius:var(--r-md);' +
+  'box-shadow:var(--target-ring);pointer-events:none;z-index:25}',
+/* 퀴즈 — 정답 링과 답 띠는 good 색을 쓴다. 판정은 액센트가 아니라 판정 색이어야 한다 */
+'.gg-qzOpt{position:absolute;display:flex;align-items:center;gap:20px;padding:0 28px;' +
+  'background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);' +
+  'backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}',
+'.gg-qzKey{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;' +
+  'border:var(--surf-lw2) solid var(--acc);color:var(--acc);font-weight:800;font-size:27px}',
+'.gg-qzBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}',
+'.gg-qzLb{font-weight:700;color:var(--ink);letter-spacing:var(--tight);line-height:1.28}',
+'.gg-qzNote{font-size:21px;color:var(--dim);line-height:1.4}',
+'.gg-qzHi{position:absolute;border:var(--surf-lw2) solid ' + T.good + ';border-radius:var(--r-md);' +
+  'box-shadow:var(--target-ring);pointer-events:none;z-index:25}',
+'.gg-qzAns{position:absolute;display:flex;align-items:center;justify-content:center;gap:20px;' +
+  'padding:24px 32px;background:var(--surf-fill);border:var(--surf-lw2) solid ' + T.good + ';' +
+  'border-radius:var(--r-md);backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow);text-align:left}',
+'.gg-qzAns .gg-ic{color:' + T.good + '}',
+'.gg-qzAnsT{font-weight:800;color:var(--ink);letter-spacing:var(--tight);line-height:1.3}',
+'.gg-qzAnsN{margin-top:7px;font-size:22px;color:var(--dim);line-height:1.42}',
+/* 엔드카드 — 다음 볼 것은 카드 규칙을 그대로 쓴다. CTA 만 알약 모양으로 따로 둔다 */
+'.gg-ecCta{position:absolute;display:flex;align-items:center;justify-content:center;gap:14px;' +
+  'border-radius:999px;background:var(--surf-fill);border:var(--surf-lw2) solid var(--acc);' +
+  'backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow);font-weight:800;color:var(--ink);' +
+  'letter-spacing:var(--tight)}',
+'.gg-ecHandle{position:absolute;text-align:center;color:var(--dim);font-weight:700;letter-spacing:.06em}',
 /* 플레이어 */
 /* 플레이어는 마우스를 올리기 전까지 완전히 숨는다 — 화면에 남는 건 작품뿐이어야 한다.
    opacity 0 이어도 hover 와 키보드 포커스는 그대로 잡힌다. */

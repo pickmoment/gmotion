@@ -11,7 +11,7 @@ const DOCS: { path: string; label: string; note: string }[] = [
     label: "연출",
     note: "내러티브 아크, 패턴 고르기, 밀도·리듬, 흔한 실패",
   },
-  { path: "references/spec.md", label: "스펙", note: "루트·씬 공통 필드, 패턴 24종의 필드와 예시" },
+  { path: "references/spec.md", label: "스펙", note: "루트·씬 공통 필드, 패턴 28종의 필드와 예시" },
   { path: "references/charts.md", label: "차트", note: "어떤 차트인가, 색은 어떤 일을 하는가" },
   { path: "references/theming.md", label: "테마", note: "테마·화면비·에너지·재생 모드·모션 토큰" },
   { path: "references/api.md", label: "API", note: "CLI, 검수 쿼리, 산출물 구조, 자막 동기화" },

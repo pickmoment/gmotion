@@ -87,6 +87,39 @@ describe("changePattern", () => {
     expect(changePattern(s, "cardsCascade").scene.items).toEqual(["로그", "지표", "한 곳"]);
   });
 
+  it("유튜브 씬의 내용 자리를 찾아간다 — 항목은 선택지로, 엔드카드는 CTA 가 아니라 다음 볼 것으로", () => {
+    const s = {
+      pattern: "cardsCascade",
+      title: "제목",
+      items: [{ label: "왼쪽", icon: "layers" }, { label: "오른쪽" }],
+    } as Scene;
+    const quiz = changePattern(s, "quizReveal").scene;
+    /* 라벨만 남은 항목은 문자열로 접힌다 — 스펙을 깨끗하게 두는 기존 규칙이다 */
+    expect(quiz.options).toEqual([{ label: "왼쪽", icon: "layers" }, "오른쪽"]);
+    expect(quiz.question).toBe("제목");
+
+    const end = changePattern(s, "endCard").scene;
+    expect(end.next).toEqual([{ label: "왼쪽", icon: "layers" }, "오른쪽"]);
+    /* cta 는 기본값(구독·좋아요·알림)을 쓰도록 비어 있어야 한다 */
+    expect(end.cta).toBeUndefined();
+  });
+
+  it("랭킹의 수치는 값을 받는 자리로 따라간다 — items(value) → stats", () => {
+    const s = {
+      pattern: "rankList",
+      title: "가장 많이 물어본 것",
+      items: [
+        { label: "설치", value: 812 },
+        { label: "속도", value: 604 },
+      ],
+    } as Scene;
+    const { scene } = changePattern(s, "dataCounter");
+    expect(scene.stats).toEqual([
+      { label: "설치", value: 812 },
+      { label: "속도", value: 604 },
+    ]);
+  });
+
   it("제목 자리가 없는 패턴에서는 제목이 첫 줄이 되고, 돌아오면 다시 제목이 된다", () => {
     const s = { pattern: "heroReveal", title: "정보는 어디에나 있다" } as Scene;
     const kinetic = changePattern(s, "kineticType").scene;

@@ -174,7 +174,7 @@ gm validate my.json
 ### 4-2. 씬 하나
 
 ```jsonc
-{ "pattern": "dataCounter",         // 필수. 24종 중 하나
+{ "pattern": "dataCounter",         // 필수. 28종 중 하나
   "purpose": "비용을 숫자로 못 박는다", // 이 씬이 무엇을 하는 씬인지
   "title":   "찾는 데만 하루가 든다",
   "kicker":  "지난 분기",             // 제목 위 작은 글자
@@ -189,12 +189,12 @@ gm validate my.json
 
 `title` 에 `\n` 을 넣으면 줄이 나뉘고 줄 단위로 나타난다.
 
-### 4-3. 패턴 24종
+### 4-3. 패턴 28종
 
 어떤 패턴이 있는지, 각각 무슨 필드를 받는지는 명령으로 확인한다.
 
 ```bash
-gm info patterns                 # 24종 전부 + 필드
+gm info patterns                 # 28종 전부 + 필드
 gm pattern convergence           # 하나만 자세히
 ```
 
@@ -228,6 +228,14 @@ convergence — 수렴
 | `chart` | 차트 | 수치를 형태로 보여준다 | - |
 | `deviceShow` | 디바이스 쇼케이스 | 제품 화면, UI 소개, 로그·코드 | - |
 | `quote` | 인용 | 인용, 사용자 목소리, 핵심 문장 | - |
+| `funnel` | 퍼널 | 전환 퍼널, 단계별 선별·감소 | 6 |
+| `cycle` | 사이클 | 순환·플라이휠·반복 루프 | 6 |
+| `anatomy` | 해부도 | 제품·구조의 부위 설명 | 6 |
+| `featureMatrix` | 기능 매트릭스 | 경쟁사·요금제·선택지 비교 | 10 |
+| `chapterCard` | 챕터 카드 | 유튜브 영상의 장 구분, 진행 표시 | 6 |
+| `rankList` | 랭킹 | Top N 순위, 카운트다운 공개 | 6 |
+| `quizReveal` | 퀴즈 | 질문 → 선택지 → 정답, 생각할 틈 | 4 |
+| `endCard` | 엔드카드 | 아웃트로, 구독·다음 영상 권하기 | 2 |
 
 **항목 상한을 넘으면 경고가 뜬다.** 정보량은 애니메이션으로 줄어들지 않는다 —
 경고가 뜨면 씬을 나누는 게 맞다.
@@ -538,7 +546,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | 명령 | 내용 |
 |---|---|
 | `gm info` | 전체 요약 |
-| `gm info patterns` | 씬 패턴 24종과 필드 |
+| `gm info patterns` | 씬 패턴 28종과 필드 |
 | `gm info themes` | 테마 목록 |
 | `gm info skins` | 스킨 6종 + 디자인 프리미티브 48종 |
 | `gm info trans` | 트랜지션 15종 |
@@ -974,9 +982,9 @@ ffmpeg -framerate 30 -i frames/%05d.png -c:v prores_ks -profile:v 3 out.mov
 
 | 파일 | 내용 |
 |---|---|
-| `references/spec.md` | 스펙 JSON 전체 필드 — 패턴 24종의 필드와 예시 |
+| `references/spec.md` | 스펙 JSON 전체 필드 — 패턴 28종의 필드와 예시 |
 | `references/direction.md` | 씬 구성을 짜는 법 — 내러티브 아크, 패턴 고르기, 리듬 |
 | `references/charts.md` | 차트 17종 — 어떤 데이터에 어떤 차트, 색의 역할 |
 | `references/theming.md` | 테마·화면비·에너지·모션 토큰 |
 | `references/api.md` | CLI 와 산출물 구조, GSAP 관련 주의점 |
-| `assets/examples/` | 스타터 스펙 12종 |
+| `assets/examples/` | 스타터 스펙 15종 |

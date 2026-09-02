@@ -38,6 +38,10 @@ validate            밀도·길이·리듬 경고를 읽고 고친다
 `assets/examples/` 의 다섯 예제가 각각 이 아크다. **백지에서 쓰지 말고
 가장 가까운 예제를 열어 갈아끼운다.**
 
+유튜브 한 편은 이 아크들을 **장 단위로 이어 붙인 것**이다 — 후크 → 챕터 → 본문 →
+퀴즈 → 챕터 → 근거 → 엔드카드. 장이 바뀌는 자리에 `chapterCard` 를 세워 "전체 중
+지금 여기"를 알리고, 마지막은 `endCard` 로 닫는다(`assets/examples/starter-youtube.json`).
+
 ## 2. 패턴 고르기 — "무엇을 말하려는가"에서 출발한다
 
 패턴은 장식이 아니라 **문장의 동사**다. 내용에 맞는 동사를 고른다.
@@ -68,6 +72,10 @@ validate            밀도·길이·리듬 경고를 읽고 고친다
 | 이 과정이 돌고 돈다 | `cycle` | `steps[]` `center{}` |
 | 이 부분이 각각 무엇인지 짚는다 | `anatomy` | `art\|icon` `parts[]` |
 | 여럿을 여러 기준으로 견준다 | `featureMatrix` | `cols[]` (`highlight`) `rows[]` |
+| 장이 바뀐다 — 전체 중 지금 여기 | `chapterCard` | `no` `title` `chapters[]` (`of` `current`) |
+| 순위를 거꾸로 열어 1위에서 멈춘다 | `rankList` | `items[]` (1위부터) `order` `unit` |
+| 질문을 던지고 답을 스스로 꺼내게 한다 | `quizReveal` | `question` `options[]` `beat` `answer` |
+| 구독을 청하고 다음 볼 것을 건넨다 | `endCard` | `cta[]` `next[]` `handle` |
 
 **같은 패턴을 3연속 쓰면 validate 가 경고한다.** 세 씬 연속 `cardsCascade` 는
 세 화면이 같은 화면으로 읽힌다 — 내용이 달라도 그렇다.
@@ -80,9 +88,12 @@ validate            밀도·길이·리듬 경고를 읽고 고친다
 
 | 패턴 | 상한 | 왜 |
 |---|---|---|
+| `endCard` | 2 | 다음 볼 것이 셋이면 아무것도 안 고른다 |
 | `dataCounter` | 4 | 숫자 다섯 개는 하나도 안 남는다 |
+| `quizReveal` | 4 | 선택지는 A·B·C·D 까지 — 다섯째를 읽는 사이 질문을 잊는다 |
 | `cameraJourney` | 5 | 정류장마다 카메라가 움직인다 — 6개면 2분이 된다 |
 | `processFlow` `explodedDiagram` `timeline` `funnel` `cycle` `anatomy` | 6 | 한 줄(또는 한 고리)에 여섯이 최대 |
+| `chapterCard` `rankList` | 6 | 레일 칸도 순위 행도 여섯이 최대 |
 | `convergence` `divergence` | 7 | 모이는 동작이 보여야 한다 |
 | `networkBuild` `zoomDetail` | 8 | 선이 8개 넘으면 그물이 된다 |
 | `cardsCascade` | 9 | 스태거가 9개를 넘으면 지루해진다 |

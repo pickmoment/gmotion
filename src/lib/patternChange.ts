@@ -58,6 +58,14 @@ const LIST_OVERRIDE: Record<string, ListSlot> = {
     allow: ["value", "unit", "icon", "note", "tone"],
     max: null,
   },
+  /* 엔드카드의 내용 자리는 "다음 볼 것" 이다. 스키마 순서상 먼저 나오는 cta 는
+     구독·좋아요 같은 행동 요청이라, 다른 패턴의 항목이 그리로 가면 뜻이 어긋난다. */
+  endCard: {
+    path: ["next"],
+    primary: "label",
+    allow: ["icon", "note", "value", "tone", "badge", "ribbon", "art", "spark", "say"],
+    max: 2,
+  },
 };
 
 /** 프레임 안 화면은 7줄이 상한이다 (엔진의 MAXSCREEN) */
@@ -124,7 +132,9 @@ function slotsOf(pattern: string): Slots {
   };
 
   return {
-    heading: textKey("title") ?? textKey("text") ?? groupKey("title") ?? undefined,
+    /* 퀴즈의 `question` 도 제목 자리다 — 이름을 안 알아보면 제목이 선택지 첫 줄로 섞인다 */
+    heading:
+      textKey("title") ?? textKey("text") ?? textKey("question") ?? groupKey("title") ?? undefined,
     kicker: textKey("kicker") ?? undefined,
     sub: textKey("sub") ?? textKey("caption") ?? groupKey("sub") ?? undefined,
     icon: fields.some((f) => f.k === "icon" && f.key === "icon") ? "icon" : undefined,

@@ -29,6 +29,8 @@ const NOTES: Record<string, string> = {
   "starter-report": "지표 축적 (5씬 19초, paper, step) — 발표자 노트가 채워진 예제",
   "starter-intro": "시리즈 오프닝 (3씬 8초, ink, E3, 매치컷)",
   "starter-shorts": "쇼츠 (4씬 8초, neon, 9:16, E3)",
+  "starter-youtube":
+    "유튜브 한 편의 아크 (7씬 33초, midnight, 16:9) — 챕터 카드·랭킹·퀴즈·엔드카드를 한 파일에서 본다",
   "starter-vectors": "벡터 세트 쇼케이스 — 마크·배지·리본·일러스트·프레임",
   "starter-charts": "차트 쇼케이스 — 13씬, 데이터의 일마다 다른 형태",
   "starter-effects": "효과 쇼케이스 — 모프·곡선 경로·스크램블·롤·마퀴",

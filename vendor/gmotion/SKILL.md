@@ -1,6 +1,6 @@
 ---
 name: gmotion
-description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 단일 HTML(오프라인 재생, 발표용, 자막·음성 동기화)을 제작하는 스킬. 모션그래픽, 인트로, 키네틱 타이포, 지표 리포트, 구조도·프로세스 애니메이션, 쇼츠 영상 제작 요청 시 사용.
+description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 단일 HTML(오프라인 재생, 발표용, 자막·음성 동기화)을 제작하는 스킬. 모션그래픽, 인트로, 키네틱 타이포, 지표 리포트, 구조도·프로세스 애니메이션, 쇼츠 영상 제작 요청 시 사용. 유튜브 영상용 씬(챕터 카드·랭킹·퀴즈·엔드카드)도 같은 스펙으로 만든다.
 ---
 
 # gmotion
@@ -68,7 +68,7 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 | 파일 | 언제 |
 |---|---|
 | `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 흔한 실패 |
-| `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 패턴 24종의 필드와 예시 |
+| `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 패턴 28종의 필드와 예시 |
 | `references/charts.md` | **차트를 넣을 때.** 어떤 차트인가, 색은 어떤 일을 하는가, 데이터 형태와 옵션 |
 | `references/theming.md` | 테마·**스킨**·화면비·에너지·재생 모드·모션 토큰 |
 | `references/api.md` | CLI, 검수 쿼리, agent-browser 캡처, 산출물 구조, GSAP 함정 |
@@ -108,6 +108,7 @@ data URI 로 인라인한다. `fit: "contain"|"cover"`. 자세한 것은 `spec.m
 | `assets/examples/starter-report.json` | 지표 축적 (5씬 19초, paper, step) — **발표자 노트가 채워진 예제** |
 | `assets/examples/starter-intro.json` | 시리즈 오프닝 (3씬 8초, ink, E3, 매치컷) |
 | `assets/examples/starter-shorts.json` | 쇼츠 (4씬 8초, neon, 9:16, E3) |
+| `assets/examples/starter-youtube.json` | **유튜브 한 편** — 후크 → 챕터 → 랭킹 → 퀴즈 → 챕터 → 근거 → 엔드카드 (7씬, midnight, 16:9) |
 | `assets/examples/starter-vectors.json` | **벡터 세트 쇼케이스** — 마크·배지·리본·프레임과 일러스트 두 쓰임(아이콘 자리 대신 · 카드 뒤 배경) |
 | `assets/examples/starter-charts.json` | **차트 쇼케이스** — 13씬, 데이터의 일마다 다른 형태 |
 | `assets/examples/starter-effects.json` | **효과 쇼케이스** — 모프·곡선 경로·스크램블·롤·마퀴·스택·곡선 와이프 |
@@ -276,7 +277,7 @@ assets/
   vectors.js       벡터 세트 102종 — 배경 20 · 강조 15 · 프레임 19 · 일러스트 48. 전부 코드로 그린다
   charts.js        차트 17종 — 형태·색·마크 스펙. 애니메이션은 지시만 하고 방법은 엔진이 정한다
   skins.js         디자인 프리미티브(인터페이스) 48종 + 스킨(구현부) 6종 — 표면·선·타이포의 재질
-  examples/        스타터 스펙 13종 + 자막 동기화용 샘플 SRT
+  examples/        스타터 스펙 15종 + 자막 동기화용 샘플 SRT
   selftest.js      엔진 회귀 검사 — 엔진을 고쳤으면 `gm test` 를 통과시킨다
 references/        direction · spec · theming · api · charts
 MANUAL.md          사람이 직접 CLI 를 쓸 때 보는 설명서 (사용자가 물으면 이 파일을 알려준다)

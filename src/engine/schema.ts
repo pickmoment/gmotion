@@ -1,5 +1,5 @@
 /**
- * 패턴 24종의 편집 스키마.
+ * 패턴 28종의 편집 스키마.
  *
  * 엔진이 필드 목록을 문자열로만 알려 주므로(`gm pattern <이름>`), 폼을 그리려면
  * 구조화된 선언이 필요하다. 여기 있는 내용은 `references/spec.md` 를 그대로 옮긴
@@ -29,7 +29,9 @@ export type ItemFieldKey =
   | "emphasis"
   | "values"
   | "highlight"
-  | "scale";
+  | "scale"
+  | "correct"
+  | "rank";
 
 export type Field =
   | { k: "text"; key: string; label: string; hint?: string; req?: boolean }
@@ -85,6 +87,10 @@ const opt = {
     left: "left — 왼쪽에서",
     scale: "scale — 확대",
     stack: "stack — 겹쳐 있다 흩어짐",
+  }),
+  rankOrder: () => ({
+    countdown: "countdown — 낮은 순위부터(기본)",
+    up: "up — 적은 순서대로",
   }),
 };
 
@@ -499,6 +505,96 @@ export const PATTERNS: Record<string, PatternSchema> = {
       },
     ],
   },
+  chapterCard: {
+    label: "챕터 카드",
+    use: '유튜브 영상의 장 구분. 번호와 진행 레일이 "전체 중 지금 여기"를 말해 준다',
+    max: 6,
+    fields: [
+      { k: "text", key: "title", label: "제목", req: true },
+      {
+        k: "text",
+        key: "no",
+        label: "장 번호",
+        hint: "숫자면 01 로 채운다, PART 3 처럼 글자도 된다",
+      },
+      { k: "text", key: "sub", label: "서브" },
+      {
+        k: "strings",
+        key: "chapters",
+        label: "전체 장 이름",
+        ph: "한 줄에 하나",
+        hint: "칸에 다 들어갈 때만 전부 적는다. 넘치면 비우고 현재 장 이름만 나온다",
+      },
+      { k: "number", key: "of", label: "전체 장 수", hint: "장 이름 없이 칸만 그릴 때" },
+      { k: "number", key: "current", label: "현재 장", hint: "1부터. 기본값은 숫자 장 번호" },
+    ],
+  },
+  rankList: {
+    label: "랭킹",
+    use: "Top N 순위. 카운트다운으로 열고 1위에 링이 감기며 멈춘다",
+    max: 6,
+    fields: [
+      { k: "text", key: "title", label: "제목" },
+      items("items", "항목", {
+        req: true,
+        extra: ["value", "unit", "rank"],
+        hint: "1위부터 순서대로. 자리는 순위가 정한다",
+      }),
+      { k: "text", key: "unit", label: "공통 단위", hint: "항목의 unit 이 이긴다" },
+      { k: "select", key: "order", label: "열리는 순서", opts: opt.rankOrder },
+      { k: "bool", key: "top", label: "1위 강조", def: true },
+    ],
+  },
+  quizReveal: {
+    label: "퀴즈",
+    use: "질문 → 선택지 → 정답. 선택지 뒤의 정지가 이 패턴의 핵이다",
+    max: 4,
+    fields: [
+      { k: "multiline", key: "question", label: "질문", req: true, rows: 2 },
+      {
+        k: "items",
+        key: "options",
+        label: "선택지",
+        primary: "label",
+        fields: ["icon", "correct", "note", "say"],
+        hint: "4개까지. 정답 하나에 correct 를 켠다",
+      },
+      {
+        k: "text",
+        key: "answer",
+        label: "정답",
+        hint: '정답 한 줄. 체크 표시와 함께 열린다 — 선택지 글자를 그대로 쓰지 말고 "왜 그런가"를 적는다',
+      },
+      {
+        k: "number",
+        key: "beat",
+        label: "생각할 틈",
+        step: 0.1,
+        hint: "선택지 뒤 생각할 틈(초). 기본 1.2",
+      },
+      { k: "bool", key: "reveal", label: "정답 공개", def: true },
+      { k: "text", key: "sub", label: "서브" },
+    ],
+  },
+  endCard: {
+    label: "엔드카드",
+    use: "영상의 마지막 씬. 구독 청하기와 다음 영상 권하기를 한 화면에서 끝낸다",
+    max: 2,
+    fields: [
+      { k: "text", key: "title", label: "제목", req: true },
+      { k: "text", key: "sub", label: "서브" },
+      {
+        k: "items",
+        key: "cta",
+        label: "행동 요청",
+        primary: "label",
+        fields: ["icon"],
+        hint: "비우면 구독·좋아요·알림",
+      },
+      items("next", "다음 볼 것", { hint: "다음 볼 것. 2개까지" }),
+      { k: "text", key: "handle", label: "채널", hint: "채널 이름" },
+    ],
+  },
 };
 
 /** 모든 패턴이 받는 공통 필드 — 폼 하단 "씬 공통" 에 그린다. */
@@ -675,6 +771,33 @@ export function blankScene(pattern: string): Record<string, unknown> {
         { label: "기준 1", values: [false, true] },
         { label: "기준 2", values: ["6주", "2일"] },
       ];
+      break;
+    case "chapterCard":
+      s.title = "장 제목";
+      s.no = 1;
+      s.chapters = ["첫째 장", "둘째 장", "셋째 장"];
+      break;
+    case "rankList":
+      s.title = "제목";
+      s.items = [
+        { label: "1위 항목", value: 92 },
+        { label: "2위 항목", value: 74 },
+        { label: "3위 항목", value: 51 },
+      ];
+      break;
+    case "quizReveal":
+      s.question = "질문";
+      s.options = [
+        { label: "선택지 A" },
+        { label: "선택지 B", correct: true },
+        { label: "선택지 C" },
+      ];
+      /* answer 를 정답 라벨과 같게 쓰면 엔진이 경고한다 — "왜 그런가"를 적는 자리다 */
+      s.answer = "B 가 정답인 이유";
+      break;
+    case "endCard":
+      s.title = "제목";
+      s.next = [{ label: "다음 영상" }];
       break;
   }
   return s;

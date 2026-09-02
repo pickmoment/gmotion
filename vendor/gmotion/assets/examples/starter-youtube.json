@@ -1,0 +1,100 @@
+{
+  "title": "모션그래픽을 손으로 짜지 않는 법",
+  "message": "손으로 짜면 좌표와 타이밍에 시간이 다 든다 — 스펙 한 장을 쓰면 배치와 코레오그래피는 엔진이 만든다",
+  "theme": "midnight",
+  "aspect": "16:9",
+  "scenes": [
+    {
+      "id": "hook",
+      "pattern": "heroReveal",
+      "purpose": "콜드 오픈 — 이 편이 무엇을 뒤집는지 한 줄로 던진다",
+      "kicker": "EP.01",
+      "title": "모션그래픽을\n손으로 짜지 않는 법",
+      "sub": "좌표를 한 번도 적지 않고 한 편을 만든다"
+    },
+    {
+      "id": "ch1",
+      "pattern": "chapterCard",
+      "purpose": "1장 시작 — 레일로 전체 네 장 중 지금이 첫 장임을 알린다",
+      "transition": "wipe",
+      "no": 1,
+      "chapters": ["손으로 짤 때", "스펙 한 장", "패턴 고르기", "음성 싱크"],
+      "current": 1,
+      "kicker": "CHAPTER",
+      "title": "손으로 짜면 무엇이 드는가",
+      "sub": "만드는 시간이 어디로 새는지 먼저 센다"
+    },
+    {
+      "id": "cost-rank",
+      "pattern": "rankList",
+      "purpose": "시간을 먹는 일을 순위로 세운다 — 1위가 이 장의 결론",
+      "transition": "pushLeft",
+      "kicker": "예시로 채운 값",
+      "title": "한 씬을 손으로 짤 때 시간을 먹는 일",
+      "order": "countdown",
+      "unit": "분",
+      "items": [
+        { "label": "좌표·정렬 맞추기", "note": "한 요소를 옮기면 나머지가 다 밀린다", "value": 42, "icon": "grid" },
+        { "label": "타이밍 다시 재기", "note": "0.1초씩 고쳐 가며 눈으로 확인한다", "value": 31, "icon": "stopwatch" },
+        { "label": "색·대비 고르기", "value": 24, "icon": "eye" },
+        { "label": "자막과 화면 맞추기", "value": 18, "icon": "mic" },
+        { "label": "내보낸 파일 정리", "value": 11, "icon": "folder" }
+      ]
+    },
+    {
+      "id": "quiz",
+      "pattern": "quizReveal",
+      "purpose": "인출 훈련 — 답을 열기 전에 멈춰 시청자가 스스로 꺼내게 한다",
+      "transition": "fade",
+      "kicker": "QUIZ",
+      "question": "이 네 가지에서 손을 떼려면 무엇을 쓰는가?",
+      "options": [
+        { "label": "GSAP 타임라인 코드", "icon": "code" },
+        { "label": "CSS 키프레임", "icon": "pencil" },
+        { "label": "선언적 스펙 한 장", "correct": true, "note": "무엇을 말할지만 적으면 배치·타이밍은 엔진이 정한다", "icon": "doc" },
+        { "label": "렌더 설정 조정", "icon": "gear" }
+      ],
+      "answer": { "label": "스펙에는 좌표가 없다", "note": "패턴과 내용만 적으면 배치·타이밍·이징은 엔진이 만든다" },
+      "beat": 1.8
+    },
+    {
+      "id": "ch2",
+      "pattern": "chapterCard",
+      "purpose": "2장 시작 — 레일이 한 칸 더 채워져 진행이 눈에 보인다",
+      "transition": "curve",
+      "no": 2,
+      "chapters": ["손으로 짤 때", "스펙 한 장", "패턴 고르기", "음성 싱크"],
+      "current": 2,
+      "kicker": "CHAPTER",
+      "title": "스펙 한 장이 하는 일",
+      "sub": "고를 것은 이미 만들어져 있다"
+    },
+    {
+      "id": "inventory",
+      "pattern": "dataCounter",
+      "purpose": "앞 장의 주장을 엔진이 가진 개수로 받친다",
+      "transition": "zoomIn",
+      "kicker": "엔진이 들고 있는 것",
+      "title": "고르기만 하면 되는 재료",
+      "stats": [
+        { "value": 28, "unit": "종", "label": "씬 패턴", "note": "말하려는 일마다 다른 동사", "icon": "grid" },
+        { "value": 15, "unit": "종", "label": "테마", "note": "배경·글자색이 한 벌로 따라온다", "icon": "eye" },
+        { "value": 191, "unit": "개", "label": "픽토그램", "note": "한글 이름으로 찾는다", "icon": "search" }
+      ]
+    },
+    {
+      "id": "outro",
+      "pattern": "endCard",
+      "purpose": "아웃트로 — 구독을 청하고 다음 볼 것을 건넨다. cta 를 비워 기본값을 쓴다",
+      "transition": "zoomOut",
+      "title": "다음 편에서 패턴을 직접 고른다",
+      "sub": "오늘 배운 것: 좌표가 아니라 내용을 쓴다",
+      "next": [
+        { "label": "패턴 28종 골라 쓰기", "note": "12분", "icon": "grid" },
+        { "label": "음성에 화면 맞추기", "note": "9분", "icon": "mic" }
+      ],
+      "handle": "@gmotion",
+      "hold": 2.4
+    }
+  ]
+}
