@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Spec, ValidateResult } from "../engine/types";
 import { build, type SyncInput } from "../lib/build";
+import { error as logError } from "@tauri-apps/plugin-log";
 
 interface GGMApi {
   master: { time(): number };
@@ -20,6 +21,19 @@ interface GGMApi {
   replay(): void;
   setCaptions(on: boolean): boolean;
   captionsOn: boolean;
+}
+
+/**
+ * 부팅 실패 진단에 붙일 CSP. Tauri 는 배포 자산의 응답 **헤더**로 CSP 를 보내므로
+ * 문서에는 meta 가 없다 — 헤더를 직접 읽어야 무엇이 막았는지 알 수 있다.
+ */
+async function effectiveCsp(): Promise<string> {
+  try {
+    const r = await fetch(location.href);
+    return r.headers.get("content-security-policy") ?? "없음";
+  } catch (e) {
+    return `읽지 못했다(${String(e)})`;
+  }
 }
 
 export function Preview({
@@ -41,6 +55,8 @@ export function Preview({
   const [live, setLive] = useState(true);
   const [stamp, setStamp] = useState(0);
   const [stalled, setStalled] = useState(false);
+  /** 산출물은 실렸는데 그 안의 스크립트가 실행되지 않았을 때 — 왜 그런지까지 적는다 */
+  const [dead, setDead] = useState("");
   /* 자막 표시는 산출물 안의 상태다 — 다시 빌드해도 보던 대로 유지한다 */
   const [ccOn, setCcOn] = useState(true);
   const pending = useRef(scene);
@@ -140,7 +156,24 @@ export function Preview({
       clearTimeout(timer);
       setStalled(false);
       const g = ggm();
-      if (!g) return;
+      if (!g) {
+        /* 산출물의 GSAP·런타임은 인라인 <script> 다. load 는 왔는데 GGM 이 없으면
+           그 스크립트가 실행되지 않은 것이다 — 배포 빌드의 CSP(script-src) 가 가장
+           흔한 원인이고(dev 에는 CSP 가 없어 재현되지 않는다), 그때는 화면이 그려지기만
+           하고 움직이지 않는다. 무엇이 막았는지 알 수 있게 CSP 까지 로그에 남긴다. */
+        const w = frame.current?.contentWindow as unknown as { gsap?: unknown } | null;
+        const doc = frame.current?.contentDocument;
+        setDead("산출물의 스크립트가 실행되지 않았다 — 로그(툴바 '로그')에 진단을 남겼다");
+        void effectiveCsp().then((csp) =>
+          logError(
+            `[preview] 런타임 부팅 실패: gsap=${typeof w?.gsap} ggReady=${
+              doc?.documentElement.dataset.ggReady ?? "없음"
+            } scripts=${doc?.querySelectorAll("script").length ?? -1} csp=${csp}`,
+          ),
+        );
+        return;
+      }
+      setDead("");
       stopWatch();
       Promise.resolve(g.ready).then(() => {
         g.goto(pending.current);
@@ -205,6 +238,8 @@ export function Preview({
           </button>
         </p>
       )}
+
+      {dead && <p className="warn-inline">{dead}</p>}
 
       <div className="transport">
         <button
