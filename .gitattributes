@@ -1,0 +1,4 @@
+# 체크아웃 줄끝을 LF 로 고정한다 — Windows 러너가 CRLF 로 받으면
+# prettier --check(endOfLine: lf 기본값)가 저장소 전체를 위반으로 읽는다.
+# 바이너리는 text 감지에서 제외되므로 안전하다.
+* text=auto eol=lf
