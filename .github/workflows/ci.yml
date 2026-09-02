@@ -30,6 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      # find_ffmpeg_finds_binary 가 실제 탐색을 검증한다 — 러너 이미지에는 ffmpeg 이 없다
+      - uses: FedericoCarboni/setup-ffmpeg@v3
       - run: cargo test
         working-directory: src-tauri
       - run: cargo build --release
