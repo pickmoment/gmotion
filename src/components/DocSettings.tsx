@@ -38,6 +38,49 @@ export function DocSettings({
     </div>
   );
 
+  /**
+   * true(기본) · false(끔) · 숫자(세기) 세 값을 받는 루트 필드.
+   * "기본" 을 고르면 키 자체를 지운다 — 생략이 곧 기본값이다.
+   */
+  const tri = (
+    k: "camera" | "depth" | "shutter",
+    label: string,
+    hint: string,
+    o: { def: number; step: number; max?: number; numLabel: string },
+  ) => {
+    const v = spec[k] as boolean | number | undefined;
+    const num = typeof v === "number";
+    return (
+      <div className="field" key={k}>
+        <label>{label}</label>
+        <select
+          value={num ? "num" : v === false ? "off" : "on"}
+          onChange={(e) =>
+            set(k, e.target.value === "off" ? false : e.target.value === "num" ? o.def : undefined)
+          }
+        >
+          <option value="on">기본(켬)</option>
+          <option value="off">끔</option>
+          <option value="num">숫자로 세기 지정</option>
+        </select>
+        {num && (
+          <input
+            type="number"
+            step={o.step}
+            min={0}
+            max={o.max}
+            value={String(v)}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              set(k, e.target.value === "" || Number.isNaN(n) ? undefined : n);
+            }}
+          />
+        )}
+        <p className="hint">{num ? o.numLabel : hint}</p>
+      </div>
+    );
+  };
+
   return (
     <div className="pane-body">
       <div className="field wide">
@@ -86,6 +129,38 @@ export function DocSettings({
           hint={`생략하면 테마 기본 배경이 적용됩니다. 전체 ${Object.keys(GG.decors).length}종 제공`}
         />
       </div>
+
+      <fieldset className="group">
+        <legend>카메라·깊이</legend>
+        <p className="hint">
+          씬마다 아주 느린 카메라가 씬 전체 길이 동안 움직여 정지 프레임을 없앱니다. 씬별 카메라는
+          씬 폼에서 고릅니다
+        </p>
+        <div className="grid">
+          {tri("camera", "카메라(camera)", "생략하면 켜집니다. 끄면 모든 씬이 정지 화면이 됩니다", {
+            def: 1,
+            step: 0.1,
+            numLabel: "카메라 움직임의 진폭 배율입니다. 1 이 기본",
+          })}
+          {tri(
+            "depth",
+            "깊이(depth)",
+            "배경 레이어가 카메라를 덜 따라가며 깊이가 생깁니다. 생략하면 0.34",
+            {
+              def: 0.34,
+              step: 0.01,
+              max: 1,
+              numLabel: "배경이 카메라를 따라가는 비율입니다. 권장 0.2~0.45, 0.7 을 넘으면 경고",
+            },
+          )}
+          {tri(
+            "shutter",
+            "셔터(shutter)",
+            "움직임이 있는 전환에 짧은 모션블러가 붙습니다. 생략하면 켜집니다",
+            { def: 1, step: 0.1, numLabel: "모션블러 세기 배율입니다. 1 이 기본" },
+          )}
+        </div>
+      </fieldset>
 
       <fieldset className="group">
         <legend>음성 정렬</legend>

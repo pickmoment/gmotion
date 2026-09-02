@@ -2,7 +2,7 @@
   "starter-arch": {
     "scenes": 4,
     "total": 35.32,
-    "tweens": 36,
+    "tweens": 38,
     "icons": 9,
     "errors": 0,
     "ats": [
@@ -21,7 +21,7 @@
   "starter-charts": {
     "scenes": 13,
     "total": 51.39,
-    "tweens": 70,
+    "tweens": 83,
     "icons": 0,
     "errors": 0,
     "ats": [
@@ -58,7 +58,7 @@
   "starter-clay": {
     "scenes": 5,
     "total": 19.08,
-    "tweens": 29,
+    "tweens": 34,
     "icons": 9,
     "errors": 0,
     "ats": [
@@ -79,7 +79,7 @@
   "starter-effects": {
     "scenes": 9,
     "total": 27.78,
-    "tweens": 73,
+    "tweens": 81,
     "icons": 18,
     "errors": 0,
     "ats": [
@@ -108,7 +108,7 @@
   "starter-fonts": {
     "scenes": 5,
     "total": 19.76,
-    "tweens": 26,
+    "tweens": 31,
     "icons": 3,
     "errors": 0,
     "ats": [
@@ -129,7 +129,7 @@
   "starter-intro": {
     "scenes": 3,
     "total": 7.9,
-    "tweens": 28,
+    "tweens": 31,
     "icons": 2,
     "errors": 0,
     "ats": [
@@ -146,7 +146,7 @@
   "starter-narrated": {
     "scenes": 5,
     "total": 15.52,
-    "tweens": 31,
+    "tweens": 36,
     "icons": 0,
     "errors": 0,
     "ats": [
@@ -167,7 +167,7 @@
   "starter-narrated +subs": {
     "scenes": 5,
     "total": 62.5,
-    "tweens": 31,
+    "tweens": 36,
     "icons": 0,
     "errors": 0,
     "ats": [
@@ -188,7 +188,7 @@
   "starter-paper": {
     "scenes": 5,
     "total": 24.58,
-    "tweens": 29,
+    "tweens": 34,
     "icons": 8,
     "errors": 0,
     "ats": [
@@ -209,7 +209,7 @@
   "starter-report": {
     "scenes": 6,
     "total": 26.19,
-    "tweens": 53,
+    "tweens": 59,
     "icons": 9,
     "errors": 0,
     "ats": [
@@ -232,7 +232,7 @@
   "starter-shorts": {
     "scenes": 4,
     "total": 7.66,
-    "tweens": 32,
+    "tweens": 35,
     "icons": 7,
     "errors": 0,
     "ats": [
@@ -251,7 +251,7 @@
   "starter-skins": {
     "scenes": 8,
     "total": 35.15,
-    "tweens": 48,
+    "tweens": 56,
     "icons": 10,
     "errors": 0,
     "ats": [
@@ -278,7 +278,7 @@
   "starter-story": {
     "scenes": 7,
     "total": 28.39,
-    "tweens": 61,
+    "tweens": 68,
     "icons": 13,
     "errors": 0,
     "ats": [
@@ -303,7 +303,7 @@
   "starter-vectors": {
     "scenes": 7,
     "total": 24.29,
-    "tweens": 61,
+    "tweens": 68,
     "icons": 7,
     "errors": 0,
     "ats": [
@@ -328,7 +328,7 @@
   "starter-verbs": {
     "scenes": 6,
     "total": 22.2,
-    "tweens": 61,
+    "tweens": 67,
     "icons": 8,
     "errors": 0,
     "ats": [
@@ -351,7 +351,7 @@
   "starter-youtube": {
     "scenes": 7,
     "total": 32.56,
-    "tweens": 59,
+    "tweens": 66,
     "icons": 14,
     "errors": 0,
     "ats": [

@@ -628,6 +628,13 @@ export const COMMON_FIELDS: Field[] = [
     step: 0.1,
   },
   { k: "select", key: "transition", label: "트랜지션", opts: () => GG.transitions },
+  {
+    k: "select",
+    key: "cam",
+    label: "카메라(cam)",
+    opts: () => GG.cams,
+    hint: "비워두면 패턴에 맞는 카메라를 자동으로 고릅니다. 씬 전체 길이 동안 아주 느리게 움직여 정지 프레임을 없앱니다",
+  },
   { k: "select", key: "mark", label: "제목 강조 마크", opts: () => GG.marks, hint: "한 씬에 하나" },
   { k: "select", key: "art", label: "일러스트", opts: () => GG.arts },
   {

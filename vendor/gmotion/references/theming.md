@@ -206,11 +206,11 @@
 
 전체 톤을 정한다. 지속시간·이징·이동거리·트랜지션 길이가 한꺼번에 바뀐다.
 
-| | 지속시간 | 등장 이징 | 이동거리 | hold | 특징 |
-|---|---|---|---|---|---|
-| `E1` 차분 | ×1.35 | `power3.out` | ×0.8 | ×1.25 | 느린 호흡, 절제된 카메라. 다큐·감성·구조 설명 |
-| `E2` 표준 | ×1.0 | `power4.out` | ×1.0 | ×1.0 | **기본값** |
-| `E3` 하이에너지 | ×0.7 | `expo.out` | ×1.25 | ×0.78 | 임팩트 플래시 + 스테이지 킥, 오버슈트, **속도 왜곡(스큐)**. 쇼츠·런칭·선언 |
+| | 지속시간 | 등장 이징 | 이동거리 | hold | 카메라 | 셔터 | 특징 |
+|---|---|---|---|---|---|---|---|
+| `E1` 차분 | ×1.35 | `power3.out` | ×0.8 | ×1.25 | ×1.2 | ×0.6 | 느린 호흡, 절제된 카메라. 다큐·감성·구조 설명 |
+| `E2` 표준 | ×1.0 | `power4.out` | ×1.0 | ×1.0 | ×1.0 | ×1.0 | **기본값** |
+| `E3` 하이에너지 | ×0.7 | `expo.out` | ×1.25 | ×0.78 | ×0.7 | ×1.35 | 임팩트 플래시 + 스테이지 킥, 오버슈트, **속도 왜곡(스큐)**. 쇼츠·런칭·선언 |
 
 `E3` 는 `kineticType` 의 기본 모드를 `cut`(한 줄씩 교체)으로, `by` 를 `chars` 로 바꾸고
 `heroReveal` `beforeAfter` `matchCut` 의 전환점에 임팩트를 심는다.
@@ -250,10 +250,14 @@ duration  micro .2 · fast .35 · normal .6 · slow 1.0 · cine 1.4
 ease      enter power4.out · exit power2.in · move power3.inOut
           dramatic expo.out · overshoot back.out(1.4) · soft sine.inOut
 stagger   tight .04 · normal .08 · loose .15
+camera    amp .045(진폭) · depth .34(배경이 따라가는 비율) · shutter 1(잔상 배율)
 ```
 
-`node assets/gm.js info tokens` 로 확인한다. 스펙에서 이 값을 바꿀 수는 없다 —
-바꾸고 싶으면 `energy` 를 바꾼다.
+카메라 토큰만 스펙에서 배율로 조절할 수 있다 — 루트 `camera` `depth` `shutter` 다
+(`spec.md` 의 루트 절). 씬마다 방향을 고르는 건 씬의 `cam` 이다.
+
+`node assets/gm.js info tokens` 로 확인한다. 카메라 배율 셋을 빼면 스펙에서 이 값을
+바꿀 수는 없다 — 바꾸고 싶으면 `energy` 를 바꾼다.
 
 ## 폰트 10종
 

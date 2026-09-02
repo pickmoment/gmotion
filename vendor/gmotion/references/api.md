@@ -293,8 +293,9 @@ done
   <div class="gg-scale">          transform: translate(-50%,-50%) scale(k) — 뷰포트 맞춤
     <main class="gg-stage">       고정 좌표계(1920×1080 등). impact/shake 가 transform 을 쓴다
       <section class="gg-scene">  씬. visibility 로 켜고 끈다
-        <div class="gg-world">    카메라(cam)가 확대·이동하는 대상
-        <div class="gg-fixed">    카메라를 따라가지 않는 레이어 (헤더·상세 패널)
+        <div class="gg-decorL">   배경. 카메라의 depth 배(기본 .34)만 따라간다 — 깊이
+        <div class="gg-world">    피사체. 카메라(cam)가 확대·이동하는 대상
+        <div class="gg-fixed">    카메라를 아예 따라가지 않는 레이어 (헤더·상세 패널)
       <div class="gg-flash">      임팩트 플래시
       <div class="gg-vig">        비네트 (테마가 0이면 없음)
       <svg class="gg-grain">      필름 그레인
@@ -311,6 +312,7 @@ done
 {"k":"split","t":"#s1 .gg-kl","at":0,"by":"chars","v":{...}} // SplitText
 {"k":"count","t":"#s3 .gg-val","at":.2,"dur":1.25,"from":0,"to":41}
 {"k":"cam","at":3.1,"dur":1.4,"v":{"scale":1.42,"x":-210,"y":86}}
+{"k":"cam","amb":1,"at":0,"dur":4.6,"v0":{"scale":1},"v":{"scale":1.045},"ease":"none"}  // 씬 카메라
 {"k":"fx","fn":"impact","at":2.4}
 ```
 

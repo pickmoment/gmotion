@@ -56,13 +56,65 @@
   function D(v) { return RM ? .001 : v; }
   function ST(v) { return RM ? 0 : (v || 0); }
 
+  /*
+   * 깊이 — 카메라가 움직일 때 배경(.gg-decorL)은 그만큼 덜 움직인다.
+   * 세 층이 서로 다른 속도로 움직여야 "공간에 들어간다"로 읽힌다.
+   * 같은 배율로 함께 움직이면 한 장의 그림을 확대·이동한 것으로 보인다.
+   *
+   *   .gg-decorL   배경 — 카메라의 DEPTH 배 (기본 .34)
+   *   .gg-world    피사체 — 카메라 그대로
+   *   .gg-fixed    UI(헤더·상세 패널) — 고정. 카메라를 아예 따라가지 않는다
+   */
+  var DEPTH = typeof SPEC.depth === 'number' ? SPEC.depth : .34;
+  /**
+   * 카메라 값 하나를 레이어의 변형으로 환산한다.
+   *   damp  따라가는 비율 (피사체 1, 배경 DEPTH)
+   *   cover 팬·틸트로 배경이 밀릴 때 프레임 밖이 드러나지 않게 미리 키워 두는 배율
+   */
+  function camVars(v, damp, cover) {
+    var o = {};
+    if (v.scale != null || cover !== 1) o.scale = cover * (1 + (num(v.scale, 1) - 1) * damp);
+    if (v.x != null) o.x = v.x * damp;
+    if (v.y != null) o.y = v.y * damp;
+    if (v.rotate != null) o.rotate = v.rotate * damp;
+    return o;
+  }
+  /*
+   * 배경이 필요로 하는 여유 배율. 팬·틸트로 레이어가 밀리면 프레임 밖(=아무것도 없는 곳)이
+   * 드러나므로, 밀리는 만큼 미리 키워 둔다. 배율 s 에서 남는 여유는 폭의 (s-1)/2 이라
+   * 필요한 최소값이 1 + 2|x|/W 다 — 실측으로 여유가 1px 밖에 안 남아 2.6 배를 쓴다
+   * (배경이 2% 커지는 것은 눈에 안 띄지만, 프레임 끝의 빈 줄은 바로 보인다).
+   *
+   * 피사체(.gg-world)에는 걸지 않는다. world 는 투명한 판이고 그 위의 요소만 움직이므로
+   * 밀려도 드러나는 것이 없다 — 여기에 배율을 걸면 팬을 시켰는데 화면이 확대된다.
+   */
+  function camCover(o, damp) {
+    var mx = 0, my = 0;
+    [o.v0, o.v].forEach(function (v) {
+      if (!v) return;
+      mx = Math.max(mx, Math.abs(num(v.x, 0)));
+      my = Math.max(my, Math.abs(num(v.y, 0)));
+    });
+    if (!mx && !my) return 1;
+    return 1 + Math.max(mx / SPEC.w, my / SPEC.h) * damp * 2.6;
+  }
+  function camLayer(tl, el, o, damp, cover) {
+    if (!el) return;
+    var to = camVars(o.v, damp, cover);
+    to.duration = D(o.dur); to.ease = o.ease || 'power2.inOut';
+    if (o.v0) tl.fromTo(el, camVars(o.v0, damp, cover), to, o.at);
+    else tl.to(el, to, o.at);
+  }
+
   /* --- IR 한 줄을 씬 타임라인에 올린다 --- */
   function apply(tl, o, scope) {
     var els;
     if (o.k === 'cam') {
-      var world = scope.querySelector('.gg-world');
-      if (world) tl.to(world, { scale: o.v.scale, x: o.v.x, y: o.v.y, rotate: o.v.rotate || 0,
-        duration: D(o.dur), ease: o.ease || 'power2.inOut' }, o.at);
+      /* 앰비언트 카메라는 움직임 자체가 목적이다 — 동작을 줄인 환경에서는 아예 걸지 않는다.
+         D() 로 0 초로 만들면 시작 배율이 그대로 남아 화면이 영구히 확대된 채로 선다. */
+      if (o.amb && RM) return;
+      camLayer(tl, scope.querySelector('.gg-world'), o, 1, 1);
+      if (DEPTH > 0) camLayer(tl, scope.querySelector('.gg-decorL'), o, DEPTH, camCover(o, DEPTH));
       return;
     }
     if (o.k === 'label') { tl.addLabel(o.name, o.at); return; }
@@ -225,9 +277,48 @@
     delete rest.opacity;
     return { op: op, rest: rest, hasRest: Object.keys(rest).length > 0 };
   }
+  /*
+   * 셔터 — 컷이 컷으로 읽히게 하는 잔상.
+   *
+   * 실제 카메라는 셔터가 열려 있는 동안의 움직임을 한 장에 담으므로, 빠르게 움직이는
+   * 프레임은 흐리다. 웹 애니메이션에는 그게 없어서 빠른 전환이 "순간이동"으로 보인다.
+   * 짧은 블러 한 번이 그 자리를 메운다 — 길게 걸면 초점이 안 맞은 화면이 된다.
+   *
+   * 움직임이 있는 전환에만 건다. 페이드·와이프처럼 제자리에서 바뀌는 전환에 걸면
+   * 정지한 그림이 흐려지는 것으로만 보인다.
+   *
+   * 값은 스테이지 1920px 기준 px 이므로 실제 폭에 맞춰 환산한다.
+   * 트윈이 끝나면 filter 를 인라인에서 지운다(clearProps) — 남겨 두면 그 씬이
+   * backdrop-filter 의 기준(backdrop root)이 되어 글래스 카드가 배경을 잃는다.
+   */
+  var SHUT = { cut: 8, pushLeft: 6, pushRight: 6, pushUp: 6, zoomIn: 5, zoomOut: 5,
+               match: 4, pageFlip: 4, paperPeel: 4, clayPop: 3, squish: 3 };
+  function shutterPx(name) {
+    var mul = typeof SPEC.shutter === 'number' ? SPEC.shutter : 1;
+    if (RM || !mul || !SHUT[name]) return 0;
+    return Math.round(SHUT[name] * mul * (SPEC.w / 1920) * 10) / 10;
+  }
+  function shutter(master, el, name, dur, at, leaving) {
+    var k = shutterPx(name);
+    if (!k) return;
+    var d = Math.max(.1, Math.min(dur * .6, .22));
+    /*
+     * immediateRender:false 가 필수다. fromTo 는 기본이 즉시 렌더라, 조립 시점에
+     * 모든 씬에 blur(0px) 이 인라인으로 박힌다 — 그 순간부터 씬이 backdrop root 가 되어
+     * 글래스 카드가 배경을 잃고, 전환 한 번을 지날 때까지 돌아오지 않는다.
+     */
+    var to = leaving
+      ? { filter: 'blur(' + (k * .8) + 'px)', ease: 'power2.in' }
+      : { filter: 'blur(0px)', ease: 'power2.out' };
+    to.duration = d; to.clearProps = 'filter'; to.immediateRender = false;
+    master.fromTo(el, { filter: leaving ? 'blur(0px)' : 'blur(' + k + 'px)' }, to, at);
+  }
   function transIn(master, el, name, dur, at) {
-    var t = TR[name]; if (!t || !t.inFrom) return;
+    var t = TR[name]; if (!t) return;
     var lag = overlapDelay(name, dur), d = D(dur - lag);
+    /* 컷은 out·inFrom 이 없다 — 셔터는 그 앞에서 건다. 잔상이 필요한 전환이 바로 컷이다 */
+    shutter(master, el, name, dur, at + lag, false);
+    if (!t.inFrom) return;
     if (t.inFrom.clip) {
       /* 곡선 와이프 & 컬 와이프 */
       var from = t.inFrom.clip === 'curve' ? 'ellipse(0% 0% at 50% 108%)' : (t.inFrom.clip === 'curl' ? 'polygon(100% 100%, 100% 100%, 100% 100%, 100% 100%)' : 'inset(0 100% 0 0)');
@@ -246,7 +337,9 @@
     }
   }
   function transOut(master, el, name, dur, at) {
-    var t = TR[name]; if (!t || !t.out) return;
+    var t = TR[name]; if (!t) return;
+    shutter(master, el, name, dur, at, true);
+    if (!t.out) return;
     var fast = name.indexOf('push') === 0 || name === 'cut' ? 1 : .85;
     var d = D(dur * fast), p = splitOpacity(t.out);
     if (p.hasRest) {
@@ -265,7 +358,12 @@
       if (!el) return;
       var stl = gsap.timeline();
       stl.addLabel('enter', 0);
-      s.tw.forEach(function (o) { apply(stl, o, el); });
+      /*
+       * 앰비언트 카메라는 씬 타임라인에 넣지 않는다. 씬 전체 길이를 덮으므로 넣으면
+       * 아래의 "내용이 다 나온 시각"(maxEnd)이 씬 끝으로 밀려, 씬별 스크린샷과
+       * 발표 모드의 정지 지점이 hold 끝으로 어긋난다. 마스터에 절대 시각으로 얹는다.
+       */
+      s.tw.forEach(function (o) { if (!o.amb) apply(stl, o, el); });
       /* 씬 내부의 모든 실제 애니메이션 자식 트윈 끝 시각을 실측 */
       var maxEnd = 0;
       var children = stl.getChildren(false, true, true);
@@ -278,6 +376,9 @@
       var effectiveScale = s.ts && s.ts !== 1 ? s.ts : 1;
       stl.set({}, {}, s.dur * effectiveScale);
       master.add(stl, s.at);
+      s.tw.forEach(function (o) {
+        if (o.amb) apply(master, Object.assign({}, o, { at: s.at + o.at }), el);
+      });
       master.set(el, { visibility: 'visible' }, s.at);
       if (i > 0) transIn(master, el, s.trans, s.tdur, s.at);
       var next = SPEC.scenes[i + 1];

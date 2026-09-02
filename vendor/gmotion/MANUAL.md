@@ -184,6 +184,20 @@ gm validate my.json
   "stats": [ … ] }                  // 패턴마다 다른 고유 필드
 ```
 
+**카메라는 적지 않아도 움직인다.** 씬마다 아주 느린 카메라가 씬 전체 길이(`hold` 포함)
+동안 걸려서, 내용이 다 나온 뒤에도 화면이 완전히 멈추지 않는다 — 멈추면 영상이 아니라
+슬라이드로 보인다. 방향을 직접 고르려면 씬에 `"cam"` 을 적는다.
+
+| `cam` | 움직임 | 어울리는 씬 |
+|---|---|---|
+| `pushIn` | 천천히 다가간다 | 설명·나열 (대부분의 기본값) |
+| `pullOut` | 살짝 크게 시작해 안착한다 | 선언·인용·마지막 씬 |
+| `panLeft` `panRight` | 좌우로 흐른다 | 훑기·장 넘김 |
+| `tiltUp` `tiltDown` | 위아래로 흐른다 | 층·순위 |
+| `none` | 세운다 | 이미 스스로 움직이는 씬 |
+
+영상 전체를 세우려면 루트에 `"camera": false` 를 적는다. `gm info cam` 으로 목록을 본다.
+
 **`purpose` 를 쓰다 막히면 그 씬은 필요 없는 씬이다.** 이 필드는 타임코드 시트에도
 남으므로, 편집자에게 넘길 때 설명이 된다.
 
@@ -262,10 +276,10 @@ server(서버·백엔드·서버실·호스팅)
 
 괄호 안은 **별칭**이다. `"icon": "server"` 라고 써도 되고 별칭으로 검색해도 찾아진다.
 
-### 4-5. 테마 · 스킨 · 트랜지션 · 화면비
+### 4-5. 테마 · 스킨 · 트랜지션 · 카메라 · 화면비
 
 ```bash
-gm info themes    gm info skins    gm info trans    gm info aspects    gm info energy
+gm info themes    gm info skins    gm info trans    gm info cam    gm info aspects    gm info energy
 ```
 
 **테마 15종**
@@ -550,6 +564,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info themes` | 테마 목록 |
 | `gm info skins` | 스킨 6종 + 디자인 프리미티브 48종 |
 | `gm info trans` | 트랜지션 15종 |
+| `gm info cam` | 씬 카메라 7종 |
 | `gm info energy` | 에너지 3종 |
 | `gm info aspects` | 화면비 4종 |
 | `gm info decor` | 배경 레이어 20종 |
@@ -558,7 +573,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info art` | 추상 일러스트 48종 |
 | `gm info fonts` | 폰트 10종 |
 | `gm info chart` | 차트 17종 |
-| `gm info tokens` | 모션 토큰 (엔진 내부값. 스펙에서 못 쓴다) |
+| `gm info tokens` | 모션 토큰 (대부분 엔진 내부값. 카메라만 루트에서 배율을 준다) |
 
 ### `gm pattern <이름>`
 

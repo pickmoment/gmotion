@@ -167,6 +167,8 @@ export interface Engine {
   fonts: Record<string, string>;
   themes: Record<string, string>;
   transitions: Record<string, string>;
+  /** 씬 카메라 무브 이름 → 라벨 */
+  cams: Record<string, string>;
   energies: Record<string, string>;
   aspects: Record<string, string>;
   /** 스킨 이름 → 라벨 */
@@ -217,6 +219,11 @@ export interface Scene {
   hold?: number;
   say?: string;
   transition?: string;
+  /**
+   * 이 씬의 카메라 무브(`GG.cams` 의 키). 생략하면 엔진이 패턴에 맞는 기본값을 고른다.
+   * zoomDetail · cameraJourney 는 카메라를 직접 쓰는 패턴이라 적어도 무시된다.
+   */
+  cam?: string;
   /** 이 씬만 재질을 갈아 끼운다. 생략하면 루트 skin 을 따른다 */
   skin?: string | SkinDefinition;
   decor?: string | string[] | false;
@@ -245,6 +252,12 @@ export interface Spec {
   mode?: string;
   decor?: string | string[] | false;
   decorLevel?: 0 | 1 | 2;
+  /** 씬 카메라 — true(기본) · false(정지) · 진폭 배율(1 이 기본) */
+  camera?: boolean | number;
+  /** 배경이 카메라를 따라가는 비율 — true(0.34) · false(없음) · 0~1(권장 0.2~0.45) */
+  depth?: boolean | number;
+  /** 전환 모션블러 — true(기본) · false(끔) · 세기 배율(1 이 기본) */
+  shutter?: boolean | number;
   audio?: { offset?: number; volume?: number };
   /** 자막·음성 파일 경로. 재생 설정인 `audio` 와 달리 여기는 파일을 가리킨다 */
   media?: { subs?: string; audio?: string; captions?: boolean };

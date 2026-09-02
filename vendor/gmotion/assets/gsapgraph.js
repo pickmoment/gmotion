@@ -259,13 +259,22 @@ var TOKENS = {
     dramatic: 'expo.out', overshoot: 'back.out(1.4)', soft: 'sine.inOut',
     draw: 'power3.inOut', count: 'power2.out'
   },
-  s: { tight: .04, normal: .08, loose: .15 }
+  s: { tight: .04, normal: .08, loose: .15 },
+  /*
+   * 카메라 — 씬이 정지하지 않게 만드는 값들. 슬라이드와 영상을 가르는 건 이 셋이다.
+   *   amp   씬 카메라의 진폭. 줌은 배율, 팬·틸트는 화면 크기의 비율
+   *   depth 배경 레이어가 카메라를 따라가는 비율. 1 이면 같이 붙어 움직여 깊이가 사라진다
+   *   shut  셔터(모션블러) 기본 세기. 스테이지 1920px 기준 px
+   */
+  cam: { amp: .045, depth: .34, shut: 1 }
 };
 /* 에너지 레벨 — 지속시간 배율, 등장 이징, 이동 거리 배율, 트랜지션 길이 */
 var ENERGY = {
-  E1: { label: 'E1 차분 — 느린 호흡, 절제된 카메라', dm: 1.35, hm: 1.25, ease: 'power3.out', dist: .8, trans: 1.0, sm: 1.3 },
-  E2: { label: 'E2 표준 — 기본값', dm: 1.0, hm: 1.0, ease: 'power4.out', dist: 1.0, trans: .8, sm: 1.0 },
-  E3: { label: 'E3 하이에너지 — 크래시 줌·오버슈트·비트 컷', dm: .7, hm: .78, ease: 'expo.out', dist: 1.25, trans: .5, sm: .7 }
+  /* camAmp — 차분한 톤은 카메라가 더 오래·더 멀리 움직이고, 하이에너지는 컷이 이미 빠르므로 덜 움직인다.
+     shut — 셔터는 반대다. 빠른 컷일수록 잔상이 강해야 컷이 컷으로 읽힌다. */
+  E1: { label: 'E1 차분 — 느린 호흡, 절제된 카메라', dm: 1.35, hm: 1.25, ease: 'power3.out', dist: .8, trans: 1.0, sm: 1.3, camAmp: 1.2, shut: .6 },
+  E2: { label: 'E2 표준 — 기본값', dm: 1.0, hm: 1.0, ease: 'power4.out', dist: 1.0, trans: .8, sm: 1.0, camAmp: 1.0, shut: 1 },
+  E3: { label: 'E3 하이에너지 — 크래시 줌·오버슈트·비트 컷', dm: .7, hm: .78, ease: 'expo.out', dist: 1.25, trans: .5, sm: .7, camAmp: .7, shut: 1.35 }
 };
 
 /* 포맷별 타이포 스케일 — 계산식보다 표가 예측 가능하다. 단위 px, 스테이지 좌표계. */
@@ -2840,16 +2849,97 @@ var TRANSITIONS = {
 };
 
 /* ================================================================== *
+ * 씬 카메라 — 정지 프레임을 없앤다.
+ *
+ * 슬라이드와 영상을 가르는 건 패턴이 아니라 **한 프레임도 완전히 멈추지 않는다**는
+ * 사실이다. 등장 애니메이션이 끝난 뒤 hold 동안 화면이 굳어 있으면, 그 hold 는
+ * 영상이 아니라 넘기기 전의 슬라이드로 읽힌다.
+ *
+ * 그래서 씬마다 카메라가 씬 전체 길이(hold 포함) 동안 아주 느리게 움직인다.
+ * 진폭은 눈에 "움직임"으로 보이지 않을 만큼 작아야 한다 — 보이면 산만해진다.
+ * 이징은 선형이다. 느린 카메라에 가속을 걸면 시작·끝에서 멈춘 것처럼 보인다.
+ *
+ * 안전 여백과의 관계: 줌은 배율이라 화면 끝의 요소가 (amp/2)·화면크기 만큼 밖으로
+ * 나간다. amp .045 면 16:9 에서 43px 이고 안전 여백은 96px 이므로 잘리지 않는다.
+ * 팬·틸트는 배율을 건드리지 않고 world 레이어만 밀기 때문에(배경은 별도 레이어라
+ * 빈자리가 생기지 않는다) 여백 안에서만 움직이면 된다.
+ * ================================================================== */
+var CAMS = {
+  none:     { label: '없음 — 카메라를 세운다' },
+  pushIn:   { label: '푸시 인 — 천천히 다가간다(기본). 설명·축적' },
+  pullOut:  { label: '풀 아웃 — 살짝 크게 시작해 안착한다. 선언·인용·클로징' },
+  panLeft:  { label: '팬 좌 — 왼쪽으로 흐른다' },
+  panRight: { label: '팬 우 — 오른쪽으로 흐른다' },
+  tiltUp:   { label: '틸트 상 — 위로 올라간다' },
+  tiltDown: { label: '틸트 하 — 아래로 내려간다' }
+};
+/*
+ * 패턴별 기본 카메라. 적지 않은 씬에 무엇을 주느냐가 산출물 대부분을 정한다.
+ *  - 타이포·선언 씬은 안착(pullOut)이 강조를 만든다 — 커지다 멈추면 들뜬다
+ *  - 자체 앰비언트 모션이 있는 씬(마퀴의 흐름, 오빗의 회전)은 카메라를 세운다
+ *  - 카메라를 직접 쓰는 패턴(zoomDetail·cameraJourney)은 여기서 다루지 않는다.
+ *    씬에 이미 cam 트윈이 있으면 compile 이 앰비언트 카메라를 얹지 않는다
+ */
+var CAM_DEFAULT = {
+  heroReveal: 'pullOut', kineticType: 'pullOut', quote: 'pullOut', endCard: 'pullOut',
+  matchCut: 'pullOut', chapterCard: 'panRight', marquee: 'none', orbit: 'none'
+};
+/**
+ * 씬 하나의 앰비언트 카메라 트윈 값. 없으면 null.
+ *
+ *   camOf('pushIn', 1920, 1080, 1)  ->  { v0:{scale:1}, v:{scale:1.045} }
+ */
+function camOf(name, W, H, ampMul) {
+  var a = TOKENS.cam.amp * num(ampMul, 1);
+  if (!a || !CAMS[name] || name === 'none') return null;
+  /* 팬·틸트는 배율이 아니라 거리다 — 화면 크기의 비율로 잡아 화면비가 달라도 같은 느낌이 된다 */
+  var dx = r2(W * a * .5), dy = r2(H * a * .5);
+  if (name === 'pushIn')   return { v0: { scale: 1 },     v: { scale: r2(1 + a) } };
+  if (name === 'pullOut')  return { v0: { scale: r2(1 + a) }, v: { scale: 1 } };
+  if (name === 'panLeft')  return { v0: { x: dx },  v: { x: -dx } };
+  if (name === 'panRight') return { v0: { x: -dx }, v: { x: dx } };
+  if (name === 'tiltUp')   return { v0: { y: dy },  v: { y: -dy } };
+  return { v0: { y: -dy }, v: { y: dy } };
+}
+/*
+ * 루트 스위치 셋. 전부 "켜져 있는 게 기본"이다 — 영상처럼 보이는 게 기본값이어야 한다.
+ *   camera  false·0 이면 카메라를 세운다. 숫자면 진폭 배율
+ *   depth   false·0 이면 배경이 카메라를 따라가지 않는다(=깊이 없음). 0~1
+ *   shutter false·0 이면 셔터를 끈다. 숫자면 세기 배율
+ */
+function camEnabled(spec) {
+  return !(spec && (spec.camera === false || spec.camera === 0));
+}
+function depthOf(spec) {
+  var v = spec ? spec.depth : undefined;
+  if (v === false) return 0;
+  if (typeof v === 'number' && isFinite(v)) return clamp(v, 0, 1);
+  return TOKENS.cam.depth;
+}
+function shutterOf(spec) {
+  var v = spec ? spec.shutter : undefined;
+  if (v === false) return 0;
+  if (typeof v === 'number' && isFinite(v)) return Math.max(0, v);
+  return TOKENS.cam.shut;
+}
+
+/* ================================================================== *
  * 빌드 — 스펙을 IR 로 컴파일한다. validate / toHTML / timing 이 모두 이걸 쓴다.
  * ================================================================== */
 /** pattern 오류 문구 — compile 과 validate 가 같은 문장을 써야 중복 보고되지 않는다 */
 function patErr(i, name) {
   return '씬 ' + (i + 1) + ': pattern "' + name + '" 은 없다 (' + Object.keys(PATTERNS).join(' ') + ').';
 }
-/** 씬 하나의 순수 애니메이션 끝 — hold 를 뺀 시간. */
+/**
+ * 씬 하나의 순수 애니메이션 끝 — hold 를 뺀 시간.
+ *
+ * 앰비언트 카메라(amb)는 세지 않는다. 그건 씬 전체 길이를 덮으므로 세면 "정지 구간이
+ * 없다"가 되어, 자막 동기화가 짚어 주던 "마지막 움직임 뒤 N초 정지" 경고가 사라진다.
+ */
 function animEndOf(tw) {
   var e = 0;
   arr(tw).forEach(function (o) {
+    if (o.amb) return;
     var d = num(o.dur, 0) || (o.v && num(o.v.duration, 0)) || (o.v2 && num(o.v2.duration, 0)) || 0;
     var st = num(o.st, 0);
     e = Math.max(e, o.at + d + (st ? st * 5 : 0));
@@ -3082,12 +3172,29 @@ function compile(spec, opts) {
       skKey = typeof sc.skin === 'string' ? sc.skin : 'sk' + (i + 1);
       sceneSkins[skKey] = sc.skin;
     }
+    /*
+     * 앰비언트 카메라 — 이름만 여기서 정하고, 트윈은 타이밍이 확정된 뒤에 얹는다.
+     * 자막에 맞추면 씬 길이가 바뀌므로(syncScenes), 지금 길이로 트윈을 만들면 어긋난다.
+     *
+     * 카메라를 직접 쓰는 패턴은 건드리지 않는다 — 두 카메라가 같은 레이어를 서로
+     * 덮어 zoomDetail 의 확대가 풀리거나 cameraJourney 의 정류장이 어긋난다.
+     */
+    /* 이름 검사는 스위치와 무관하게 한다 — 오타는 조용히 "카메라 없음"으로 흘러 눈에 안 띈다 */
+    if (has(sc, 'cam') && !CAMS[String(sc.cam)]) {
+      errors.push('씬 ' + (i + 1) + ': cam "' + sc.cam + '" 는 없다 (' + Object.keys(CAMS).join(' ') + ').');
+    }
+    var ownCam = built.tw.list.some(function (o) { return o.k === 'cam'; });
+    var camName = 'none';
+    if (!ownCam && camEnabled(spec)) {
+      camName = has(sc, 'cam') ? String(sc.cam) : (CAM_DEFAULT[sc.pattern] || 'pushIn');
+      if (!CAMS[camName]) camName = 'none';
+    }
     out.push({
       id: sc.id || slug(sc.title || sc.pattern, i),
       sid: ctx.sid, pattern: sc.pattern, purpose: sc.purpose || '', skin: skKey,
       notes: sc.notes || sc.purpose || '',
       html: built.html, fixed: built.fixed || '', decor: decorSVG, tw: built.tw.list,
-      dur: r2(built.dur), contentEnd: r2(Math.min(ce, built.dur)),
+      dur: r2(built.dur), contentEnd: r2(Math.min(ce, built.dur)), cam: camName,
       trans: tr, tdur: tdur, overlap: overlap,
       /* 줄이 객체({text,...})일 수 있다 — lineText 를 거치지 않으면 [object Object] 가 된다 */
       at: 0, title: sc.title || sc.text || lineText(arr(sc.lines)[0]) || ''
@@ -3106,6 +3213,17 @@ function compile(spec, opts) {
   }
   var total = out.length ? r2(out[out.length - 1].at + out[out.length - 1].dur) : 0;
   if (sync && opts.cues.length) total = Math.max(total, r2(opts.cues[opts.cues.length - 1].end));
+
+  /*
+   * 앰비언트 카메라를 얹는다 — 씬 전체 길이(hold 포함)를 덮는 트윈 하나.
+   * contentEnd 를 이미 재고 난 뒤라 씬별 스크린샷·발표 모드의 정지 지점은 그대로다.
+   */
+  var camMul = (typeof spec.camera === 'number' ? spec.camera : 1) * E.camAmp;
+  out.forEach(function (s) {
+    var mv = camOf(s.cam, ASPECTS[aspect].w, ASPECTS[aspect].h, camMul);
+    if (!mv) return;
+    s.tw = s.tw.concat([{ k: 'cam', amb: 1, at: 0, dur: s.dur, v0: mv.v0, v: mv.v, ease: 'none' }]);
+  });
 
   return {
     aspect: aspect, theme: theme, energy: energy, skin: skin, sceneSkins: sceneSkins,
@@ -3163,6 +3281,16 @@ function validate(spec, opts) {
   if (spec.decor && spec.decor !== false) arr(spec.decor).forEach(function (d) {
     if (!VEC.DECOR[d]) errors.push('decor "' + d + '" 는 없다 (' + Object.keys(VEC.DECOR).join(' ') + ').');
   });
+  /* 카메라 스위치 — 문자열로 적으면(예: "off") 켜져 있는 것으로 흘러 조용히 무시된다 */
+  [['camera', '카메라'], ['depth', '깊이'], ['shutter', '셔터']].forEach(function (p) {
+    if (!has(spec, p[0])) return;
+    var v = spec[p[0]];
+    if (typeof v === 'boolean' || (typeof v === 'number' && isFinite(v) && v >= 0)) return;
+    errors.push(p[0] + ' 는 true·false 또는 0 이상의 숫자(세기 배율)여야 한다 — ' + p[1] + '를 끄려면 false 를 쓴다.');
+  });
+  if (typeof spec.depth === 'number' && spec.depth > .7)
+    warnings.push('depth 가 ' + spec.depth + ' 다 — 배경이 카메라를 거의 그대로 따라가면 깊이가 사라진다' +
+      '(공간에 들어가는 게 아니라 한 장을 확대한 것처럼 보인다). 0.2~0.45 가 적정이다.');
   /* 스펙이 들고 다니는 자막·음성 경로 — 오타는 조용히 "자막 없음"으로 흐르므로 오류로 잡는다 */
   if (has(spec, 'media')) {
     if (typeof spec.media !== 'object' || !spec.media || Array.isArray(spec.media)) {
@@ -3359,6 +3487,14 @@ function validate(spec, opts) {
   var c = compile(spec, opts);
   c.errors.forEach(function (e) { if (errors.indexOf(e) < 0) errors.push(e); });
   c.warnings.forEach(function (w) { if (warnings.indexOf(w) < 0) warnings.push(w); });
+  /* 카메라를 직접 쓰는 패턴에 cam 을 적으면 무시된다 — 적어 놓고 안 움직이면 원인을 못 찾는다 */
+  arr(spec.scenes).forEach(function (sc, i) {
+    if (!sc || !has(sc, 'cam') || String(sc.cam) === 'none') return;
+    var cs = c.scenes[i];
+    if (cs && cs.pattern === sc.pattern && cs.cam === 'none' && camEnabled(spec))
+      warnings.push('씬 ' + (i + 1) + ': cam "' + sc.cam + '" 은 무시된다 — ' + sc.pattern +
+        ' 은 카메라를 직접 쓰는 패턴이라 씬 카메라를 얹지 않는다.');
+  });
   var timed = !!c.sync;
 
   /* 씬 길이·전체 리듬 —
@@ -3477,7 +3613,10 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-fixed{position:absolute;inset:0;z-index:40;pointer-events:none}',
 '.gg-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;color:var(--acc)}',
 /* ---- 배경·분위기 레이어 ---- */
-'.gg-decorL{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}',
+/* 배경도 카메라를 따라간다 — world 보다 덜 움직여 깊이를 만든다(runtime 의 DEPTH).
+   overflow 는 이 박스에 걸리고 박스 자체가 확대되므로, 밀려도 프레임 밖이 드러나지 않는다. */
+'.gg-decorL{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;' +
+  'transform-origin:center center;will-change:transform}',
 '.gg-decor{position:absolute;inset:0;width:100%;height:100%}',
 /* 마스터 타임라인과 무관한 느린 무한 루프 — CSS 로 돌린다. 시킹에 영향이 없다. */
 '@keyframes ggFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(2.2%,-2.6%) scale(1.05)}' +
@@ -3957,6 +4096,9 @@ function toHTML(spec, opts) {
   var mode = opts.present ? 'step' : c.mode;
   var ir = {
     w: A.w, h: A.h, total: c.total, mode: mode, theme: c.theme, energy: c.energy,
+    /* 깊이와 셔터는 런타임이 실행할 값이다 — 배경 레이어의 감쇠율과 잔상 세기.
+       에너지 배율은 여기서 곱해 둔다 — 런타임에 에너지 표를 또 두지 않는다 */
+    depth: depthOf(spec), shutter: r2(shutterOf(spec) * ENERGY[c.energy].shut),
     present: !!opts.present, title: c.title || '',
     scenes: c.scenes.map(function (s) {
       return { sid: s.sid, id: s.id, pattern: s.pattern, at: s.at, dur: s.dur, ce: s.contentEnd,
@@ -4084,8 +4226,6 @@ opts.cdn
 '</html>'
   ].filter(function (x) { return x !== ''; }).join('\n');
 }
-
-/* node 에서만 쓰는 에셋 로더 — 브라우저에서는 opts 로 소스를 주입한다. */
 function readAsset(name) {
   if (typeof require !== 'function') throw new Error('브라우저에서는 opts.' + name.split('.')[0] + ' 로 소스를 넘겨야 한다');
   var fs = require('fs'), path = require('path');
@@ -4196,6 +4336,8 @@ return {
   },
   get themes() { var o = {}; Object.keys(THEMES).forEach(function (k) { o[k] = THEMES[k].label; }); return o; },
   get transitions() { var o = {}; Object.keys(TRANSITIONS).forEach(function (k) { o[k] = TRANSITIONS[k].label; }); return o; },
+  /** 씬 카메라 7종 — 앱의 씬 폼이 목록을 하드코딩하지 않게 여기서 읽는다 */
+  get cams() { var o = {}; Object.keys(CAMS).forEach(function (k) { o[k] = CAMS[k].label; }); return o; },
   get energies() { var o = {}; Object.keys(ENERGY).forEach(function (k) { o[k] = ENERGY[k].label; }); return o; },
   get aspects() { var o = {}; Object.keys(ASPECTS).forEach(function (k) { o[k] = ASPECTS[k].w + '×' + ASPECTS[k].h + ' — ' + ASPECTS[k].label; }); return o; },
   tokens: TOKENS,

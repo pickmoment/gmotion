@@ -1085,3 +1085,85 @@ CLI 와 앱이 같은 파일을 스스로 찾는다.
 `~/.claude/skills/gmotion` 설치본이 있었고 **손댄 흔적 없이 낡은 사본**이었다(runtime.js 만
 HEAD 보다 이전, 나머지는 HEAD 와 동일) — vendor 로 덮어 동기화했고 설치본에서도
 `gm info patterns` 28종 · `gm test` 176건 통과를 확인했다.
+
+## 29. 씬 카메라 · 깊이 · 셔터 — 정지 프레임을 없앤다 (2026-09-02)
+
+**왜.** 씬은 등장 애니메이션이 끝나면 hold 동안 완전히 정지했다. 카메라(`cam` IR)는
+있었지만 호출부가 `zoomDetail`·`cameraJourney` 두 패턴뿐이어서 나머지 26개 패턴은 고정
+평면이었다. 레이어도 `.gg-world`(카메라 대상)·`.gg-fixed`(고정) 둘뿐이라 줌이 "사진 확대"로
+보였다. 그래서 산출물이 영상이 아니라 슬라이드로 읽혔다.
+
+### `assets/gsapgraph.js`
+- 모션 토큰에 `cam: { amp: .045, depth: .34, shut: 1 }` 추가. 에너지에는 `camAmp`
+  (E1 1.2 · E2 1 · E3 .7)와 `shut`(E1 .6 · E2 1 · E3 1.35)을 추가했다 — 차분한 톤은
+  카메라를 더 움직이고, 빠른 컷일수록 잔상을 강하게.
+- 씬 카메라 `CAMS` 7종(`none` `pushIn` `pullOut` `panLeft` `panRight` `tiltUp` `tiltDown`)과
+  패턴별 기본값 `CAM_DEFAULT` 추가. 타이포·선언 계열(`heroReveal`·`kineticType`·`quote`·
+  `endCard`·`matchCut`)은 `pullOut`, `chapterCard` 는 `panRight`, 자체 앰비언트 모션이 있는
+  `marquee`·`orbit` 은 `none`, 나머지는 `pushIn`.
+- `camOf()` — 카메라 이름을 트윈 값으로 환산한다. 줌은 배율(1 → 1+amp), 팬·틸트는 화면
+  크기 비율의 거리. 이징은 선형(`none`)이다 — 느린 카메라에 가속을 걸면 시작·끝이 멈춘
+  것처럼 보인다.
+- `camEnabled()` `depthOf()` `shutterOf()` — 루트 스위치 `camera` `depth` `shutter` 해석.
+  기본은 전부 켬.
+- `compile()` — 씬마다 카메라 이름을 정하고(씬의 `cam` → 패턴 기본), **타이밍이 확정된
+  뒤에** `{k:'cam', amb:1, at:0, dur:씬길이}` 트윈을 얹는다. 자막에 맞추면 씬 길이가
+  바뀌므로(`syncScenes`) 순서가 중요하다. 이미 `cam` 트윈을 쓰는 패턴에는 얹지 않는다 —
+  두 카메라가 같은 레이어를 덮어 `zoomDetail` 의 확대가 풀리기 때문이다. `contentEnd` 를
+  재고 난 뒤에 얹으므로 씬별 스크린샷·발표 모드 정지 지점은 그대로다.
+- `animEndOf()` — `amb` 트윈을 세지 않는다. 세면 "정지 구간이 없다"가 되어 자막 동기화의
+  "마지막 움직임 뒤 N초 정지" 경고가 사라진다.
+- `validate()` — 루트 스위치 타입 검사(문자열로 적으면 오류), `depth > .7` 경고, 씬 `cam`
+  이름 오타 오류(스위치와 무관하게 검사), 카메라를 직접 쓰는 패턴에 `cam` 을 적으면
+  무시된다는 경고.
+- IR 에 `depth`·`shutter`(에너지 배율을 곱한 값) 추가. `.gg-decorL` 에
+  `transform-origin`·`will-change:transform` 추가.
+- 공개 표면에 `cams` 게터 추가.
+
+### `assets/runtime.js`
+- `cam` 핸들러 재작성 — `v0` 가 있으면 `fromTo`, 없으면 `to`. `.gg-world` 는 카메라
+  그대로, `.gg-decorL` 은 `DEPTH` 배(기본 .34)만 따라간다. 세 층(배경 · 피사체 · 고정 UI)이
+  다른 속도로 움직여야 "공간에 들어간다"로 읽힌다. 팬·틸트는 배경이 밀려 프레임 밖이
+  드러나지 않게 필요한 만큼만 미리 확대한다(`camCover`).
+- `amb` 카메라는 감소 모션(`prefers-reduced-motion`)에서 아예 걸지 않는다 — `D()` 로
+  0초로 만들면 시작 배율이 그대로 남아 화면이 영구히 확대된 채 선다.
+- `amb` 카메라는 씬 타임라인이 아니라 마스터에 절대 시각으로 얹는다 — 씬 타임라인에
+  넣으면 "내용이 다 나온 시각"(`maxEnd`)이 씬 끝으로 밀려 발표 모드 정지 지점이 hold 끝이 된다.
+- 셔터 추가 — 움직임이 있는 전환(cut 8 · push 6 · zoom 5 · match·pageFlip·paperPeel 4 ·
+  clayPop·squish 3, 1920px 기준 px)에 0.1~0.22초 블러. 페이드·와이프처럼 제자리에서
+  바뀌는 전환에는 걸지 않는다. `immediateRender:false` 가 필수다 — `fromTo` 는 기본이
+  즉시 렌더라 조립 시점에 모든 씬에 `blur(0px)` 이 인라인으로 박히고, 그 순간부터 씬이
+  backdrop root 가 되어 글래스 카드가 배경을 잃는다. 끝나면 `clearProps` 로 지운다.
+
+### `assets/selftest.js` · `assets/selftest.baseline.json`
+- `camera()` 검사 절 신규(25건) — 씬마다 카메라 하나, 패턴별 기본값, 카메라를 직접 쓰는
+  패턴 제외, `cam:'none'`, 씬 전체 길이를 덮는지, `contentEnd` 가 밀리지 않는지, 루트
+  스위치, 에너지 진폭, 오타·무시 경고, IR 의 `depth`·`shutter`, 자막 "정지가 길다" 경고 유지.
+- `firstAt` 헬퍼가 셀렉터 없는 op(`cam`·`label`·`fx`)에서 터지던 것을 막았다.
+- 기준값 갱신 — 예제 16종의 트윈 수가 씬 수만큼 늘었다(씬 시작 시각·길이는 그대로).
+
+### `assets/gm.js` · 문서
+- `gm info cam` 추가(씬 카메라 7종). `gm info tokens` 가 카메라 토큰까지 찍는다.
+- `SKILL.md` — "카메라도 기본으로 움직인다" 절과 원칙 10("카메라를 끄지 않는다").
+- `references/spec.md` — 루트 `camera`·`depth`·`shutter` 절과 씬 `cam` 절(7종 표).
+- `references/direction.md` — "5-2. 카메라 — 정지 프레임이 있으면 슬라이드다", 셔터가
+  어떤 전환에 붙는지.
+- `references/theming.md` — 에너지 표에 카메라·셔터 배율 열, 모션 토큰에 `camera` 줄.
+- `references/api.md` — 산출물 구조에 `.gg-decorL`(깊이) 층, IR 예시에 앰비언트 `cam`.
+- `MANUAL.md` — 씬 필드 절에 카메라 표, `gm info cam` 행.
+- `selftest.js` 의 문서 개수 검사에 "씬 카메라" 를 넣어 개수·이름이 다시 어긋나지 않게 했다.
+
+### 앱
+- `src/engine/types.ts` — `Spec.camera`·`depth`·`shutter`, `Scene.cam`, `Engine.cams`.
+- `src/engine/schema.ts` — `COMMON_FIELDS` 에 카메라 select(열거값은 `GG.cams` 에서 읽는다).
+- `src/components/SceneForm.tsx` — 씬 비주얼 바에 카메라 선택기(트랜지션과 같은 방식).
+  "자동(패턴 기본)" 을 고르면 스펙에서 키를 지운다.
+- `src/components/DocSettings.tsx` — `카메라·깊이` 묶음. 세 값 모두 기본(켬)·끔·숫자를
+  받고, **기본을 고르면 키를 지운다** — 생략이 곧 기본값이라는 규칙을 UI 에서도 지킨다.
+
+**실측 확인.** 산출물에서 `.gg-world` 배율 1.0468일 때 `.gg-decorL` 이 1.0159(=0.34배)로
+따라오고, hold 구간에서 피사체가 6~157px 움직이며, 셔터 블러가 push 전환 중에만 나타나고
+끝나면 인라인 `filter` 가 지워진다. 카메라 7종을 한 스펙에 담아 재 보니 팬·틸트는 배율
+1.000 을 유지하고(피사체에 `camCover` 를 걸지 않는다) 배경만 1.017 로 덮으며, 밝은 테마
+9:16 에서 네 변 모두 배경이 프레임을 넘어 덮는다. 감소 모션에서는 두 레이어 모두
+`transform: none` 이다. `gm test` 202건 통과 · `npx tsc --noEmit` 오류 0 · 콘솔 오류 0.

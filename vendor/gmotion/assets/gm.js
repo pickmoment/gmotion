@@ -7,7 +7,7 @@
  *                                   [--subs voice.srt] [--audio voice.mp3] [--captions]
  *                                   (design 의 image 가 로컬 경로면 스펙 파일 기준으로 data URI 인라인)
  *   node gm.js timing   <spec.json> [-o out.csv] [--fps 30] [--subs voice.srt]
- *   node gm.js info     [patterns|themes|skins|fonts|trans|energy|aspects|tokens|decor|mark|frame|art|chart]
+ *   node gm.js info     [patterns|themes|skins|fonts|trans|cam|energy|aspects|tokens|decor|mark|frame|art|chart]
  *   node gm.js pattern  <이름>            패턴 하나의 필드와 용도
  *   node gm.js icons    [검색어]          픽토그램 191종 찾기 (한글 이름 지원)
  *   node gm.js check    <out.html>        산출물 기계 검수 (자기 선언 금지)
@@ -269,6 +269,7 @@ if (cmd === 'info') {
   if (!topic || topic === 'skins') dump('스킨 (루트 skin. 표면·선·타이포의 구현부를 갈아 끼운다 — 자세히: gm info skins)', G.skins);
   if (!topic || topic === 'fonts') dump('폰트 (루트 font 로 고른다. 생략하면 테마 기본)', G.fonts);
   if (!topic || topic === 'trans') dump('트랜지션', G.transitions);
+  if (!topic || topic === 'cam') dump('씬 카메라 (씬의 cam. 생략하면 패턴에 맞는 기본값. 루트 camera:false 로 전체 정지)', G.cams);
   if (!topic || topic === 'energy') dump('에너지', G.energies);
   if (!topic || topic === 'aspects') dump('화면비', G.aspects);
   if (!topic) {
@@ -282,6 +283,7 @@ if (cmd === 'info') {
     console.log('  duration  ' + JSON.stringify(G.tokens.d));
     console.log('  ease      ' + JSON.stringify(G.tokens.e));
     console.log('  stagger   ' + JSON.stringify(G.tokens.s));
+    console.log('  camera    ' + JSON.stringify(G.tokens.cam) + '  (루트 camera·depth·shutter 로 배율을 준다)');
   }
   process.exit(0);
 }

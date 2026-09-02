@@ -218,7 +218,11 @@ function hygiene() {
   var pfTw = G.compile(pf).scenes[0].tw;
   /* `:not([data-head])` 안에도 `[data-head]` 가 들어 있다 — 부분일치로 찾으면 선을
      머리로 잘못 잡는다. 술어로 정확히 가른다. */
-  function firstAt(pred) { var h = pfTw.filter(pred)[0]; return h ? h.at : null; }
+  /* 셀렉터가 없는 op 도 섞여 있다 — 카메라(cam)·라벨·fx 는 t 가 없다 */
+  function firstAt(pred) {
+    var h = pfTw.filter(function (o) { return typeof o.t === 'string' && pred(o); })[0];
+    return h ? h.at : null;
+  }
   var st0 = firstAt(function (o) { return o.t.indexOf('.gg-step[data-i="0"]') >= 0; });
   var ln0 = firstAt(function (o) { return o.t.indexOf('[data-i="0"]') >= 0 && o.t.indexOf(':not([data-head])') >= 0; });
   var hd0 = firstAt(function (o) { return o.t.indexOf('[data-i="0"]') >= 0 && o.t.indexOf(':not(') < 0 && o.t.indexOf('[data-head]') >= 0; });
@@ -269,7 +273,8 @@ function hygiene() {
     ['배경 레이어', Object.keys(G.decors).length],
     ['강조 마크', Object.keys(G.marks).length],
     ['디바이스 프레임', Object.keys(G.frames).length],
-    ['추상 일러스트', Object.keys(G.arts).length]
+    ['추상 일러스트', Object.keys(G.arts).length],
+    ['씬 카메라', Object.keys(G.cams).length]
   ];
   /* 문서에 실린 **샘플 CLI 출력**은 재고 주장이 아니다 — "씬 7(패턴 7종)" 은 그 스펙의
      이야기일 뿐이다. 그 줄만 걸러낸다. 코드 블록 전체를 빼지는 않는다 —
@@ -291,7 +296,8 @@ function hygiene() {
 
   /* 테마·스킨·트랜지션은 표로 나열하므로 이름이 다 적혀 있어야 한다 */
   [['테마', G.themes, 'MANUAL.md'], ['테마', G.themes, 'references/theming.md'],
-   ['트랜지션', G.transitions, 'MANUAL.md'], ['스킨', G.skins, 'references/theming.md']
+   ['트랜지션', G.transitions, 'MANUAL.md'], ['스킨', G.skins, 'references/theming.md'],
+   ['씬 카메라', G.cams, 'references/spec.md']
   ].forEach(function (t) {
     var missing = Object.keys(t[1]).filter(function (k) {
       return docText[t[2]].indexOf('`' + k + '`') < 0;
@@ -537,7 +543,90 @@ function inlineDesign() {
 }
 
 /* ================================================================== *
- * 1-c. 대비 — 읽히지 않는 색은 예쁠 수 없다
+ * 1-c. 카메라 — 정지 프레임이 없는지, 그리고 없앤 대가가 없는지
+ *
+ * 앰비언트 카메라는 씬 전체 길이를 덮는다. 그래서 두 가지가 조용히 깨질 수 있다.
+ *   1) "내용이 다 나온 시각"(contentEnd)이 씬 끝으로 밀려 씬별 스크린샷과 발표
+ *      모드의 정지 지점이 hold 끝이 된다
+ *   2) 자막 동기화의 "마지막 움직임 뒤 N초 정지" 경고가 사라진다(정지가 없다고 읽혀서)
+ * 둘 다 눈으로 알아채기 어려우므로 여기서 잡는다.
+ * ================================================================== */
+function camera() {
+  console.log('카메라');
+  function camsOf(sc) { return sc.tw.filter(function (o) { return o.k === 'cam' && o.amb; }); }
+
+  var base = { scenes: [
+    { pattern: 'cardsCascade', title: '항목', items: ['가', '나', '다'] },
+    { pattern: 'heroReveal', title: '결론' },
+    { pattern: 'cameraJourney', title: '여정', stops: ['ㄱ', 'ㄴ', 'ㄷ'] },
+    { pattern: 'marquee', items: ['가', '나', '다', '라'] },
+    { pattern: 'quote', text: '한 문장.', cam: 'panLeft' },
+    { pattern: 'quote', text: '두 문장.', cam: 'none' }
+  ] };
+  var c = G.compile(base);
+  is('카메라 오류 없음', c.errors.join(' · '), '');
+  is('씬마다 앰비언트 카메라 하나', camsOf(c.scenes[0]).length, 1);
+  is('설명 씬 기본은 푸시 인', c.scenes[0].cam, 'pushIn');
+  is('선언 씬 기본은 풀 아웃', c.scenes[1].cam, 'pullOut');
+  is('카메라를 직접 쓰는 패턴엔 얹지 않는다', camsOf(c.scenes[2]).length, 0);
+  is('자체 앰비언트 모션이 있는 패턴은 세운다', c.scenes[3].cam, 'none');
+  is('씬이 적은 카메라를 쓴다', c.scenes[4].cam, 'panLeft');
+  is('none 은 트윈을 안 만든다', camsOf(c.scenes[5]).length, 0);
+
+  /* 씬 전체를 덮는다 — hold 가 정지 프레임이 아니게 하는 것이 목적이다 */
+  var amb = camsOf(c.scenes[0])[0];
+  is('카메라가 씬 전체 길이를 덮는다', amb.dur, c.scenes[0].dur);
+  is('카메라는 씬 시작에서 출발한다', amb.at, 0);
+  truthy('푸시 인은 1 에서 커진다', amb.v0.scale === 1 && amb.v.scale > 1);
+  is('카메라 이징은 선형이다', amb.ease, 'none');
+
+  /* contentEnd — 카메라가 밀지 않아야 한다 */
+  truthy('내용이 다 나온 시각이 씬 끝보다 앞이다',
+    c.scenes[0].contentEnd < c.scenes[0].dur,
+    'contentEnd ' + c.scenes[0].contentEnd + ' / dur ' + c.scenes[0].dur);
+
+  /* 스위치 */
+  var off = G.compile({ camera: false, scenes: base.scenes });
+  is('camera:false 면 카메라가 없다',
+    off.scenes.reduce(function (n, s) { return n + camsOf(s).length; }, 0), 0);
+  var loud = G.compile({ camera: 2, scenes: [base.scenes[0]] });
+  truthy('camera 숫자는 진폭 배율이다',
+    camsOf(loud.scenes[0])[0].v.scale > camsOf(c.scenes[0])[0].v.scale);
+  /* 에너지가 진폭을 정한다 — E3 는 컷이 이미 빠르므로 덜 움직인다 */
+  var e1 = G.compile({ energy: 'E1', scenes: [base.scenes[0]] });
+  var e3 = G.compile({ energy: 'E3', scenes: [base.scenes[0]] });
+  truthy('E1 이 E3 보다 카메라를 더 움직인다',
+    camsOf(e1.scenes[0])[0].v.scale > camsOf(e3.scenes[0])[0].v.scale);
+
+  /* 이름 검사는 스위치와 무관하다 */
+  var typo = G.validate({ message: 'm', camera: false, scenes: [{ pattern: 'quote', text: 'x', cam: 'pushin' }] });
+  truthy('cam 오타를 잡는다', typo.errors.some(function (e) { return e.indexOf('cam "pushin"') >= 0; }));
+  var ignored = G.validate({ message: 'm', scenes: [{ pattern: 'cameraJourney', stops: ['ㄱ', 'ㄴ'], cam: 'pushIn' }] });
+  truthy('무시되는 cam 을 알려준다', ignored.warnings.some(function (w) { return w.indexOf('무시된다') >= 0; }));
+  var badSw = G.validate({ message: 'm', camera: 'off', scenes: [{ pattern: 'quote', text: 'x' }] });
+  truthy('camera 를 문자열로 적으면 오류다', badSw.errors.some(function (e) { return e.indexOf('camera') >= 0; }));
+
+  /* 깊이·셔터는 런타임이 실행한다 — IR 에 실려야 한다 */
+  var html = G.toHTML({ scenes: [base.scenes[0]] }, {});
+  truthy('깊이가 산출물에 실린다', /"depth":0\.34/.test(html), '기본 깊이가 안 실렸다');
+  truthy('셔터가 산출물에 실린다', /"shutter":1/.test(html), '기본 셔터가 안 실렸다');
+  var plain = G.toHTML({ depth: false, shutter: false, scenes: [base.scenes[0]] }, {});
+  truthy('깊이를 끌 수 있다', /"depth":0/.test(plain));
+  truthy('셔터를 끌 수 있다', /"shutter":0/.test(plain));
+  var e3ir = G.toHTML({ energy: 'E3', scenes: [base.scenes[0]] }, {});
+  truthy('셔터에 에너지 배율이 곱해진다', /"shutter":1\.35/.test(e3ir));
+
+  /* 자막 동기화의 정지 경고 — 카메라가 그 판단을 흐리지 않아야 한다 */
+  var cues = G.parseSubtitles('1\n00:00:00,000 --> 00:00:24,000\n한 문장만 말한다.\n');
+  var slow = G.validate({ message: 'm', scenes: [{ pattern: 'quote', text: '짧다.', say: '한 문장만 말한다.' }] },
+    { cues: cues });
+  truthy('카메라가 있어도 "정지가 길다" 를 짚는다',
+    slow.warnings.some(function (w) { return w.indexOf('정지') >= 0; }),
+    slow.warnings.join(' | '));
+}
+
+/* ================================================================== *
+ * 1-d. 대비 — 읽히지 않는 색은 예쁠 수 없다
  *
  * 테마의 글자색이 배경에서 실제로 읽히는지 WCAG 대비비로 잰다.
  * dim 은 장식이 아니라 카드 설명·단계 설명에 쓰는 본문색이라 4.5 를 지켜야 한다.
@@ -725,6 +814,7 @@ unit();
 hygiene();
 skins();
 inlineDesign();
+camera();
 contrast();
 var now = snapshot();
 output();

@@ -154,6 +154,22 @@ export function SceneForm({
             </select>
           </div>
 
+          {/* 카메라 (Cam) 선택기 — 씬 전체 길이 동안 아주 느리게 움직인다 */}
+          <div
+            className="visual-slot-select"
+            title="씬 카메라 무브. 비워두면 패턴에 맞는 카메라를 자동으로 고릅니다"
+          >
+            <span className="slot-icon">🎥</span>
+            <select value={scene.cam ?? ""} onChange={(e) => patch("cam", e.target.value)}>
+              <option value="">카메라: 자동 (패턴 기본)</option>
+              {Object.entries(GG.cams).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* 텍스트 효과 (Text FX) 선택기 */}
           <div className="visual-slot-select" title="글자 등장 모션 효과">
             <span className="slot-icon">⚡</span>
