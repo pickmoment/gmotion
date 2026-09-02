@@ -1,4 +1,5 @@
 /** 스타터 예제 — 백지에서 쓰지 않고 가장 가까운 걸 열어 갈아끼운다. */
+import { GG } from "../engine/boot";
 import type { Spec } from "../engine/types";
 
 const raw = import.meta.glob("../../vendor/gmotion/assets/examples/*.json", {
@@ -6,6 +7,21 @@ const raw = import.meta.glob("../../vendor/gmotion/assets/examples/*.json", {
   query: "?raw",
   import: "default",
 }) as Record<string, string>;
+
+/* 예제 옆에 놓인 자막도 번들에 들어 있다 — media.subs 가 그걸 가리키면 파일 없이도 붙는다 */
+const subs = import.meta.glob("../../vendor/gmotion/assets/examples/*.srt", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
+
+const bundledSubsOf = (spec: Spec): string | null => {
+  const ref = GG.media(spec).subs;
+  if (!ref) return null;
+  const name = ref.split(/[/\\]/).pop();
+  const hit = Object.entries(subs).find(([path]) => path.split("/").pop() === name);
+  return hit ? hit[1] : null;
+};
 
 const NOTES: Record<string, string> = {
   "starter-story": "문제 → 해결 (7씬 28초, midnight, 16:9)",
@@ -40,7 +56,7 @@ export function ExamplesPanel({
   onPick,
   onClose,
 }: {
-  onPick: (s: Spec, name: string) => void;
+  onPick: (s: Spec, name: string, bundledSubs: string | null) => void;
   onClose: () => void;
 }) {
   return (
@@ -58,7 +74,10 @@ export function ExamplesPanel({
             <button
               key={e.name}
               type="button"
-              onClick={() => onPick(JSON.parse(e.text) as Spec, e.name)}
+              onClick={() => {
+                const spec = JSON.parse(e.text) as Spec;
+                onPick(spec, e.name, bundledSubsOf(spec));
+              }}
             >
               <strong>{e.name}</strong>
               <span className="dim">{e.note}</span>

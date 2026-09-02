@@ -159,6 +159,8 @@ export interface Engine {
   timing(spec: unknown, fps: number, opts?: { cues?: Cue[] | null }): string;
   compile(spec: unknown, opts?: unknown): unknown;
   parseSubtitles(src: string): Cue[];
+  /** 스펙이 참조하는 자막·음성 파일. 경로는 스펙 파일이 있는 폴더 기준이다 */
+  media(spec: unknown): { subs: string | null; audio: string | null; captions: boolean };
   itemKeys(): string[];
   patterns: Record<string, PatternInfo>;
   themeColors(): Record<string, Record<string, string>>;
@@ -244,6 +246,8 @@ export interface Spec {
   decor?: string | string[] | false;
   decorLevel?: 0 | 1 | 2;
   audio?: { offset?: number; volume?: number };
+  /** 자막·음성 파일 경로. 재생 설정인 `audio` 와 달리 여기는 파일을 가리킨다 */
+  media?: { subs?: string; audio?: string; captions?: boolean };
   scenes: Scene[];
   [k: string]: unknown;
 }

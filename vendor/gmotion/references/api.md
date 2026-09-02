@@ -30,6 +30,7 @@ node $G info     decor|mark|frame|art       # 벡터 세트 102종
 | `--subs <f>` | **자막(SRT·VTT)으로 씬 타이밍을 실측으로 맞춘다.** 씬에 `say` 가 있어야 한다 |
 | `--audio <f>` | 음성을 산출물에 심는다. 재생하면 **목소리가 시계를 잡는다** |
 | `--captions` | 화면 자막을 얹는다 (`--subs` 와 함께). 화면 맨 아래에 붙고, 보는 쪽에서 `C` 키나 플레이어의 `CC` 버튼으로 끌 수 있다. **`--present` 산출물에는 실리지 않는다** |
+| `--no-captions` | 화면 자막을 끈다. **스펙의 `media.captions: true` 를 무르는 데 쓴다**(아래) |
 | `--no-inline-audio` | 음성을 파일 안에 넣지 않고 경로로 참조한다 — HTML 옆에 둔다 |
 
 `--subs` 는 `validate` `timing` 에도 준다. 안 주면 타임코드 시트가 추정 길이로 나온다.
@@ -88,6 +89,39 @@ node $G build spec.json --subs voice.srt --audio voice.m4a --captions -o out.htm
 산출물에서 시계는 음성이다. 진행 바를 끌거나 `GGM.seek()` 를 불러도 소리와 화면이
 같이 움직인다. 자동재생이 막히면(브라우저 정책) 화면만 먼저 가고, 재생을 누르면
 음성이 시계를 도로 가져간다.
+
+**스펙이 경로를 들고 다닌다 — `media`.** 자막·음성으로 만든 스펙이라면 파일 경로를
+스펙 안에 적어 둔다. 그러면 다음부터 플래그 없이 `gm build spec.json` 만으로 같은
+산출물이 나온다.
+
+```jsonc
+{
+  "media": {
+    "subs":  "voice.srt",   // 자막(SRT·VTT) 경로 — `--subs` 와 같다
+    "audio": "voice.mp3",   // 음성 파일 경로 — `--audio` 와 같다
+    "captions": true        // 화면 자막을 얹는다 — `--captions` 와 같다
+  }
+}
+```
+
+| 규칙 | 내용 |
+|---|---|
+| 경로 기준 | **스펙 파일이 있는 폴더 기준 상대경로**(권장). 절대경로도 받는다 — `design.arts.image` 와 같은 규칙이다 |
+| 우선순위 | **명령줄 플래그가 이긴다.** `--subs`·`--audio` 를 주면 스펙의 값을 덮는다 |
+| 자막 끄기 | `--no-captions` 로 스펙의 `captions: true` 를 끈다 |
+| 파일이 없으면 | **빌드가 멈춘다** — 조용히 추정 타이밍으로 넘어가지 않는다 |
+| 형식 | `media` 는 객체, `subs`·`audio` 는 문자열, `captions` 는 boolean. 아니면 오류다 |
+
+`media.audio` 는 **파일 경로**이고 루트 `audio`(`offset`·`volume`)는 **재생 설정**이다.
+다른 필드이고 함께 쓴다.
+
+`media.subs` 없이 `media.audio`·`media.captions` 만 적으면 경고한다 — 플래그와 같은
+이유다(소리는 실측인데 화면이 추정이면 어긋난다). `media.subs` 를 적었는데 `say` 가
+있는 씬이 하나도 없으면 그것도 경고한다.
+
+gmotion 앱(스펙 에디터)도 같은 블록을 읽는다. 스펙 파일을 열면 `media` 의 자막·음성을
+자동으로 읽어 붙이고, 앱에서 자막·음성을 고르면 저장 위치 기준 상대경로로 `media` 에
+적어 둔다. 경로가 가리키는 파일이 없으면 그 사실을 알린다.
 
 ## 엔진을 고쳤을 때 — `gm test`
 

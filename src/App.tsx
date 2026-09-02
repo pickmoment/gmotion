@@ -19,6 +19,15 @@ import { syncSpecDesign } from "./lib/design";
 import { useDesignStore, onLibrarySaveError } from "./lib/designStore";
 import { EMPTY_SPEC, insertScene, moveScene, removeScene, replaceScene } from "./lib/spec";
 import {
+  dirOf,
+  loadSpecMedia,
+  relativeTo,
+  retargetMedia,
+  setMediaRefs,
+  specMedia,
+  type LoadedMedia,
+} from "./lib/media";
+import {
   build,
   checkOutput,
   parseSubtitles,
@@ -126,6 +135,34 @@ export default function App() {
 
   /* ── 파일 ───────────────────────────────────────────────────── */
 
+  /** 스펙의 media 를 읽어 붙인다 — 파일을 열 때·예제를 고를 때. 참조가 없으면 null. */
+  const attachSpecMedia = async (
+    next: Spec,
+    path: string | null,
+    bundledSubs?: string | null,
+  ): Promise<LoadedMedia | null> => {
+    setSubsPath(null);
+    setCues(null);
+    setAudioPath(null);
+    setAudioSrc(null);
+    setCaptions(false);
+    const m = await loadSpecMedia(next, path, bundledSubs);
+    if (!m) return null;
+    setSubsPath(m.subsPath);
+    setCues(m.cues);
+    setAudioPath(m.audioPath);
+    setAudioSrc(m.audioSrc);
+    setCaptions(m.captions);
+    return m;
+  };
+
+  /** 자동으로 읽은 것과 못 읽은 것을 한 줄로 — 조용히 넘기지 않는다. */
+  const mediaNote = (m: LoadedMedia | null): string => {
+    if (!m) return "";
+    const parts = [...m.loaded, ...m.missing];
+    return parts.length ? ` · ${parts.join(" · ")}` : "";
+  };
+
   const doOpen = async () => {
     if (store.dirty && !(await ask("저장하지 않은 편집이 있다. 그래도 열까?", "열기"))) return;
     try {
@@ -135,7 +172,8 @@ export default function App() {
       reset(parsed);
       setFilePath(p);
       setSelected(0);
-      say(`열었다 — ${p.split(/[/\\]/).pop()}`);
+      const m = await attachSpecMedia(parsed, p);
+      say(`열었다 — ${p.split(/[/\\]/).pop()}${mediaNote(m)}`);
     } catch (e) {
       fail(e);
     }
@@ -190,10 +228,15 @@ export default function App() {
   const writeSpec = async (path: string) => {
     setBusy(true);
     try {
-      await api.writeText(path, JSON.stringify(spec, null, 2));
+      /* 저장 위치가 바뀌면 media 의 상대경로도 그 폴더 기준으로 다시 잡는다 —
+         스펙만 옮겨 놓고 자막을 못 찾는 일이 없게. */
+      const next = retargetMedia(spec, path, { subs: subsPath, audio: audioPath });
+      await api.writeText(path, JSON.stringify(next, null, 2));
       setFilePath(path);
-      store.markSaved();
-      say(`저장했다 — ${path.split(/[/\\]/).pop()}`);
+      if (next === spec) store.markSaved();
+      else store.commitSaved(next);
+      const moved = next === spec ? "" : ` · media 경로를 이 폴더 기준으로 고쳤다`;
+      say(`저장했다 — ${path.split(/[/\\]/).pop()}${moved}`);
     } catch (e) {
       fail(e);
     } finally {
@@ -257,6 +300,12 @@ export default function App() {
 
   /* ── 자막·음성 ──────────────────────────────────────────────── */
 
+  /** 붙인 파일을 스펙에 적는다 — 스펙 폴더 기준 상대경로로. 다음에 열면 자동으로 붙는다. */
+  const recordMedia = (key: "subs" | "audio", abs: string | null) => {
+    const ref = abs ? relativeTo(filePath ? dirOf(filePath) : "", abs) : null;
+    update((cur) => setMediaRefs(cur, { [key]: ref }));
+  };
+
   const pickSubs = async () => {
     try {
       const p = await dialogs.openSubs();
@@ -265,7 +314,8 @@ export default function App() {
       if (!parsed.length) return say("자막에서 cue 를 찾지 못했다 — SRT·VTT 형식인지 확인한다");
       setSubsPath(p);
       setCues(parsed);
-      say(`자막 ${parsed.length}개 cue 를 읽었다`);
+      recordMedia("subs", p);
+      say(`자막 ${parsed.length}개 cue 를 읽었다 — 스펙의 media.subs 에 적었다`);
     } catch (e) {
       fail(e);
     }
@@ -279,12 +329,19 @@ export default function App() {
       const size = await api.fileSize(p);
       setAudioSrc(await api.readDataUri(p));
       setAudioPath(p);
-      say(`음성 ${(size / 1048576).toFixed(1)}MB 를 산출물에 심는다`);
+      recordMedia("audio", p);
+      say(`음성 ${(size / 1048576).toFixed(1)}MB 를 산출물에 심는다 — 경로를 스펙에 적었다`);
     } catch (e) {
       fail(e);
     } finally {
       setBusy(false);
     }
+  };
+
+  /** 화면 자막 스위치도 스펙에 남는다 — 다음에 열면 그대로 켜진다. */
+  const toggleCaptions = (on: boolean) => {
+    setCaptions(on);
+    update((cur) => setMediaRefs(cur, { captions: on }));
   };
 
   const clearSync = () => {
@@ -293,6 +350,7 @@ export default function App() {
     setAudioPath(null);
     setAudioSrc(null);
     setCaptions(false);
+    update((cur) => setMediaRefs(cur, { subs: null, audio: null, captions: false }));
   };
 
   /* ── 내보내기 ───────────────────────────────────────────────── */
@@ -451,6 +509,7 @@ export default function App() {
         cueCount={cues?.length ?? 0}
         audioMB={sync.audioSrc ? (sync.audioSrc.length * 0.75) / 1048576 : 0}
         captions={captions}
+        mediaRefs={specMedia(spec)}
         busy={busy}
         onNew={async () => {
           if (store.dirty && !(await ask("저장하지 않은 편집이 있다. 버릴까?", "새로 만들기")))
@@ -458,6 +517,7 @@ export default function App() {
           reset(EMPTY_SPEC);
           setFilePath(null);
           setSelected(0);
+          void attachSpecMedia(EMPTY_SPEC, null);
         }}
         onOpen={doOpen}
         onSave={doSave}
@@ -469,7 +529,7 @@ export default function App() {
         onPickSubs={pickSubs}
         onPickAudio={pickAudio}
         onClearSync={clearSync}
-        onToggleCaptions={setCaptions}
+        onToggleCaptions={toggleCaptions}
         onGenSpec={() => setModal("gen")}
         onExport={doExport}
         onCheck={doCheck}
@@ -577,7 +637,7 @@ export default function App() {
       {modal === "examples" && (
         <ExamplesPanel
           onClose={() => setModal(null)}
-          onPick={async (s, name) => {
+          onPick={async (s, name, bundledSubs) => {
             if (
               store.dirty &&
               !(await ask("저장하지 않은 편집이 있다. 그래도 예제를 열까?", "예제 열기"))
@@ -587,7 +647,9 @@ export default function App() {
             setFilePath(null);
             setSelected(0);
             setModal(null);
-            say(`${name} 를 열었다 — 내용을 갈아끼운다`);
+            /* 예제는 파일이 아니라 번들이다 — media.subs 가 가리키는 자막도 번들에서 준다 */
+            const m = await attachSpecMedia(s, null, bundledSubs);
+            say(`${name} 를 열었다 — 내용을 갈아끼운다${mediaNote(m)}`);
           }}
         />
       )}

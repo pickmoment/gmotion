@@ -5,11 +5,13 @@
   "aspect": "16:9",
   "energy": "E2",
   "mode": "autoplay",
+  "media": { "subs": "starter-narrated.srt", "captions": true },
 
   "_note": [
     "자막에 맞추는 예제다. 옆의 starter-narrated.srt 와 함께 쓴다.",
-    "  node <skill>/assets/gm.js build starter-narrated.json --subs starter-narrated.srt --captions -o out.html",
-    "음성이 있으면 --audio voice.mp3 를 더한다.",
+    "루트 media 에 자막 경로와 captions 가 적혀 있으므로 플래그 없이 빌드된다.",
+    "  node <skill>/assets/gm.js build starter-narrated.json -o out.html",
+    "플래그로 덮어쓸 수도 있다 — --subs 다른.srt · --no-captions · --audio voice.mp3",
     "",
     "씬 다섯 개가 62초를 덮는다 — 씬당 8~19초다. 이 정도가 이 스킬에 맞는 분량이다.",
     "씬의 say 는 그 씬에서 말하는 대사 전체이고, 항목의 say 는 그 항목이 들어올 대사다.",

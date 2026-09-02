@@ -839,6 +839,24 @@ function parseSubtitles(text) {
   return cues;
 }
 
+/**
+ * 스펙이 들고 다니는 외부 미디어 — 자막·음성 파일과 화면 자막 여부.
+ *
+ *   "media": { "subs": "intro.srt", "audio": "intro.mp3", "captions": true }
+ *
+ * 경로는 **스펙 파일이 있는 폴더 기준**으로 푼다(design 의 image 와 같은 규칙) —
+ * 파일을 읽는 것은 CLI·앱의 일이고, 엔진은 무엇을 읽어야 하는지만 알려준다.
+ * 루트 `audio: {offset, volume}` 는 재생 설정이라 그대로 남는다 — 여기는 파일이다.
+ */
+function mediaOf(spec) {
+  var m = spec && typeof spec.media === 'object' && spec.media ? spec.media : {};
+  return {
+    subs: typeof m.subs === 'string' && m.subs.trim() ? m.subs.trim() : null,
+    audio: typeof m.audio === 'string' && m.audio.trim() ? m.audio.trim() : null,
+    captions: m.captions === true
+  };
+}
+
 /** 두 문자열이 앞에서부터 얼마나 겹치는지. 한쪽에 글자가 끼어도 계속 센다. */
 function commonPrefixish(a, b) {
   var i = 0, j = 0, hit = 0;
@@ -2792,6 +2810,24 @@ function validate(spec, opts) {
   if (spec.decor && spec.decor !== false) arr(spec.decor).forEach(function (d) {
     if (!VEC.DECOR[d]) errors.push('decor "' + d + '" 는 없다 (' + Object.keys(VEC.DECOR).join(' ') + ').');
   });
+  /* 스펙이 들고 다니는 자막·음성 경로 — 오타는 조용히 "자막 없음"으로 흐르므로 오류로 잡는다 */
+  if (has(spec, 'media')) {
+    if (typeof spec.media !== 'object' || !spec.media || Array.isArray(spec.media)) {
+      errors.push('media 는 { subs, audio, captions } 객체여야 한다.');
+    } else {
+      ['subs', 'audio'].forEach(function (k) {
+        if (has(spec.media, k) && typeof spec.media[k] !== 'string')
+          errors.push('media.' + k + ' 는 파일 경로(문자열)여야 한다 — 스펙 파일이 있는 폴더 기준으로 찾는다.');
+      });
+      if (has(spec.media, 'captions') && typeof spec.media.captions !== 'boolean')
+        errors.push('media.captions 는 true 또는 false 다.');
+      var M = mediaOf(spec);
+      if (!M.subs && (M.audio || M.captions))
+        warnings.push('media 에 자막(subs)이 없다 — 소리는 실측인데 화면이 추정이면 어긋난다. 자막을 먼저 준다.');
+      if (M.subs && !arr(spec.scenes).some(function (sc) { return sc && String(sc.say || '').trim(); }))
+        warnings.push('media.subs 가 있는데 say 를 적은 씬이 없다 — 씬마다 그 씬에서 낭독하는 대사를 say 에 적어야 타이밍을 맞춘다.');
+    }
+  }
   if (!spec.message) warnings.push('message 가 없다 — 이 모션그래픽이 전하려는 한 줄을 적어 두면 씬 구성을 스스로 검증할 수 있다.');
 
   var patCount = {}, run = { p: null, n: 0 };
@@ -3714,6 +3750,8 @@ return {
   usedDesignNames: usedDesignNames,
   designKinds: DS.KINDS,
   parseSubtitles: parseSubtitles,
+  /** 스펙이 참조하는 자막·음성 파일 — CLI·앱이 무엇을 읽어야 하는지 여기서 읽는다 */
+  media: mediaOf,
   itemKeys: function () { return ITEM_KEYS.slice(); },
   get patterns() {
     var o = {};

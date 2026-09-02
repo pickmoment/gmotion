@@ -948,3 +948,71 @@ DesignPanel 을 단독 마운트해 업로드 → 저장 → localStorage 왕복
 `(960, 362)` — 링 좌표와 일치(칩 실제 높이 65 vs `chipH` 가정 96 만큼 15px 위,
 convergence 와 같은 기존 오차) · 비행 궤적을 `.gg-flow` path 에 투영해
 `getPointAtLength` 로 대조: 진행률 0→1 단조, 경로 이탈 일정(칩 높이 오차분).
+
+## 27. 스펙이 자막·음성 경로를 들고 다닌다 — `media` 블록 (2026-09-02)
+
+**왜.** 자막·음성으로 만든 스펙인데 그 사실이 스펙 어디에도 없었다. 빌드할 때마다
+`--subs`·`--audio`·`--captions` 를 다시 적어야 했고(어느 파일이었는지 기억해야 한다),
+앱은 스펙을 열어도 자막을 붙이지 않아 사람이 다시 골라야 했다. 스킬이 자막을 근거로
+씬을 짜 놓고도 **무엇에 맞춘 스펙인지**를 넘기지 못한 것이다. 경로를 스펙에 적으면
+CLI 와 앱이 같은 파일을 스스로 찾는다.
+
+**규약.** 루트에 `media` 하나. 경로는 **스펙 파일이 있는 폴더 기준**(§24 의
+`design.image` 와 같은 규칙), 절대경로도 받는다.
+
+```jsonc
+"media": { "subs": "intro.srt", "audio": "intro.mp3", "captions": true }
+```
+
+루트 `audio: {offset, volume}` 는 **재생 설정**이라 그대로 두고 건드리지 않았다 —
+`media.audio` 는 파일이다. 문자열 단축(`"audio": "x.mp3"`)을 만들지 않은 이유가 이것이다:
+같은 키가 객체이면서 문자열이면 앱의 `DocSettings`(스프레드로 offset·volume 을 고친다)가
+글자를 흩어 놓는다.
+
+### `assets/gsapgraph.js`
+- `mediaOf(spec)` 추가 — `{subs, audio, captions}` 로 정규화(공백 제거, 빈 값은 null,
+  `captions` 는 `true` 일 때만 참). `media` 로 export 해 CLI·앱이 **같은 눈**으로 읽는다.
+- `validate` 루트 검사 — `media` 가 객체가 아니거나 `subs`·`audio` 가 문자열이 아니거나
+  `captions` 가 boolean 이 아니면 오류(오타는 조용히 "자막 없음"으로 흐른다).
+  경고 둘: 자막 없이 음성·화면 자막만 있을 때, `media.subs` 가 있는데 `say` 를 적은
+  씬이 하나도 없을 때.
+
+### `assets/gm.js`
+- `mediaFrom(spec, specFile, flags)` — **플래그가 스펙을 이긴다.** 스펙 경로는 스펙
+  파일 기준으로 `path.resolve`, 플래그는 CWD 기준(셸에서 준 것이므로). `--no-captions`
+  추가 — 스펙의 `captions: true` 를 끈다.
+- `validate`·`build`·`timing` 세 명령이 전부 이걸 지난다. 스펙에서 읽었으면
+  "media 에서 읽었다 — 자막 x.srt · 음성 y.mp3" 를 먼저 찍는다. 파일이 없으면
+  기존 `readCues`·`audioSrcOf` 가 그대로 멈춘다(빈 화면이 조용히 나가면 안 된다).
+- 사용법 헤더에 `media` 단락과 `--no-captions`.
+
+### 문서 · 예제
+- `references/api.md` 자막 동기화 절(상세 한 곳) · `references/spec.md` 루트 필드 ·
+  `SKILL.md` 6단계 · `MANUAL.md` 6장 플래그 표와 7-3.
+- `assets/examples/starter-narrated.json` 에 `media` 를 넣었다 — 이제
+  `gm build starter-narrated.json` 만으로 자막 정렬·화면 자막까지 나온다.
+
+### 앱
+- `src/lib/media.ts` (신규) — 웹뷰에는 node 의 `path` 가 없으므로 경로 헬퍼를 직접
+  들었다(`dirOf`·`resolveRef`·`relativeTo`, 두 구분자·UNC·드라이브 문자 처리).
+  `loadSpecMedia` 가 스펙의 참조를 실제로 읽고 **읽은 것·못 읽은 것을 목록으로** 돌려준다.
+  `setMediaRefs` 는 불변으로 갈아끼우고 전부 비면 키째 지운다.
+- `src/App.tsx` — 파일을 열면 자동으로 붙인다(토스트에 "자막 42cue · 음성 3.1MB" 또는
+  못 찾은 이유). 자막·음성을 고르면 `media` 에 적고, 화면 자막 스위치도 스펙에 남는다.
+  `해제` 는 스펙에서도 지운다. **저장 위치가 바뀌면 상대경로를 그 폴더 기준으로 다시
+  계산한다**(`retargetMedia`) — 스펙만 옮겨 놓고 자막을 못 찾는 일이 없게.
+- `src/lib/useSpecStore.ts` — `commitSaved(next)` 추가. 저장하면서 스펙을 다듬을 때
+  히스토리·dirty 를 건드리지 않는다(`update` 로 하면 방금 저장한 파일이 dirty 로 돌아온다).
+- `src/components/ExamplesPanel.tsx` — 예제 옆의 `.srt` 도 번들에 있으므로
+  `media.subs` 가 그걸 가리키면 파일 없이 붙여 준다. `starter-narrated` 를 고르면
+  자막 13cue·화면 자막이 즉시 걸린다.
+- `src/components/Toolbar.tsx` — 자막·음성 메뉴에 `media <경로>` 배지와 "다음에 열 때
+  자동으로 붙는다" 안내.
+
+**검증.** `gm test` 175건 통과(기준값 갱신 없음) · `/tmp` 에서 `gm build` 로 스펙만
+주고 빌드해 자막 5/5 정렬·`id="gg-cc"` 실림 확인, `--no-captions` 로 빠지는 것까지 ·
+`npx tsc --noEmit` · `vitest` 61건(신규 `media.test.ts` 19건 — 경로 헬퍼 왕복,
+가짜 파일함으로 로더의 없는 파일·위치 불명·절대경로·번들 자막) · 브라우저로 앱을 띄워
+예제 열기 → 자막 13cue 자동 부착 · 화면 자막 자동 켜짐 · 검증 바 "자막에 맞춘 씬 5/5" ·
+`media` 배지 · 스위치를 끄면 `captions` 가 스펙에서 빠지고 `해제` 하면 `media` 키가
+사라지는 것까지 JSON 탭으로 확인.

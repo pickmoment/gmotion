@@ -42,6 +42,16 @@ export function useSpecStore(initial: Spec = EMPTY_SPEC) {
     bump((n) => n + 1);
   }, []);
 
+  /**
+   * 저장하면서 스펙 자체를 다듬을 때 — 예: 저장 위치가 바뀌어 media 의 상대경로를
+   * 다시 계산했을 때. 히스토리를 남기지 않고 dirty 도 세우지 않는다(방금 쓴 내용이다).
+   */
+  const commitSaved = useCallback((next: Spec) => {
+    setSpecRaw(next);
+    setDirty(false);
+    bump((n) => n + 1);
+  }, []);
+
   const undo = useCallback(() => {
     setSpecRaw((cur) => {
       const prev = past.current.pop();
@@ -68,6 +78,7 @@ export function useSpecStore(initial: Spec = EMPTY_SPEC) {
     spec,
     update,
     reset,
+    commitSaved,
     undo,
     redo,
     dirty,

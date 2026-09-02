@@ -18,11 +18,16 @@
  *   --captions   화면 자막을 얹는다 (--subs 와 함께). 화면 맨 아래에 붙는다 —
  *                보는 쪽에서 C 키·플레이어 CC 버튼·?cc=0 으로 끌 수 있다
  *                (--present 산출물에는 실리지 않는다 — 말은 발표자가 한다)
+ *   --no-captions  스펙의 media.captions 가 켜져 있어도 화면 자막을 뺀다
  *   --no-inline-audio  음성을 파일 안에 넣지 않고 경로로 참조한다 (HTML 옆에 둔다)
  *   --present    발표용으로 출력 — 씬 단위 진행 + 발표자 창(?presenter=1). 화면 자막은 빠진다
  *   --clean      플레이어 UI 없이 출력 (녹화·캡처용)
  *   --cdn        GSAP 을 인라인하지 않고 CDN 으로 건다 (파일이 146KB 가벼워진다)
  *   --no-fonts   폰트 CDN 을 걸지 않는다 (완전 오프라인)
+ *
+ *   스펙이 경로를 들고 다닐 수 있다 — 플래그를 매번 적지 않아도 된다.
+ *     "media": { "subs": "intro.srt", "audio": "intro.mp3", "captions": true }
+ *   상대경로는 스펙 파일이 있는 폴더 기준이다. 플래그를 주면 플래그가 이긴다.
  */
 'use strict';
 var fs = require('fs'), path = require('path');
@@ -65,6 +70,26 @@ function audioSrcOf(f, out, inline) {
                wav: 'audio/wav', ogg: 'audio/ogg', opus: 'audio/ogg', webm: 'audio/webm' }[ext] || 'audio/mpeg';
   return 'data:' + mime + ';base64,' + fs.readFileSync(f).toString('base64');
 }
+/**
+ * 자막·음성을 어디서 읽을지 정한다. 명령줄 플래그가 스펙의 `media` 를 이긴다.
+ * 스펙에 적힌 상대경로는 **스펙 파일이 있는 폴더 기준**으로 푼다(design 의 image 와 같은
+ * 규칙) — 어느 폴더에서 실행하든 같은 파일을 가리킨다. 플래그는 셸에서 준 것이므로
+ * 현재 폴더 기준 그대로 쓴다.
+ */
+function mediaFrom(spec, specFile, flags) {
+  var M = G.media(spec), base = path.dirname(path.resolve(specFile || '.'));
+  var subs = flags.subs || (M.subs ? path.resolve(base, M.subs) : null);
+  var audio = flags.audio || (M.audio ? path.resolve(base, M.audio) : null);
+  var fromSpec = [];
+  if (!flags.subs && M.subs) fromSpec.push('자막 ' + M.subs);
+  if (!flags.audio && M.audio) fromSpec.push('음성 ' + M.audio);
+  return {
+    subs: subs, audio: audio,
+    captions: flags.captions ? true : (flags.noCaptions ? false : M.captions),
+    fromSpec: fromSpec
+  };
+}
+
 /**
  * design.arts·decors 의 image 가 로컬 경로면 스펙 파일 기준으로 찾아 data URI 로 인라인한다.
  * data:·http(s): 는 그대로 둔다. 파일이 없으면 여기서 멈춘다 — 빈 그림이 조용히 나가면 안 된다.
@@ -124,26 +149,32 @@ if (cmd === 'test') { require(path.join(__dirname, 'selftest.js')); return; }
 if (cmd === 'validate') {
   var vspec = readSpec(files[0]);
   inlineDesignImages(vspec, files[0]);   /* 빌드와 같은 눈으로 본다 — 없는 파일은 여기서 걸린다 */
-  process.exit(report(G.validate(vspec, { cues: readCues(flags.subs) })) ? 0 : 1);
+  var vmedia = mediaFrom(vspec, files[0], flags);
+  var vcues = readCues(vmedia.subs);
+  if (vmedia.fromSpec.length) console.error('  media 에서 읽었다 — ' + vmedia.fromSpec.join(' · '));
+  process.exit(report(G.validate(vspec, { cues: vcues,
+                                          captions: vmedia.captions && vcues ? vcues : null })) ? 0 : 1);
 }
 
 if (cmd === 'build') {
   var spec = readSpec(files[0]);
-  var cues = readCues(flags.subs);
+  var media = mediaFrom(spec, files[0], flags);
+  var cues = readCues(media.subs);
   var images = inlineDesignImages(spec, files[0]);
-  if (!cues && (flags.audio || flags.captions)) {
-    console.error('  ! --audio · --captions 는 --subs 와 함께 쓴다 — 소리는 실측인데 화면이 추정이면 어긋난다.');
+  if (media.fromSpec.length) console.error('  media 에서 읽었다 — ' + media.fromSpec.join(' · '));
+  if (!cues && (media.audio || media.captions)) {
+    console.error('  ! 음성·화면 자막은 자막(--subs 또는 media.subs)과 함께 쓴다 — 소리는 실측인데 화면이 추정이면 어긋난다.');
   }
-  if (flags.present && flags.captions) {
+  if (flags.present && media.captions) {
     console.error('  ! --present 산출물에는 화면 자막이 실리지 않는다 — 말은 발표자가 한다. 타이밍 정렬만 적용된다.');
   }
-  var v = G.validate(spec, { cues: cues, captions: flags.captions && cues ? cues : null });
+  var v = G.validate(spec, { cues: cues, captions: media.captions && cues ? cues : null });
   if (!report(v)) { console.error('  → 오류를 고치고 다시 빌드한다.'); process.exit(1); }
   var out = flags.out || files[0].replace(/\.json$/, '') + '.html';
   var html = G.toHTML(spec, { clean: !!flags.clean, cdn: !!flags.cdn, noFonts: !!flags.noFonts,
                               present: !!flags.present, cues: cues,
-                              captions: flags.captions && cues ? cues : null,
-                              audioSrc: audioSrcOf(flags.audio, out, !flags.noInlineAudio) });
+                              captions: media.captions && cues ? cues : null,
+                              audioSrc: audioSrcOf(media.audio, out, !flags.noInlineAudio) });
   fs.writeFileSync(out, html);
   console.error('  → ' + out + ' (' + Math.round(html.length / 1024) + 'KB)' + (flags.present ? ' [발표용]' : ''));
   if (images.length) {
@@ -151,10 +182,10 @@ if (cmd === 'build') {
       (images.reduce(function (s, x) { return s + x.bytes; }, 0) / 1048576).toFixed(1) +
       'MB 를 HTML 안에 넣었다 (' + images.map(function (x) { return x.at; }).join(' · ') + ')');
   }
-  if (flags.audio) {
+  if (media.audio) {
     console.error('    음성 ' + (flags.noInlineAudio
-      ? '경로 참조 — ' + flags.audio + ' 를 HTML 옆에 둔다'
-      : (fs.statSync(flags.audio).size / 1048576).toFixed(1) + 'MB 를 HTML 안에 넣었다'));
+      ? '경로 참조 — ' + media.audio + ' 를 HTML 옆에 둔다'
+      : (fs.statSync(media.audio).size / 1048576).toFixed(1) + 'MB 를 HTML 안에 넣었다'));
   }
   if (flags.present) {
     console.error('    조작: → / Space 다음 · ← 이전 · 숫자키 점프 · R 이 씬 다시 · B 검은 화면 · O 씬 목록');
@@ -168,7 +199,7 @@ if (cmd === 'build') {
 
 if (cmd === 'timing') {
   var spec2 = readSpec(files[0]);
-  var csv = G.timing(spec2, flags.fps || 30, { cues: readCues(flags.subs) });
+  var csv = G.timing(spec2, flags.fps || 30, { cues: readCues(mediaFrom(spec2, files[0], flags).subs) });
   if (flags.out) { fs.writeFileSync(flags.out, csv); console.error('  → ' + flags.out); }
   else process.stdout.write(csv + '\n');
   process.exit(0);

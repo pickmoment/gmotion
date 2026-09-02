@@ -34,6 +34,7 @@ export function Toolbar({
   cueCount,
   audioMB,
   captions,
+  mediaRefs,
   busy,
   onNew,
   onOpen,
@@ -64,6 +65,8 @@ export function Toolbar({
   cueCount: number;
   audioMB: number;
   captions: boolean;
+  /** 스펙에 적힌 자막·음성 경로 — 무엇이 파일에 남는지 그 자리에서 보여 준다 */
+  mediaRefs: { subs: string | null; audio: string | null; captions: boolean };
   busy: boolean;
   onNew: () => void | Promise<void>;
   onOpen: () => void;
@@ -171,19 +174,23 @@ export function Toolbar({
                 닫기는 바깥 클릭·Esc·닫기 버튼으로만 한다. */}
             <p className="hint">
               순서는 자막이 먼저, 음성이 그다음이다. <code>--audio</code> 만 주면 소리는 실측인데
-              화면은 추정이라 어긋난다.
+              화면은 추정이라 어긋난다. 고른 경로는 스펙의 <code>media</code> 에 적혀
+              <strong> 다음에 열 때 자동으로 붙고</strong>, <code>gm build</code> 도 플래그 없이
+              같은 파일을 읽는다.
             </p>
             <div className="menu-row">
               <button type="button" onClick={() => onPickSubs()}>
                 자막 {subsPath ? "다시 고르기" : "고르기"} (SRT·VTT)
               </button>
               <span className="mono dim">{subsPath ?? "없음"}</span>
+              {mediaRefs.subs && <span className="badge">media {mediaRefs.subs}</span>}
             </div>
             <div className="menu-row">
               <button type="button" disabled={!subsPath} onClick={() => onPickAudio()}>
                 음성 {audioPath ? "다시 고르기" : "고르기"} (mp3·m4a)
               </button>
               <span className="mono dim">{audioPath ?? "없음"}</span>
+              {mediaRefs.audio && <span className="badge">media {mediaRefs.audio}</span>}
             </div>
             <label className="inline-check">
               <input

@@ -574,6 +574,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | `--subs <파일>` | 자막(SRT·VTT)으로 타이밍을 맞춘다 (→ 7장) |
 | `--audio <파일>` | 음성을 파일 안에 심는다 (→ 7장) |
 | `--captions` | 화면 자막을 얹는다 |
+| `--no-captions` | 화면 자막을 끈다. **스펙의 `media.captions` 를 무를 때 쓴다** (→ 7장) |
 | `--no-inline-audio` | 음성을 파일에 넣지 않고 경로로 참조. **HTML 옆에 음성 파일을 둬야 한다** |
 | `--fps <숫자>` | `timing` 의 프레임 계산 기준 (기본 30) |
 | `--update` | `gm test` 전용 — 기준값 갱신 |
@@ -646,6 +647,21 @@ gm build my.json --subs voice.srt --audio voice.mp3 --captions -o out.html
 
 일치율이 50% 아래면 그 씬은 **못 맞춘 것으로 보고** 앞 씬 끝에 이어 붙인다.
 조용히 틀린 시각을 넣는 것보다 어디가 안 맞는지 말해 주는 편이 낫다.
+
+**매번 플래그를 치지 않는 법.** 자막·음성 경로를 스펙 루트의 `media` 에 적어 두면
+`gm build my.json` 만으로 같게 동작한다.
+
+```jsonc
+{ "media": { "subs": "voice.srt", "audio": "voice.mp3", "captions": true } }
+```
+
+경로는 **스펙 파일이 있는 폴더 기준**이다 (절대경로도 된다). 명령줄 플래그를 같이
+주면 **플래그가 이긴다** — `--subs`·`--audio` 로 다른 파일을 시험해 볼 수 있고,
+`--no-captions` 로 스펙의 `"captions": true` 를 끌 수 있다. 적어 둔 파일이 없으면
+빌드가 멈춘다.
+
+루트 `audio`(`offset`·`volume`)와 헷갈리지 않는다. 그건 **재생 설정**이고
+`media.audio` 는 **파일 경로**다 — 다른 필드이고 함께 쓴다.
 
 ### 7-4. `say` 를 쓸 때 지킬 것
 
@@ -723,6 +739,12 @@ gm build my.json --audio voice.m4a --no-inline-audio -o /tmp/out.html
 cd ~/.claude/skills/gmotion/assets/examples
 gm build starter-narrated.json --subs starter-narrated.srt --captions -o /tmp/nar.html
 open /tmp/nar.html
+```
+
+이 예제는 `media` 에 자막 경로가 적혀 있어 플래그 없이도 같다.
+
+```bash
+gm build starter-narrated.json -o /tmp/nar.html
 ```
 
 ---

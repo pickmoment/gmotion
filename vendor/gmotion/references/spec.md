@@ -16,6 +16,7 @@
   "font":    "display",                 // 10종. 생략하면 테마가 정한다 (`gm info fonts`)
   "mode":    "autoplay",                // autoplay loop step
   "audio":   { "offset": 0, "volume": 1 }, // 음성을 얹을 때만. 파일은 --audio 로 준다
+  "media":   { "subs": "voice.srt", "audio": "voice.mp3", "captions": true }, // 자막·음성 파일 경로
   "design":  { /* 아래 */ },            // 이 스펙에서만 쓰는 커스텀 요소 정의
   "scenes":  [ /* 아래 */ ]
 }
@@ -23,6 +24,16 @@
 
 `audio.offset` 은 **음성 안에서 첫 대사가 시작하는 시각**이다. 녹음 앞에 여백이
 있으면 그만큼 적는다.
+
+`media` 는 **자막·음성 파일의 경로를 스펙이 들고 다니게** 한다. `subs` 는 자막(SRT·VTT),
+`audio` 는 음성 파일, `captions` 는 화면 자막을 얹을지(boolean)다. 적어 두면
+`gm build spec.json` 만으로 `--subs`·`--audio`·`--captions` 를 준 것과 같게 동작한다.
+경로는 **스펙 파일이 있는 폴더 기준 상대경로**(권장, 절대경로도 된다)로 찾는다 —
+`design` 의 `image` 와 같은 규칙이다. 셋 다 생략할 수 있다.
+
+루트 `audio` 와 혼동하지 않는다. **`audio` 는 재생 설정(`offset`·`volume`)이고
+`media.audio` 는 파일 경로다** — 다른 필드이고 함께 쓴다. 우선순위·`--no-captions`·
+파일이 없을 때의 동작은 `api.md` 의 자막 동기화 절에 있다.
 
 `skin` 은 색이 아니라 **재질**을 정한다 — 테마가 색을 정하고 스킨이 표면·선·타이포의
 모양을 정하므로 둘은 곱해서 쓴다(테마 15종 × 스킨 6종). 생략하면 테마가 정한 기본
@@ -126,6 +137,7 @@
 
 녹음이 끝나 자막(SRT·VTT)이 있으면 화면을 목소리에 맞출 수 있다. 씬마다 `say` 를
 적고 `--subs` 로 빌드하면 씬의 시작·길이가 실측으로 바뀐다.
+자막·음성 파일 경로는 루트 `media` 에 적어 두면 플래그 없이도 그대로 적용된다.
 
 ```jsonc
 { "pattern": "dataCounter",
