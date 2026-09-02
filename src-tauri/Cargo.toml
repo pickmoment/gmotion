@@ -28,3 +28,7 @@ include_dir = "0.7"
 # CDP 는 ws://127.0.0.1 이라 TLS 가 필요 없다. 동기 클라이언트로 충분해 tokio 를 끌어오지 않는다.
 tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
 url = "2"
+
+# 시한 초과·취소 때 자식의 프로세스 그룹째 SIGKILL 하는 데만 쓴다 (agent.rs)
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

@@ -166,7 +166,23 @@ fn pump<R: Read + Send + 'static>(
 }
 
 /// 죽인다. 취소·시한 초과 양쪽에서 쓴다.
+/* 자식 하나만 죽이면 손자가 stdout/stderr 파이프를 물고 남는다 — pump 조인이 그 손자가
+   끝날 때까지 멈춰 run() 이 시한을 넘겨 매달린다. 에이전트 CLI 는 대부분 셔틀(node 런처)이
+   실제 작업 프로세스를 낳는 구조라 실전에서 바로 맞는 경로다. 프로세스 트리째 죽인다. */
+#[cfg(windows)]
 fn kill(child: &mut Child) {
+    let _ = new_command("taskkill")
+        .args(["/PID", &child.id().to_string(), "/T", "/F"])
+        .output();
+    let _ = child.kill();
+    let _ = child.wait();
+}
+#[cfg(unix)]
+fn kill(child: &mut Child) {
+    /* spawn 때 process_group(0) 으로 제 그룹의 리더로 묶어 두었다 — 그룹째 SIGKILL */
+    unsafe {
+        libc::kill(-(child.id() as i32), libc::SIGKILL);
+    }
     let _ = child.kill();
     let _ = child.wait();
 }
@@ -202,6 +218,12 @@ pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, 
     cmd.stdin(Stdio::null()) /* codex exec 는 stdin 이 열려 있으면 입력을 기다린다 */
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
+    /* 취소·시한 초과 때 트리째 죽일 수 있게 자식을 제 프로세스 그룹의 리더로 만든다 */
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        cmd.process_group(0);
+    }
 
     let mut child = cmd
         .spawn()
