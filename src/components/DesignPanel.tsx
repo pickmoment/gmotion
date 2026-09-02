@@ -2577,10 +2577,7 @@ function DecorEditorModal({
               </div>
               <div className="field">
                 <label>맞춤 방식 (fit)</label>
-                <select
-                  value={fit}
-                  onChange={(e) => setFit(e.target.value as "contain" | "cover")}
-                >
+                <select value={fit} onChange={(e) => setFit(e.target.value as "contain" | "cover")}>
                   <option value="cover">cover — 꽉 채우고 넘치면 자른다 (배경 기본)</option>
                   <option value="contain">contain — 전부 보이게 맞춘다</option>
                 </select>
@@ -3223,10 +3220,7 @@ function ArtEditorModal({
               </div>
               <div className="field">
                 <label>맞춤 방식 (fit)</label>
-                <select
-                  value={fit}
-                  onChange={(e) => setFit(e.target.value as "contain" | "cover")}
-                >
+                <select value={fit} onChange={(e) => setFit(e.target.value as "contain" | "cover")}>
                   <option value="contain">contain — 전부 보이게 맞춘다 (일러스트 기본)</option>
                   <option value="cover">cover — 꽉 채우고 넘치면 자른다</option>
                 </select>
