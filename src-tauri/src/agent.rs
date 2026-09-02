@@ -271,6 +271,7 @@ mod tests {
     }
 
     /// 실행·스트리밍·종료 코드 왕복. 모델을 부르지 않고 셸 도구로 확인한다.
+    #[cfg(unix)]
     #[test]
     fn runs_and_streams() {
         use std::sync::atomic::AtomicBool;
@@ -301,6 +302,7 @@ mod tests {
     }
 
     /// stdin 은 닫혀 있어야 한다 — codex exec 는 열려 있으면 입력을 기다리다 멈춘다.
+    #[cfg(unix)]
     #[test]
     fn stdin_is_closed() {
         use std::sync::atomic::AtomicBool;
@@ -322,6 +324,7 @@ mod tests {
     }
 
     /// 시한이 지나면 죽인다.
+    #[cfg(unix)]
     #[test]
     fn times_out() {
         use std::sync::atomic::AtomicBool;
@@ -332,6 +335,86 @@ mod tests {
             super::RunOpts {
                 bin: "/bin/sh".into(),
                 args: vec!["-c".into(), "sleep 60".into()],
+                cwd: None,
+                timeout_sec: 10, /* clamp 하한이 10 이다 */
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .expect("실행 실패");
+        assert!(out.timed_out, "시한 초과로 끝나야 한다");
+        assert!(out.ms < 20_000);
+    }
+
+    /* Windows 대응 — 같은 계약을 cmd 로 검증한다. 한글·정확일치 대신 ASCII·contains 를
+       쓴다: cmd 의 echo 는 CRLF 를 내고 코드페이지에 따라 비ASCII 가 깨질 수 있다. */
+
+    /// 실행·스트리밍·종료 코드 왕복 (Windows).
+    #[cfg(windows)]
+    #[test]
+    fn runs_and_streams() {
+        use std::sync::atomic::AtomicBool;
+        use std::sync::{mpsc, Arc};
+        let (tx, rx) = mpsc::channel::<String>();
+        let emit: super::OnLine = Arc::new(move |l: super::Line| {
+            let _ = tx.send(format!("{}:{}", l.stream, l.text));
+        });
+        let out = super::run(
+            emit,
+            super::RunOpts {
+                bin: "cmd".into(),
+                args: vec!["/C".into(), "(echo one)&(echo two 1>&2)&exit /b 3".into()],
+                cwd: None,
+                timeout_sec: 20,
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .expect("실행 실패");
+        assert_eq!(out.code, 3, "종료 코드가 그대로 와야 한다");
+        assert!(out.stdout.contains("one"));
+        assert!(out.stderr.contains("two"));
+        let lines: Vec<String> = rx.try_iter().collect();
+        assert!(
+            lines.iter().any(|l| l.starts_with("out:") && l.contains("one")),
+            "스트림 구분이 있어야 한다: {lines:?}"
+        );
+        assert!(lines.iter().any(|l| l.starts_with("err:") && l.contains("two")));
+        assert!(!out.timed_out && !out.canceled);
+    }
+
+    /// stdin 은 닫혀 있어야 한다 (Windows) — more 는 stdin 이 열려 있으면 끝나지 않는다.
+    #[cfg(windows)]
+    #[test]
+    fn stdin_is_closed() {
+        use std::sync::atomic::AtomicBool;
+        use std::sync::Arc;
+        let emit: super::OnLine = Arc::new(|_l| {});
+        let out = super::run(
+            emit,
+            super::RunOpts {
+                bin: "cmd".into(),
+                args: vec!["/C".into(), "more & echo end".into()],
+                cwd: None,
+                timeout_sec: 15,
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .expect("실행 실패");
+        assert!(!out.timed_out, "stdin 이 열려 있으면 more 가 끝나지 않는다");
+        assert!(out.stdout.contains("end"));
+    }
+
+    /// 시한이 지나면 죽인다 (Windows). timeout.exe 는 stdin 이 닫히면 오류라 ping 으로 잔다.
+    #[cfg(windows)]
+    #[test]
+    fn times_out() {
+        use std::sync::atomic::AtomicBool;
+        use std::sync::Arc;
+        let emit: super::OnLine = Arc::new(|_l| {});
+        let out = super::run(
+            emit,
+            super::RunOpts {
+                bin: "cmd".into(),
+                args: vec!["/C".into(), "ping -n 60 127.0.0.1 > NUL".into()],
                 cwd: None,
                 timeout_sec: 10, /* clamp 하한이 10 이다 */
             },
