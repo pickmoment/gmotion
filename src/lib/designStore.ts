@@ -65,7 +65,7 @@ function syncLibraryToEngine(lib: CustomDesignLibrary): void {
     registerCustomIcon(k, v.path, v.aliases, v.label);
   }
   for (const [k, v] of Object.entries(lib.arts)) {
-    registerCustomVector("ART", k, { label: v.label, svg: v.svg });
+    registerCustomVector("ART", k, { label: v.label, svg: v.svg, image: v.image, fit: v.fit });
   }
   for (const [k, v] of Object.entries(lib.marks)) {
     registerCustomVector("MARK", k, {
@@ -77,7 +77,13 @@ function syncLibraryToEngine(lib: CustomDesignLibrary): void {
     });
   }
   for (const [k, v] of Object.entries(lib.decors)) {
-    registerCustomVector("DECOR", k, { label: v.label, category: v.category, svg: v.svg });
+    registerCustomVector("DECOR", k, {
+      label: v.label,
+      category: v.category,
+      svg: v.svg,
+      image: v.image,
+      fit: v.fit,
+    });
   }
   for (const [k, v] of Object.entries(lib.frames)) {
     registerCustomVector("FRAME", k, { label: v.label, ratio: v.ratio, svg: v.svg, bar: v.bar });
@@ -145,6 +151,10 @@ const MARK_WHERE: Record<string, true> = {
   ribbon: true,
 };
 const MAX_SVG_LEN = 200_000;
+/** 이미지(data URI)는 localStorage 에 그대로 들어간다 — 문자 수 기준 2MB 상한 */
+export const MAX_IMAGE_LEN = 2 * 1024 * 1024;
+const IMAGE_TOO_BIG_MSG =
+  "이미지가 너무 크다 — data URI 기준 2MB(문자 수) 이하만 저장할 수 있다. 더 작은 이미지를 쓴다.";
 
 function isValidEntry(kind: keyof CustomDesignLibrary, v: unknown): boolean {
   if (!v || typeof v !== "object") return false;
@@ -164,8 +174,15 @@ function isValidEntry(kind: keyof CustomDesignLibrary, v: unknown): boolean {
     case "icons":
       return str(o.path) && Array.isArray(o.aliases) && (o.aliases as unknown[]).every(str);
     case "arts":
-    case "decors":
-      return str(o.label) && svgOk(o.svg);
+    case "decors": {
+      if (!str(o.label)) return false;
+      const hasSvg = o.svg != null;
+      const hasImage = o.image != null;
+      if (hasSvg === hasImage) return false; /* svg 또는 image 중 정확히 하나 */
+      if (o.fit != null && o.fit !== "contain" && o.fit !== "cover") return false;
+      if (hasImage) return str(o.image) && o.image.length > 0 && o.image.length <= MAX_IMAGE_LEN;
+      return svgOk(o.svg);
+    }
     case "marks":
       return str(o.label) && svgOk(o.svg) && !!MARK_WHERE[o.where as string];
     case "frames":
@@ -257,12 +274,23 @@ export const designStore = {
     saveLibrary({ ...currentLibrary, icons });
   },
 
-  addArt(key: string, label: string, svg: string): void {
+  addArt(
+    key: string,
+    item: { label: string; svg?: string; image?: string; fit?: "contain" | "cover" },
+  ): void {
+    if (item.image && item.image.length > MAX_IMAGE_LEN) {
+      saveErrorListeners.forEach((l) => l(IMAGE_TOO_BIG_MSG));
+      return;
+    }
+    /* svg 또는 image 중 하나만 담는다 — 엔진 계약(둘 다 있으면 검증 오류) */
+    const entry: CustomDesignLibrary["arts"][string] = item.image
+      ? { label: item.label, image: item.image, fit: item.fit }
+      : { label: item.label, svg: item.svg };
     const next: CustomDesignLibrary = {
       ...currentLibrary,
-      arts: { ...currentLibrary.arts, [key]: { label, svg } },
+      arts: { ...currentLibrary.arts, [key]: entry },
     };
-    registerCustomVector("ART", key, { label, svg });
+    registerCustomVector("ART", key, entry);
     saveLibrary(next);
   },
 
@@ -296,12 +324,28 @@ export const designStore = {
     saveLibrary({ ...currentLibrary, marks });
   },
 
-  addDecor(key: string, label: string, svg: string, category?: string): void {
+  addDecor(
+    key: string,
+    item: {
+      label: string;
+      category?: string;
+      svg?: string;
+      image?: string;
+      fit?: "contain" | "cover";
+    },
+  ): void {
+    if (item.image && item.image.length > MAX_IMAGE_LEN) {
+      saveErrorListeners.forEach((l) => l(IMAGE_TOO_BIG_MSG));
+      return;
+    }
+    const entry: CustomDesignLibrary["decors"][string] = item.image
+      ? { label: item.label, category: item.category, image: item.image, fit: item.fit }
+      : { label: item.label, category: item.category, svg: item.svg };
     const next: CustomDesignLibrary = {
       ...currentLibrary,
-      decors: { ...currentLibrary.decors, [key]: { label, svg, category } },
+      decors: { ...currentLibrary.decors, [key]: entry },
     };
-    registerCustomVector("DECOR", key, { label, svg, category });
+    registerCustomVector("DECOR", key, entry);
     saveLibrary(next);
   },
 

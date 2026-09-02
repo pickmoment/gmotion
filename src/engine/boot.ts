@@ -174,7 +174,10 @@ export function registerCustomVector(
   key: string,
   item: {
     label: string;
-    svg: string;
+    /** svg 또는 image 중 하나 — 엔진 makers 가 알아서 렌더한다 */
+    svg?: string;
+    image?: string;
+    fit?: "contain" | "cover";
     where?: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
     ratio?: number;
     bar?: number;

@@ -20,7 +20,7 @@ import {
   renderMarkSvg,
   resolveThemeColors,
 } from "../lib/design";
-import { useDesignStore } from "../lib/designStore";
+import { MAX_IMAGE_LEN, useDesignStore } from "../lib/designStore";
 import { IconGlyph } from "./fields/IconPicker";
 import { SkinsTab } from "./SkinsTab";
 import { listSkins } from "../lib/design";
@@ -92,6 +92,8 @@ export function DesignPanel({
     key: string;
     label: string;
     svg: string;
+    image?: string;
+    fit?: "contain" | "cover";
   } | null>(null);
   const [editingMark, setEditingMark] = useState<{
     isNew: boolean;
@@ -108,6 +110,8 @@ export function DesignPanel({
     label: string;
     category: string;
     svg: string;
+    image?: string;
+    fit?: "contain" | "cover";
   } | null>(null);
   const [editingFrame, setEditingFrame] = useState<{
     isNew: boolean;
@@ -448,7 +452,9 @@ export function DesignPanel({
                   key,
                   label: item.label,
                   category: item.category || "기하·격자",
-                  svg: item.svg,
+                  svg: item.svg || "",
+                  image: item.image,
+                  fit: item.fit,
                 })
               }
               onCloneDecor={(key, item) =>
@@ -457,7 +463,9 @@ export function DesignPanel({
                   key: `${key}Custom`,
                   label: `${item.label} (복제본)`,
                   category: item.category || "기하·격자",
-                  svg: item.svg,
+                  svg: item.svg || "",
+                  image: item.image,
+                  fit: item.fit,
                 })
               }
               onDeleteDecor={(key) => {
@@ -523,14 +531,23 @@ export function DesignPanel({
                 onNotify?.(`일러스트 "${key}" 가 적용되었습니다.`);
               }}
               onEditArt={(key, item) =>
-                setEditingArt({ isNew: false, key, label: item.label, svg: item.svg })
+                setEditingArt({
+                  isNew: false,
+                  key,
+                  label: item.label,
+                  svg: item.svg || "",
+                  image: item.image,
+                  fit: item.fit,
+                })
               }
               onCloneArt={(key, item) =>
                 setEditingArt({
                   isNew: true,
                   key: `${key}Custom`,
                   label: `${item.label} (복제본)`,
-                  svg: item.svg,
+                  svg: item.svg || "",
+                  image: item.image,
+                  fit: item.fit,
                 })
               }
               onDeleteArt={(key) => {
@@ -626,7 +643,7 @@ export function DesignPanel({
             data={editingDecor}
             onClose={() => setEditingDecor(null)}
             onSave={(key, item) => {
-              addDecor(key, item.label, item.svg, item.category);
+              addDecor(key, item);
               onNotify?.(`배경 "${key}" 가 등록되었습니다.`);
               setEditingDecor(null);
             }}
@@ -650,7 +667,7 @@ export function DesignPanel({
             data={editingArt}
             onClose={() => setEditingArt(null)}
             onSave={(key, item) => {
-              addArt(key, item.label, item.svg);
+              addArt(key, item);
               onNotify?.(`일러스트 "${key}" 가 등록되었습니다.`);
               setEditingArt(null);
             }}
@@ -895,13 +912,38 @@ function DecorsTab({
   currentTheme: string;
   library: CustomDesignLibrary;
   onApplyDecor: (k: string) => void;
-  onEditDecor: (k: string, item: { label: string; category?: string; svg: string }) => void;
-  onCloneDecor: (k: string, item: { label: string; category?: string; svg: string }) => void;
+  onEditDecor: (
+    k: string,
+    item: {
+      label: string;
+      category?: string;
+      svg?: string;
+      image?: string;
+      fit?: "contain" | "cover";
+    },
+  ) => void;
+  onCloneDecor: (
+    k: string,
+    item: {
+      label: string;
+      category?: string;
+      svg?: string;
+      image?: string;
+      fit?: "contain" | "cover";
+    },
+  ) => void;
   onDeleteDecor: (k: string) => void;
 }) {
   const allDecors = useMemo(() => {
-    const list: { key: string; label: string; category: string; custom: boolean; svg?: string }[] =
-      [];
+    const list: {
+      key: string;
+      label: string;
+      category: string;
+      custom: boolean;
+      svg?: string;
+      image?: string;
+      fit?: "contain" | "cover";
+    }[] = [];
     const seen = new Set<string>();
 
     for (const [k, item] of Object.entries(VECTORS.DECOR)) {
@@ -919,6 +961,8 @@ function DecorsTab({
         category: item.category || foundCat,
         custom: !!item.custom || !!library.decors[k],
         svg: library.decors[k]?.svg,
+        image: library.decors[k]?.image,
+        fit: library.decors[k]?.fit,
       });
     }
 
@@ -930,6 +974,8 @@ function DecorsTab({
           category: item.category || "커스텀",
           custom: true,
           svg: item.svg,
+          image: item.image,
+          fit: item.fit,
         });
       }
     }
@@ -1012,8 +1058,11 @@ function DecorsTab({
                     onCloneDecor(d.key, {
                       label: d.label,
                       category: d.category,
-                      svg:
-                        d.svg || `<rect width="{W}" height="{H}" fill="{accent}" opacity="0.1"/>`,
+                      image: d.image,
+                      fit: d.fit,
+                      svg: d.image
+                        ? undefined
+                        : d.svg || `<rect width="{W}" height="{H}" fill="{accent}" opacity="0.1"/>`,
                     })
                   }
                 >
@@ -1028,7 +1077,9 @@ function DecorsTab({
                         onEditDecor(d.key, {
                           label: d.label,
                           category: d.category,
-                          svg: d.svg || "",
+                          svg: d.svg,
+                          image: d.image,
+                          fit: d.fit,
                         })
                       }
                     >
@@ -1290,12 +1341,25 @@ function ArtsTab({
   currentTheme: string;
   library: CustomDesignLibrary;
   onApplyArt: (k: string) => void;
-  onEditArt: (k: string, item: { label: string; svg: string }) => void;
-  onCloneArt: (k: string, item: { label: string; svg: string }) => void;
+  onEditArt: (
+    k: string,
+    item: { label: string; svg?: string; image?: string; fit?: "contain" | "cover" },
+  ) => void;
+  onCloneArt: (
+    k: string,
+    item: { label: string; svg?: string; image?: string; fit?: "contain" | "cover" },
+  ) => void;
   onDeleteArt: (k: string) => void;
 }) {
   const allArts = useMemo(() => {
-    const list: { key: string; label: string; custom: boolean; svg?: string }[] = [];
+    const list: {
+      key: string;
+      label: string;
+      custom: boolean;
+      svg?: string;
+      image?: string;
+      fit?: "contain" | "cover";
+    }[] = [];
     const seen = new Set<string>();
 
     for (const [k, item] of Object.entries(VECTORS.ART)) {
@@ -1305,12 +1369,21 @@ function ArtsTab({
         label: item.label || k,
         custom: !!item.custom || !!library.arts[k],
         svg: library.arts[k]?.svg,
+        image: library.arts[k]?.image,
+        fit: library.arts[k]?.fit,
       });
     }
 
     for (const [k, item] of Object.entries(library.arts)) {
       if (!seen.has(k)) {
-        list.push({ key: k, label: item.label || k, custom: true, svg: item.svg });
+        list.push({
+          key: k,
+          label: item.label || k,
+          custom: true,
+          svg: item.svg,
+          image: item.image,
+          fit: item.fit,
+        });
       }
     }
 
@@ -1367,9 +1440,12 @@ function ArtsTab({
                   onClick={() =>
                     onCloneArt(a.key, {
                       label: a.label,
-                      svg:
-                        a.svg ||
-                        `<g class="gg-artP"><circle cx="100" cy="100" r="60" fill="{accent}" opacity="0.3"/></g>`,
+                      image: a.image,
+                      fit: a.fit,
+                      svg: a.image
+                        ? undefined
+                        : a.svg ||
+                          `<g class="gg-artP"><circle cx="100" cy="100" r="60" fill="{accent}" opacity="0.3"/></g>`,
                     })
                   }
                 >
@@ -1380,7 +1456,9 @@ function ArtsTab({
                     <button
                       type="button"
                       className="action-btn"
-                      onClick={() => onEditArt(a.key, { label: a.label, svg: a.svg || "" })}
+                      onClick={() =>
+                        onEditArt(a.key, { label: a.label, svg: a.svg, image: a.image, fit: a.fit })
+                      }
                     >
                       수정
                     </button>
@@ -2161,15 +2239,36 @@ function DecorEditorModal({
   onClose,
   onSave,
 }: {
-  data: { isNew: boolean; key: string; label: string; category: string; svg: string };
+  data: {
+    isNew: boolean;
+    key: string;
+    label: string;
+    category: string;
+    svg: string;
+    image?: string;
+    fit?: "contain" | "cover";
+  };
   onClose: () => void;
-  onSave: (key: string, item: { label: string; category: string; svg: string }) => void;
+  onSave: (
+    key: string,
+    item: {
+      label: string;
+      category: string;
+      svg?: string;
+      image?: string;
+      fit?: "contain" | "cover";
+    },
+  ) => void;
 }) {
-  const [mode, setMode] = useState<"gui" | "code">("gui");
+  const [mode, setMode] = useState<"gui" | "code" | "image">(data.image ? "image" : "gui");
   const [key, setKey] = useState(data.key);
   const [label, setLabel] = useState(data.label);
   const [category, setCategory] = useState(data.category);
   const [svg, setSvg] = useState(data.svg);
+  const [image, setImage] = useState(data.image || "");
+  const [fit, setFit] = useState<"contain" | "cover">(data.fit || "cover");
+  const [imageError, setImageError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // GUI Controls
   const [pattern, setPattern] = useState("blob");
@@ -2195,6 +2294,23 @@ function DecorEditorModal({
       colorMode: cm,
     });
     setSvg(generated);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const uri = String(evt.target?.result || "");
+      if (uri.length > MAX_IMAGE_LEN) {
+        setImageError("이미지가 너무 크다 — data URI 기준 2MB(문자 수) 이하만 저장할 수 있다.");
+        return;
+      }
+      setImageError(null);
+      setImage(uri);
+    };
+    reader.readAsDataURL(file);
   };
 
   const previewFilled = svg
@@ -2236,6 +2352,13 @@ function DecorEditorModal({
               >
                 📝 SVG 템플릿 코드
               </button>
+              <button
+                type="button"
+                className={mode === "image" ? "on" : ""}
+                onClick={() => setMode("image")}
+              >
+                🖼 외부 이미지
+              </button>
             </div>
           </div>
           <button type="button" className="ghost" onClick={onClose}>
@@ -2274,14 +2397,27 @@ function DecorEditorModal({
           {/* Realtime 16:9 Canvas Preview */}
           <div className="gui-canvas-preview">
             <span className="canvas-badge">실시간 배경 미리보기 (16:9)</span>
-            <div
-              className="canvas-inner"
-              dangerouslySetInnerHTML={{
-                __html: previewFilled.includes("<svg")
-                  ? previewFilled
-                  : `<svg viewBox="0 0 320 180" width="100%" height="100%" aria-hidden="true">${previewFilled}</svg>`,
-              }}
-            />
+            {mode === "image" ? (
+              image ? (
+                <img
+                  className="canvas-inner image-fill-preview"
+                  src={image}
+                  alt=""
+                  style={{ objectFit: fit }}
+                />
+              ) : (
+                <p className="dim pad">이미지를 선택하면 여기에 미리보기가 뜬다.</p>
+              )
+            ) : (
+              <div
+                className="canvas-inner"
+                dangerouslySetInnerHTML={{
+                  __html: previewFilled.includes("<svg")
+                    ? previewFilled
+                    : `<svg viewBox="0 0 320 180" width="100%" height="100%" aria-hidden="true">${previewFilled}</svg>`,
+                }}
+              />
+            )}
           </div>
 
           {mode === "gui" ? (
@@ -2402,7 +2538,7 @@ function DecorEditorModal({
                 </div>
               </div>
             </div>
-          ) : (
+          ) : mode === "code" ? (
             <div className="field">
               <label>SVG 마크업 / 템플릿</label>
               <textarea
@@ -2416,6 +2552,40 @@ function DecorEditorModal({
                 {"{dim}"}
               </p>
             </div>
+          ) : (
+            <div className="gui-controls-section">
+              <div className="field">
+                <label>이미지 파일 (data URI 로 인라인 저장)</label>
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  style={{ display: "none" }}
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <button
+                  type="button"
+                  className="secondary small"
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  📁 이미지 파일 선택
+                </button>
+                {imageError && <p className="hint image-error">{imageError}</p>}
+                <p className="hint">
+                  PNG·JPG·WebP 등 한 장이 data URI 로 인라인된다 — 2MB(문자 수) 이하.
+                </p>
+              </div>
+              <div className="field">
+                <label>맞춤 방식 (fit)</label>
+                <select
+                  value={fit}
+                  onChange={(e) => setFit(e.target.value as "contain" | "cover")}
+                >
+                  <option value="cover">cover — 꽉 채우고 넘치면 자른다 (배경 기본)</option>
+                  <option value="contain">contain — 전부 보이게 맞춘다</option>
+                </select>
+              </div>
+            </div>
           )}
         </div>
 
@@ -2426,8 +2596,15 @@ function DecorEditorModal({
           <button
             type="button"
             className="primary"
-            disabled={!key.trim() || !svg.trim()}
-            onClick={() => onSave(key.trim(), { label: label.trim() || key.trim(), category, svg })}
+            disabled={!key.trim() || (mode === "image" ? !image : !svg.trim())}
+            onClick={() =>
+              onSave(
+                key.trim(),
+                mode === "image"
+                  ? { label: label.trim() || key.trim(), category, image, fit }
+                  : { label: label.trim() || key.trim(), category, svg },
+              )
+            }
           >
             저장
           </button>
@@ -2745,14 +2922,28 @@ function ArtEditorModal({
   onClose,
   onSave,
 }: {
-  data: { isNew: boolean; key: string; label: string; svg: string };
+  data: {
+    isNew: boolean;
+    key: string;
+    label: string;
+    svg: string;
+    image?: string;
+    fit?: "contain" | "cover";
+  };
   onClose: () => void;
-  onSave: (key: string, item: { label: string; svg: string }) => void;
+  onSave: (
+    key: string,
+    item: { label: string; svg?: string; image?: string; fit?: "contain" | "cover" },
+  ) => void;
 }) {
-  const [mode, setMode] = useState<"gui" | "code">("gui");
+  const [mode, setMode] = useState<"gui" | "code" | "image">(data.image ? "image" : "gui");
   const [key, setKey] = useState(data.key);
   const [label, setLabel] = useState(data.label);
   const [svg, setSvg] = useState(data.svg);
+  const [image, setImage] = useState(data.image || "");
+  const [fit, setFit] = useState<"contain" | "cover">(data.fit || "contain");
+  const [imageError, setImageError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // GUI Controls
   const [concept, setConcept] = useState("data");
@@ -2781,6 +2972,23 @@ function ArtEditorModal({
       setMode("code");
     };
     reader.readAsText(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const uri = String(evt.target?.result || "");
+      if (uri.length > MAX_IMAGE_LEN) {
+        setImageError("이미지가 너무 크다 — data URI 기준 2MB(문자 수) 이하만 저장할 수 있다.");
+        return;
+      }
+      setImageError(null);
+      setImage(uri);
+    };
+    reader.readAsDataURL(file);
   };
 
   const previewFilled = svg
@@ -2818,6 +3026,13 @@ function ArtEditorModal({
               >
                 📝 SVG 코드
               </button>
+              <button
+                type="button"
+                className={mode === "image" ? "on" : ""}
+                onClick={() => setMode("image")}
+              >
+                🖼 외부 이미지
+              </button>
             </div>
           </div>
           <button type="button" className="ghost" onClick={onClose}>
@@ -2844,14 +3059,27 @@ function ArtEditorModal({
           {/* 200x200 Preview Stage */}
           <div className="gui-art-preview-box">
             <span className="preview-heading">200×200 viewBox 실시간 렌더링</span>
-            <div
-              className="art-stage-inner"
-              dangerouslySetInnerHTML={{
-                __html: previewFilled.includes("<svg")
-                  ? previewFilled
-                  : `<svg viewBox="0 0 200 200" width="120" height="120" aria-hidden="true">${previewFilled}</svg>`,
-              }}
-            />
+            {mode === "image" ? (
+              image ? (
+                <img
+                  className="art-stage-inner image-fill-preview"
+                  src={image}
+                  alt=""
+                  style={{ objectFit: fit }}
+                />
+              ) : (
+                <p className="dim pad">이미지를 선택하면 여기에 미리보기가 뜬다.</p>
+              )
+            ) : (
+              <div
+                className="art-stage-inner"
+                dangerouslySetInnerHTML={{
+                  __html: previewFilled.includes("<svg")
+                    ? previewFilled
+                    : `<svg viewBox="0 0 200 200" width="120" height="120" aria-hidden="true">${previewFilled}</svg>`,
+                }}
+              />
+            )}
           </div>
 
           {mode === "gui" ? (
@@ -2957,7 +3185,7 @@ function ArtEditorModal({
                 </button>
               </div>
             </div>
-          ) : (
+          ) : mode === "code" ? (
             <div className="field">
               <label>SVG 마크업 (200×200 viewBox 기준)</label>
               <textarea
@@ -2970,6 +3198,40 @@ function ArtEditorModal({
                 치환 변수: {"{accent}"}, {"{accent2}"}, {"{bg2}"}, {"{ink}"}, {"{dim}"}
               </p>
             </div>
+          ) : (
+            <div className="gui-controls-section">
+              <div className="field">
+                <label>이미지 파일 (data URI 로 인라인 저장)</label>
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  style={{ display: "none" }}
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <button
+                  type="button"
+                  className="secondary small"
+                  onClick={() => imageInputRef.current?.click()}
+                >
+                  📁 이미지 파일 선택
+                </button>
+                {imageError && <p className="hint image-error">{imageError}</p>}
+                <p className="hint">
+                  PNG·JPG·WebP 등 한 장이 data URI 로 인라인된다 — 2MB(문자 수) 이하.
+                </p>
+              </div>
+              <div className="field">
+                <label>맞춤 방식 (fit)</label>
+                <select
+                  value={fit}
+                  onChange={(e) => setFit(e.target.value as "contain" | "cover")}
+                >
+                  <option value="contain">contain — 전부 보이게 맞춘다 (일러스트 기본)</option>
+                  <option value="cover">cover — 꽉 채우고 넘치면 자른다</option>
+                </select>
+              </div>
+            </div>
           )}
         </div>
 
@@ -2980,8 +3242,15 @@ function ArtEditorModal({
           <button
             type="button"
             className="primary"
-            disabled={!key.trim() || !svg.trim()}
-            onClick={() => onSave(key.trim(), { label: label.trim() || key.trim(), svg })}
+            disabled={!key.trim() || (mode === "image" ? !image : !svg.trim())}
+            onClick={() =>
+              onSave(
+                key.trim(),
+                mode === "image"
+                  ? { label: label.trim() || key.trim(), image, fit }
+                  : { label: label.trim() || key.trim(), svg },
+              )
+            }
           >
             저장
           </button>

@@ -59,9 +59,9 @@
 | `themes` | 색 10종(`bg` `bg2` `ink` `ink2` `dim` `accent` `accent2` `good` `warn` `bad`) | — |
 | `skins` | 없음 (`extends` 한 스킨에서 물려받는다) | — |
 | `icons` | `path` | **24×24** path d |
-| `arts` | `svg` | **200×200** |
+| `arts` | `svg` 또는 `image` | **200×200** |
 | `marks` | `svg` · `where` | 붙는 글자 기준 상대 박스 |
-| `decors` | `svg` | `{W}`×`{H}` (화면 전체) |
+| `decors` | `svg` 또는 `image` | `{W}`×`{H}` (화면 전체) |
 | `frames` | `svg` | `{W}`×`{H}`, `ratio` 로 가로세로비 |
 
 **SVG 는 템플릿이다.** `{accent}` `{accent2}` `{ink}` `{ink2}` `{dim}` `{bg}` `{bg2}`
@@ -69,6 +69,24 @@
 `{W}` `{H}` 는 화면 크기, `decors` 는 `{lv}`(세기 0·1·2), `marks` 는 `{text}` 를 더 받는다.
 그래서 커스텀 요소도 **테마를 바꾸면 색이 따라온다.** 통째 `<svg>` 를 줘도 되고
 조각만 줘도 껍데기를 씌워 준다.
+
+**외부 이미지 — `arts`·`decors` 는 `svg` 대신 `image` 를 받는다.** 로고·사진·스크린샷처럼
+벡터로 못 그리는 것을 세울 때 쓴다. 값은 data URI(권장) 또는 URL 이고, **로컬 파일 경로를
+적으면 `gm validate`·`gm build` 가 스펙 파일 기준으로 찾아 data URI 로 인라인한다** —
+산출물은 여전히 파일 한 장이다. `fit` 은 `contain`(그대로 다 보이게 — art 기본) ·
+`cover`(자리를 가득 채우게 — decor 기본). `svg` 와 `image` 를 한 항목에 같이 쓸 수는 없다.
+
+```jsonc
+{ "design": {
+    "arts":   { "shot":   { "label": "제품 스크린샷", "image": "./shot.png" } },
+    "decors": { "photoBg": { "label": "현장 사진", "image": "./site.jpg", "fit": "cover" } }
+  },
+  "scenes": [ { "pattern": "heroReveal", "title": "실물로 보인다", "art": "shot", "decor": "photoBg" } ] }
+```
+
+원격 URL 은 경고가 뜬다 — 오프라인 재생과 MP4 렌더에서 안 보일 수 있다. 이미지는
+테마 색을 따라오지 않으므로(사진은 사진이다) 분위기를 테마와 맞추는 것은 스펙을 쓰는
+쪽의 몫이다.
 
 `design` 의 정의는 **그 빌드 동안만** 유효하다 — 기본 요소와 이름이 겹쳐도
 (`"midnight"` 을 재정의해도) 다음 빌드에는 기본 요소가 돌아온다.

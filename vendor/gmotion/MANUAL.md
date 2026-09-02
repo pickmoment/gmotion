@@ -362,6 +362,16 @@ SVG 는 템플릿이다 — `{accent}` `{W}` 같은 자리가 테마 색·화면
 커스텀 요소도 테마를 바꾸면 색이 따라온다. 갈래별 필수 필드와 좌표계는
 `references/spec.md` 의 design 절에 표로 있다.
 
+**외부 이미지 — 일러스트·배경은 `svg` 대신 `image` 를 받는다.** 로고·사진·스크린샷을
+그대로 세운다. 값은 data URI 또는 URL 이고, **로컬 파일 경로를 적으면 `gm build` 가
+스펙 파일 기준으로 찾아 data URI 로 인라인한다** — 산출물은 여전히 파일 한 장이다.
+`fit: "contain"`(다 보이게 — 일러스트 기본) · `"cover"`(가득 채우게 — 배경 기본).
+
+```jsonc
+{ "design": { "arts": { "shot": { "label":"제품 화면", "image":"./shot.png" } } },
+  "scenes": [ { "pattern":"heroReveal", "title":"실물로 보인다", "art":"shot" } ] }
+```
+
 **트랜지션 15종** — 씬의 `transition` 에 쓴다. 첫 씬은 무시된다.
 
 | 이름 | 의미 |

@@ -88,6 +88,15 @@ node <skill>/assets/gm.js info chart       # 차트 17종과 각각의 용도
 **배경은 기본으로 깔린다** — 테마마다 어울리는 조합이 이미 적용된다. 화면이 허전하면
 `decorLevel: 2` 로 세기를 올리거나 씬별로 `decor` 를 바꾼다.
 
+**사용자가 로고·사진·스크린샷을 주면** `design.arts`(또는 배경이면 `design.decors`)에
+`svg` 대신 `image` 로 정의하고 이름으로 참조한다 — 값은 파일 경로면 되고 `gm build` 가
+data URI 로 인라인한다. `fit: "contain"|"cover"`. 자세한 것은 `spec.md` 의 design 절.
+
+```jsonc
+{ "design": { "arts": { "logo": { "label":"로고", "image":"./logo.png" } } },
+  "scenes": [ { "pattern":"heroReveal", "title":"…", "art":"logo" } ] }
+```
+
 ### 3. 예제에서 시작한다. 백지에서 쓰지 않는다.
 
 가장 가까운 걸 열어 갈아끼운다. 다섯 예제가 각각 다른 내러티브 아크다.

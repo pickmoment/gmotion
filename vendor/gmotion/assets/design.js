@@ -15,6 +15,8 @@
  *     "skins":   { "myBrand": { "extends":"flat", "vars":{ "r-lg":"4px" } } },
  *     "icons":   { "myLogo":  { "path":"M4 4 …", "aliases":["로고"] } },
  *     "arts":    { "myArt":   { "label":"…", "svg":"<circle …/>" } },
+ *                 일러스트·배경은 svg 대신 { "image":"data:image/…", "fit":"contain|cover" } 로
+ *                 외부 이미지 한 장을 세울 수도 있다 (gm build 가 로컬 경로를 인라인한다)
  *     "marks":   { "myMark":  { "label":"…", "where":"under", "svg":"…" } },
  *     "decors":  { "myBg":    { "label":"…", "svg":"…" } },
  *     "frames":  { "myFrame": { "label":"…", "ratio":1.6, "svg":"…" } }
@@ -54,6 +56,15 @@ function fill(svg, vars) {
   return out;
 }
 
+/** <image> 조각을 만든다 — 커스텀 요소를 SVG 대신 외부 이미지 한 장으로 정의할 때. */
+function imageMarkup(def, w, h, defaultFit) {
+  var fit = def.fit === 'cover' || def.fit === 'contain' ? def.fit : defaultFit;
+  var href = String(def.image)
+    .split('&').join('&amp;').split('<').join('&lt;').split('"').join('&quot;');
+  return '<image href="' + href + '" x="0" y="0" width="' + w + '" height="' + h +
+    '" preserveAspectRatio="xMidYMid ' + (fit === 'cover' ? 'slice' : 'meet') + '"/>';
+}
+
 /** 테마 색을 템플릿 값으로. 모든 벡터가 같은 이름을 쓴다. */
 function themeVars(T) {
   return {
@@ -88,6 +99,7 @@ var makers = {
     return {
       label: def.label || '커스텀 배경', category: def.category, custom: true,
       build: function (W, H, T, lv) {
+        if (def.image) return wrap(imageMarkup(def, W, H, 'cover'), 'gg-decor', '0 0 ' + W + ' ' + H);
         var v = themeVars(T); v.W = W; v.H = H; v.lv = lv;
         return wrap(fill(def.svg, v), 'gg-decor', '0 0 ' + W + ' ' + H);
       }
@@ -107,7 +119,10 @@ var makers = {
   art: function (def) {
     return {
       label: def.label || '커스텀 일러스트', custom: true,
-      build: function (T) { return wrap(fill(def.svg, themeVars(T)), 'gg-art', '0 0 200 200'); }
+      build: function (T) {
+        if (def.image) return wrap(imageMarkup(def, 200, 200, 'contain'), 'gg-art', '0 0 200 200');
+        return wrap(fill(def.svg, themeVars(T)), 'gg-art', '0 0 200 200');
+      }
     };
   },
   frame: function (def) {
@@ -236,10 +251,29 @@ function validate(design, SK) {
       warnings.push('design.icons.' + k + ' 의 path 가 M 으로 시작하지 않는다 — 24×24 좌표의 path d 여야 한다.');
   });
 
-  [['arts', '일러스트'], ['marks', '마크'], ['decors', '배경'], ['frames', '프레임']].forEach(function (m) {
+  /* 마크·프레임은 svg 만 받는다 — 글자·콘텐츠 위에 얹는 장식이라 이미지가 설 자리가 아니다 */
+  [['marks', '마크'], ['frames', '프레임']].forEach(function (m) {
     var bag = design[m[0]] || {};
     Object.keys(bag).forEach(function (k) {
       if (!bag[k] || !bag[k].svg) errors.push('design.' + m[0] + '.' + k + ' 에 svg 가 없다.');
+    });
+  });
+
+  /* 일러스트·배경은 svg 또는 image — 외부 이미지 한 장을 그대로 세울 수 있다 */
+  [['arts', '일러스트'], ['decors', '배경']].forEach(function (m) {
+    var bag = design[m[0]] || {};
+    Object.keys(bag).forEach(function (k) {
+      var d = bag[k];
+      if (!d || (!d.svg && !d.image)) { errors.push('design.' + m[0] + '.' + k + ' 에 svg 도 image 도 없다.'); return; }
+      if (d.svg && d.image) { errors.push('design.' + m[0] + '.' + k + ' 에 svg 와 image 가 둘 다 있다 — 하나만 쓴다.'); return; }
+      if (!d.image) return;
+      var img = String(d.image);
+      if (d.fit != null && d.fit !== 'contain' && d.fit !== 'cover')
+        warnings.push('design.' + m[0] + '.' + k + '.fit "' + d.fit + '" 는 없다 (contain cover) — 기본값으로 간다.');
+      if (/^https?:/i.test(img))
+        warnings.push('design.' + m[0] + '.' + k + '.image 가 원격 URL 이다 — 오프라인 재생·MP4 렌더에서 안 보일 수 있다. data URI 로 인라인하는 편이 안전하다.');
+      else if (!/^data:image\//i.test(img))
+        warnings.push('design.' + m[0] + '.' + k + '.image 가 data URI 가 아니다 — 파일 경로는 gm build 가 인라인하지만, 앱 미리보기와 산출물 이동에서는 깨진다.');
     });
   });
 

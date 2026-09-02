@@ -5,6 +5,7 @@
  *   node gm.js validate <spec.json> [--subs voice.srt]
  *   node gm.js build    <spec.json> [-o out.html] [--clean] [--cdn] [--no-fonts] [--present]
  *                                   [--subs voice.srt] [--audio voice.mp3] [--captions]
+ *                                   (design 의 image 가 로컬 경로면 스펙 파일 기준으로 data URI 인라인)
  *   node gm.js timing   <spec.json> [-o out.csv] [--fps 30] [--subs voice.srt]
  *   node gm.js info     [patterns|themes|skins|fonts|trans|energy|aspects|tokens|decor|mark|frame|art|chart]
  *   node gm.js pattern  <이름>            패턴 하나의 필드와 용도
@@ -64,6 +65,35 @@ function audioSrcOf(f, out, inline) {
                wav: 'audio/wav', ogg: 'audio/ogg', opus: 'audio/ogg', webm: 'audio/webm' }[ext] || 'audio/mpeg';
   return 'data:' + mime + ';base64,' + fs.readFileSync(f).toString('base64');
 }
+/**
+ * design.arts·decors 의 image 가 로컬 경로면 스펙 파일 기준으로 찾아 data URI 로 인라인한다.
+ * data:·http(s): 는 그대로 둔다. 파일이 없으면 여기서 멈춘다 — 빈 그림이 조용히 나가면 안 된다.
+ * 돌려주는 값: 인라인한 [{ at, bytes }] 목록 (빌드 결과 보고용).
+ */
+function inlineDesignImages(spec, specFile) {
+  var design = spec && spec.design, inlined = [];
+  if (!design || typeof design !== 'object') return inlined;
+  var MIME = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp',
+               gif: 'image/gif', avif: 'image/avif', svg: 'image/svg+xml' };
+  ['arts', 'decors'].forEach(function (kind) {
+    var bag = design[kind];
+    if (!bag || typeof bag !== 'object') return;
+    Object.keys(bag).forEach(function (k) {
+      var d = bag[k];
+      if (!d || typeof d.image !== 'string' || /^(data:|https?:)/i.test(d.image)) return;
+      var f = path.resolve(path.dirname(path.resolve(specFile)), d.image);
+      if (!fs.existsSync(f)) {
+        console.error('이미지 파일이 없다: design.' + kind + '.' + k + '.image → ' + d.image + ' (스펙 파일 기준)');
+        process.exit(1);
+      }
+      var ext = path.extname(f).slice(1).toLowerCase();
+      var buf = fs.readFileSync(f);
+      d.image = 'data:' + (MIME[ext] || 'image/png') + ';base64,' + buf.toString('base64');
+      inlined.push({ at: 'design.' + kind + '.' + k, bytes: buf.length });
+    });
+  });
+  return inlined;
+}
 
 function report(v) {
   v.errors.forEach(function (e) { console.error('  ✗ ' + e); });
@@ -91,11 +121,16 @@ if (!cmd || flags.help || cmd === 'help') usage(cmd ? 0 : 1);
    타이밍 계산을 건드리면 바로 드러난다. --update 는 의도한 변경 뒤에만. */
 if (cmd === 'test') { require(path.join(__dirname, 'selftest.js')); return; }
 
-if (cmd === 'validate') process.exit(report(G.validate(readSpec(files[0]), { cues: readCues(flags.subs) })) ? 0 : 1);
+if (cmd === 'validate') {
+  var vspec = readSpec(files[0]);
+  inlineDesignImages(vspec, files[0]);   /* 빌드와 같은 눈으로 본다 — 없는 파일은 여기서 걸린다 */
+  process.exit(report(G.validate(vspec, { cues: readCues(flags.subs) })) ? 0 : 1);
+}
 
 if (cmd === 'build') {
   var spec = readSpec(files[0]);
   var cues = readCues(flags.subs);
+  var images = inlineDesignImages(spec, files[0]);
   if (!cues && (flags.audio || flags.captions)) {
     console.error('  ! --audio · --captions 는 --subs 와 함께 쓴다 — 소리는 실측인데 화면이 추정이면 어긋난다.');
   }
@@ -111,6 +146,11 @@ if (cmd === 'build') {
                               audioSrc: audioSrcOf(flags.audio, out, !flags.noInlineAudio) });
   fs.writeFileSync(out, html);
   console.error('  → ' + out + ' (' + Math.round(html.length / 1024) + 'KB)' + (flags.present ? ' [발표용]' : ''));
+  if (images.length) {
+    console.error('    이미지 ' + images.length + '장 ' +
+      (images.reduce(function (s, x) { return s + x.bytes; }, 0) / 1048576).toFixed(1) +
+      'MB 를 HTML 안에 넣었다 (' + images.map(function (x) { return x.at; }).join(' · ') + ')');
+  }
   if (flags.audio) {
     console.error('    음성 ' + (flags.noInlineAudio
       ? '경로 참조 — ' + flags.audio + ' 를 HTML 옆에 둔다'

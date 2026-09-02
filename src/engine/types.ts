@@ -66,12 +66,18 @@ export interface SpecDesign {
   themes?: Record<string, ThemeDefinition>;
   skins?: Record<string, SkinDefinition>;
   icons?: Record<string, { path: string; aliases?: string[]; label?: string }>;
-  arts?: Record<string, { label: string; svg: string }>;
+  arts?: Record<
+    string,
+    { label: string; svg?: string; image?: string; fit?: "contain" | "cover" }
+  >;
   marks?: Record<
     string,
     { label: string; where?: string; svg: string; draw?: boolean; text?: boolean }
   >;
-  decors?: Record<string, { label: string; category?: string; svg: string }>;
+  decors?: Record<
+    string,
+    { label: string; category?: string; svg?: string; image?: string; fit?: "contain" | "cover" }
+  >;
   frames?: Record<
     string,
     { label: string; ratio?: number; svg: string; bar?: number; pad?: { x?: number; y?: number } }
@@ -82,7 +88,10 @@ export interface CustomDesignLibrary {
   themes: Record<string, ThemeDefinition>;
   skins: Record<string, SkinDefinition>;
   icons: Record<string, { path: string; aliases: string[]; label?: string }>;
-  arts: Record<string, { label: string; svg: string }>;
+  arts: Record<
+    string,
+    { label: string; svg?: string; image?: string; fit?: "contain" | "cover" }
+  >;
   marks: Record<
     string,
     {
@@ -93,7 +102,10 @@ export interface CustomDesignLibrary {
       text?: boolean;
     }
   >;
-  decors: Record<string, { label: string; category?: string; svg: string }>;
+  decors: Record<
+    string,
+    { label: string; category?: string; svg?: string; image?: string; fit?: "contain" | "cover" }
+  >;
   frames: Record<string, { label: string; ratio: number; svg: string; bar?: number }>;
 }
 

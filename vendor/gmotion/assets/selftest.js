@@ -467,10 +467,28 @@ function inlineDesign() {
     return G.validate({ message: 'm', design: d, scenes: [{ pattern: 'quote', text: 'x' }] }).errors.join(' ');
   }
   truthy('색이 빠진 테마는 오류', errOf({ themes: { x: { label: 'x', bg: '#000' } } }).indexOf('색이 없다') >= 0);
-  truthy('svg 없는 일러스트는 오류', errOf({ arts: { x: { label: 'x' } } }).indexOf('svg 가 없다') >= 0);
+  truthy('svg 도 image 도 없는 일러스트는 오류', errOf({ arts: { x: { label: 'x' } } }).indexOf('svg 도 image 도 없다') >= 0);
+  truthy('svg 없는 프레임은 오류', errOf({ frames: { x: { label: 'x' } } }).indexOf('svg 가 없다') >= 0);
+  truthy('svg 와 image 를 겹치면 오류', errOf({ arts: { x: { label: 'x', svg: '<g/>', image: 'data:image/png;base64,x' } } }).indexOf('둘 다') >= 0);
   truthy('path 없는 픽토그램은 오류', errOf({ icons: { x: {} } }).indexOf('path 가 없다') >= 0);
   truthy('없는 갈래는 오류', errOf({ nope: {} }).indexOf('없는 갈래') >= 0);
   truthy('없는 where 는 오류', errOf({ marks: { x: { label: 'x', svg: '<g/>', where: 'sideways' } } }).indexOf('where') >= 0);
+
+  /* 6b. 외부 이미지 — svg 대신 image 를 받는 규약 (일러스트·배경) */
+  function warnOf(d) {
+    return G.validate({ message: 'm', design: d, scenes: [{ pattern: 'quote', text: 'x' }] }).warnings.join(' ');
+  }
+  var imgSpec = { message: 'm',
+    design: { arts: { photo: { label: '사진', image: 'data:image/png;base64,iVBORw0KGgo=' } },
+              decors: { photoBg: { label: '사진 배경', image: 'data:image/png;base64,iVBORw0KGgo=', fit: 'cover' } } },
+    scenes: [{ pattern: 'heroReveal', title: 'x', art: 'photo', decor: 'photoBg' }] };
+  is('image 일러스트·배경 스펙의 오류', G.validate(imgSpec).errors.join(' · ') || '없음', '없음');
+  var imgHtml = G.toHTML(imgSpec, {});
+  truthy('image 일러스트가 산출물에 실린다', imgHtml.indexOf('data:image/png;base64,iVBORw0KGgo=') >= 0);
+  truthy('image 는 <image> 로 나간다', imgHtml.indexOf('<image href="data:image/png') >= 0);
+  truthy('없는 fit 은 경고', warnOf({ arts: { x: { label: 'x', image: 'data:image/png;base64,x', fit: 'stretch' } } }).indexOf('fit') >= 0);
+  truthy('원격 URL 은 경고', warnOf({ arts: { x: { label: 'x', image: 'https://ex.am/p.png' } } }).indexOf('원격 URL') >= 0);
+  truthy('경로 image 는 경고', warnOf({ arts: { x: { label: 'x', image: './p.png' } } }).indexOf('data URI 가 아니다') >= 0);
 
   /* 7. 스펙이 참조하는 이름을 찾아낸다 — 앱이 무엇을 담을지 정하는 근거 */
   var used = G.usedDesignNames(spec);

@@ -822,3 +822,55 @@ glass 설명("기존 산출물과 같은 모습" → 빛의 3겹)을 실제와 �
 `gm check` 8/8 OK(transform/opacity 만) · 16:9 다크/라이트 · 9:16 씬별 스크린샷 육안 검수 ·
 재생 중간 프레임(퍼널 카운트 진행, 사이클 원호 드로우) 정상 · `npm run build`(tsc) ·
 `vitest` 24건 · `cargo test` 11건 통과. `~/.claude/skills` 설치본 없음 — 동기화 대상 없음.
+
+## 24. 외부 이미지 규약 — arts·decors 가 svg 대신 image 를 받는다 (2026-09-02)
+
+**왜.** 로고·사진·스크린샷은 벡터로 못 그린다. `design.arts` 의 SVG 가 무살균으로
+주입되는 것을 이용해 `<image href="data:…">` 를 손으로 심는 우회로는 있었지만,
+규약이 아니라서 스킬(에이전트)이 쓸 수 없고 검증도 안 됐다. `image` 를 일급 필드로
+승격한다 — 일러스트·배경 두 갈래만. 마크·프레임은 글자·콘텐츠 위에 얹는 장식이라
+이미지가 설 자리가 아니다.
+
+**규약.** `design.arts.<k>`·`design.decors.<k>` 에 `svg` **또는** `image` 중 정확히
+하나(둘 다면 오류). `image` 값은 `<image href>` 에 들어갈 URI — data URI 권장,
+원격 URL 은 경고(오프라인·MP4 렌더에서 안 보일 수 있다), **로컬 파일 경로는
+`gm validate`·`gm build` 가 스펙 파일 기준으로 찾아 data URI 로 인라인**(`--audio`
+인라인과 같은 계약 — 산출물은 여전히 파일 한 장). `fit`: `contain`(art 기본,
+xMidYMid meet) · `cover`(decor 기본, slice). 이미지는 테마 색을 따라오지 않는다.
+
+### `assets/design.js`
+- `imageMarkup(def, w, h, defaultFit)` — href 를 XML 이스케이프해 `<image>` 조각으로.
+- `makers.art`·`makers.decor` 가 `def.image` 면 그걸로 빌드 (art 200×200 · decor {W}×{H}).
+- `validate` — 마크·프레임(svg 필수)과 일러스트·배경(svg|image 택일)을 갈랐다.
+  둘 다·둘 다 없음은 오류, 없는 `fit`·원격 URL·경로 image 는 경고.
+
+### `assets/gm.js`
+- `inlineDesignImages(spec, specFile)` — data:·http(s): 가 아닌 image 를 스펙 파일 기준
+  경로로 해석해 인라인. 없는 파일은 즉시 중단(빈 그림이 조용히 나가면 안 된다).
+  `validate` 와 `build` 둘 다 통과시킨다 — 검증이 빌드와 같은 눈으로 본다.
+- 빌드 보고에 "이미지 N장 X.XMB 를 HTML 안에 넣었다 (자리 목록)" 한 줄.
+
+### `assets/selftest.js`
+- §6 오류 문구를 새 계약에 맞추고(`svg 도 image 도 없다`), §6b 추가 — image
+  일러스트·배경 스펙이 오류 없이 `<image href>` 로 산출물에 실리는지, fit 오타·
+  원격 URL·경로 image 경고 3종. 163건 → 172건. **기존 예제 기준값은 그대로다** —
+  이 작업은 타이밍을 안 건드린다.
+
+### 문서
+- `references/spec.md` design 절 — 갈래 표(`svg` 또는 `image`)와 외부 이미지 단락·예시.
+- `MANUAL.md` 커스텀 요소 절 · `SKILL.md` §2(사용자가 로고·사진을 주면) · `gm.js` 사용법 헤더.
+
+### 앱
+- `src/engine/types.ts` — arts·decors 항목 `{ label; svg?; image?; fit? }`.
+- `src/engine/boot.ts` — `registerCustomVector` 가 image·fit 을 엔진 maker 로 전달(타입만).
+- `src/lib/designStore.ts` — `addArt`·`addDecor` 를 객체 인자로, image 는 2MB(문자 수)
+  상한(localStorage 라서), 가져오기 검증이 svg|image 택일·fit·상한을 지킨다.
+- `src/components/DesignPanel.tsx` — 일러스트·배경 편집 모달에 "외부 이미지" 모드:
+  파일 선택 → FileReader data URI → fit 셀렉트 → 미리보기. 목록 카드는 엔진 build()
+  경로라 image 항목도 자동 렌더.
+
+**검증.** `gm test` 172건 통과(기준값 갱신 없음) · 로컬 경로 스펙을 CLI 로 빌드해
+data URI 인라인·경로 잔존 없음 확인, 산출물 브라우저 스크린샷으로 art(contain)·
+decor(cover) 육안 검수 · 없는 파일 즉시 오류 · `npx tsc --noEmit` · `vitest` 24건 통과 ·
+DesignPanel 을 단독 마운트해 업로드 → 저장 → localStorage 왕복 → 리로드 후 카드 렌더까지
+브라우저로 확인. `~/.claude/skills`·`~/.agents/skills` 설치본 없음 — 동기화 대상 없음.
