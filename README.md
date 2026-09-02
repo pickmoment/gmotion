@@ -165,6 +165,14 @@ cd src-tauri && cargo test              # base64 왕복 · 음성 data URI · �
 node vendor/gmotion/assets/gm.js test   # 엔진 회귀 검사 (엔진을 고쳤으면 통과시킨다)
 ```
 
+**CSP 는 `script-src` 에 `'unsafe-inline'` 이 있어야 한다**(`tauri.conf.json`).
+미리보기는 산출물 HTML 을 srcdoc iframe 에 그대로 띄우고, srcdoc 문서는 **부모의 CSP 를
+물려받는다** — 산출물의 GSAP·런타임은 인라인 `<script>` 이므로 이게 없으면 그림만 서고
+움직이지 않는다(`window.GGM` 이 생기지 않아 씬 시킹·전송부도 죽는다). 산출물마다
+스크립트가 달라 nonce·해시로는 좁힐 수 없다. **dev 에서는 이 증상이 안 보인다** —
+창이 vite(`devUrl`)를 열어 Tauri 가 CSP 를 싣지 않기 때문이다. 그래서 CSP 를 건드렸으면
+`npm run tauri build` 로 만든 번들에서 미리보기가 재생되는지 확인한다.
+
 vendor 엔진을 CLI 로 직접 쓸 수도 있다. `vendor/package.json` 이 루트의
 `type: module` 로부터 CommonJS 를 격리해 둔다 (스킬 페이로드에는 들어가지 않는다).
 
