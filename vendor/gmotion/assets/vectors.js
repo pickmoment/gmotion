@@ -29,17 +29,24 @@ var DECOR = {};
 DECOR.blob = {
   label: '블롭 — 부드러운 유기 덩어리가 느리게 떠다닌다. 감성·브랜드·캠페인',
   build: function (W, H, T, lv) {
+    /* feGaussianBlur 로 민 단색 타원은 채도가 죽고 밴딩이 생긴다 — 라디얼 그라디언트로
+       심지가 살아 있는 발광 오브를 만든다. 심지는 진하고 가장자리는 길게 사라진다. */
     var o = [.1, .17, .27][lv], R = rng(7);
-    var n = 3, s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">',
-      '<defs><filter id="ggBlur" x="-30%" y="-30%" width="160%" height="160%">' +
-      '<feGaussianBlur stdDeviation="' + Math.round(Math.min(W, H) * .06) + '"/></filter></defs>'];
+    var n = 3, s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>'];
     var cols = [T.accent, T.accent2, T.accent];
     for (var i = 0; i < n; i++) {
+      s.push('<radialGradient id="ggBlob' + i + '">' +
+        '<stop offset="0%" stop-color="' + cols[i] + '" stop-opacity="' + r2(o * 1.35) + '"/>' +
+        '<stop offset="45%" stop-color="' + cols[i] + '" stop-opacity="' + r2(o * .6) + '"/>' +
+        '<stop offset="100%" stop-color="' + cols[i] + '" stop-opacity="0"/></radialGradient>');
+    }
+    s.push('</defs>');
+    for (var j = 0; j < n; j++) {
       var cx = W * (.2 + R() * .6), cy = H * (.18 + R() * .64);
-      var rr = Math.min(W, H) * (.22 + R() * .2);
-      s.push('<ellipse class="gg-drFloat" style="animation-delay:' + r2(-i * 5.5) + 's" ' +
+      var rr = Math.min(W, H) * (.26 + R() * .22);
+      s.push('<ellipse class="gg-drFloat" style="animation-delay:' + r2(-j * 5.5) + 's" ' +
         'cx="' + r2(cx) + '" cy="' + r2(cy) + '" rx="' + r2(rr) + '" ry="' + r2(rr * (.72 + R() * .5)) + '" ' +
-        'fill="' + cols[i] + '" opacity="' + r2(o) + '" filter="url(#ggBlur)"/>');
+        'fill="url(#ggBlob' + j + ')"/>');
     }
     return s.join('') + '</svg>';
   }
@@ -130,9 +137,12 @@ DECOR.mesh = {
     var o = [.18, .28, .42][lv], R = rng(19);
     var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>'];
     var cols = [T.accent, T.accent2, T.good, T.warn];
+    /* 2스톱 선형 감쇠는 끝이 뚝 끊긴다 — 중간 스톱을 넣어 심지는 살리고 꼬리는 길게 뺀다 */
     for (var i = 0; i < 4; i++) {
-      s.push('<radialGradient id="ggMesh' + i + '"><stop offset="0%" stop-color="' + cols[i] +
-        '" stop-opacity="' + r2(o) + '"/><stop offset="100%" stop-color="' + cols[i] + '" stop-opacity="0"/></radialGradient>');
+      s.push('<radialGradient id="ggMesh' + i + '">' +
+        '<stop offset="0%" stop-color="' + cols[i] + '" stop-opacity="' + r2(o * 1.15) + '"/>' +
+        '<stop offset="52%" stop-color="' + cols[i] + '" stop-opacity="' + r2(o * .45) + '"/>' +
+        '<stop offset="100%" stop-color="' + cols[i] + '" stop-opacity="0"/></radialGradient>');
     }
     s.push('</defs>');
     for (var j = 0; j < 4; j++) {

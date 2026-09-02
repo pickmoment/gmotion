@@ -66,7 +66,7 @@
 
 | 스킨 | 모습 | 어울리는 곳 |
 |---|---|---|
-| `glass` | 반투명 패널 + 배경 블러. **기본값** | 기존 산출물과 같은 모습 |
+| `glass` | 반투명 패널 + 배경 블러 + 위에서 오는 빛(하이라이트·광택·그림자). **기본값** | 범용 |
 | `flat` | 불투명 면 + 얇은 테두리. 블러 없음 | 문서·인쇄·저사양 화면. 글자 대비가 올라간다 |
 | `brutalist` | 직각 + 굵은 잉크 테두리 + 어긋난 하드 그림자 | 포스터·편집 디자인·강한 주장 |
 | `clay` | 큰 반경 + 이중 그림자로 점토 볼륨 | 친근한 설명·교육. `clay` 테마의 기본 |
@@ -208,9 +208,9 @@
 
 | | 지속시간 | 등장 이징 | 이동거리 | hold | 특징 |
 |---|---|---|---|---|---|
-| `E1` 차분 | ×1.35 | `power2.out` | ×0.8 | ×1.25 | 느린 호흡, 절제된 카메라. 다큐·감성·구조 설명 |
-| `E2` 표준 | ×1.0 | `power3.out` | ×1.0 | ×1.0 | **기본값** |
-| `E3` 하이에너지 | ×0.7 | `power4.out` | ×1.25 | ×0.78 | 임팩트 플래시 + 스테이지 킥, 오버슈트, **속도 왜곡(스큐)**. 쇼츠·런칭·선언 |
+| `E1` 차분 | ×1.35 | `power3.out` | ×0.8 | ×1.25 | 느린 호흡, 절제된 카메라. 다큐·감성·구조 설명 |
+| `E2` 표준 | ×1.0 | `power4.out` | ×1.0 | ×1.0 | **기본값** |
+| `E3` 하이에너지 | ×0.7 | `expo.out` | ×1.25 | ×0.78 | 임팩트 플래시 + 스테이지 킥, 오버슈트, **속도 왜곡(스큐)**. 쇼츠·런칭·선언 |
 
 `E3` 는 `kineticType` 의 기본 모드를 `cut`(한 줄씩 교체)으로, `by` 를 `chars` 로 바꾸고
 `heroReveal` `beforeAfter` `matchCut` 의 전환점에 임팩트를 심는다.
@@ -247,8 +247,8 @@
 
 ```js
 duration  micro .2 · fast .35 · normal .6 · slow 1.0 · cine 1.4
-ease      enter power3.out · exit power2.in · move power2.inOut
-          dramatic power4.out · overshoot back.out(1.6) · soft sine.inOut
+ease      enter power4.out · exit power2.in · move power3.inOut
+          dramatic expo.out · overshoot back.out(1.4) · soft sine.inOut
 stagger   tight .04 · normal .08 · loose .15
 ```
 

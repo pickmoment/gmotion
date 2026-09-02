@@ -78,25 +78,43 @@ function alpha(hex, aa) {
   return String(hex).length >= 7 ? String(hex).slice(0, 7) + aa : hex;
 }
 
+/** 배경이 어두운 테마인가 — 표면 그림자·광택의 방향을 고른다 (gsapgraph 의 lum 과 같은 WCAG 식) */
+function darkBg(hex) {
+  var h = String(hex).replace('#', '');
+  if (h.length < 6) return true;
+  var c = [0, 1, 2].map(function (i) {
+    var v = parseInt(h.substr(i * 2, 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < .5;
+}
+
 var SKINS = {};
 
 /* ------------------------------------------------------------------ *
  * glass — 기본. 반투명 패널 + 배경 블러.
  *
- * 프리미티브를 뽑기 전 스타일시트의 값을 그대로 옮겨 적은 것이다. 값 하나라도
- * 바꾸면 기존 산출물의 모습이 달라진다 — 여기는 손대지 않는다.
+ * 표면에는 세 겹이 들어간다 — 위쪽 헤어라인 하이라이트(inset), 유리 광택(윗면이
+ * 살짝 밝은 그라디언트), 낮게 깔린 그림자. 셋 다 빛이 위에서 온다는 하나의 가정을
+ * 공유한다. 어두운 테마는 흰 하이라이트, 밝은 테마는 그림자가 형태를 만든다.
  * ------------------------------------------------------------------ */
 SKINS.glass = {
   label: '글래스 — 반투명 패널 + 배경 블러. 기본값',
   vars: function (T, A) {
-    var m = Math.min(A.w, A.h);
+    var m = Math.min(A.w, A.h), dark = darkBg(T.bg);
     return {
-      'surf-fill': 'var(--panel)', 'surf-line': 'var(--pline)',
-      'surf-lw': '1.5px', 'surf-lw2': '2px', 'surf-shadow': 'none',
+      'surf-fill': dark
+        ? 'linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0) 58%),linear-gradient(var(--panel),var(--panel))'
+        : 'var(--panel)',
+      'surf-line': 'var(--pline)',
+      'surf-lw': '1.5px', 'surf-lw2': '2px',
+      'surf-shadow': dark
+        ? 'inset 0 1px 0 rgba(255,255,255,.07),0 24px 48px -20px rgba(0,0,0,.55)'
+        : 'inset 0 1px 0 rgba(255,255,255,.6),0 16px 36px -18px rgba(15,20,32,.18)',
       'r-lg': '24px', 'r-md': '20px', 'r-ms': '18px', 'r-sm': '16px', 'r-xs': '12px',
       'bd-1': 'blur(6px)', 'bd-2': 'blur(7px)', 'bd-3': 'blur(9px)', 'bd-4': 'blur(10px)',
-      'hub-ring': '0 0 0 6px ' + alpha(T.accent, '18'),
-      'target-ring': '0 0 0 8px ' + alpha(T.accent, '14'),
+      'hub-ring': '0 0 0 6px ' + alpha(T.accent, '18') + ',0 14px 34px -10px ' + alpha(T.accent, '30'),
+      'target-ring': '0 0 0 8px ' + alpha(T.accent, '14') + ',0 14px 34px -10px ' + alpha(T.accent, '2b'),
       'ln-cap': 'round',
       'link-w': '2.2', 'link-op': '.5',
       'arrow-w': '2.6', 'arrow-op': '.72',
@@ -108,7 +126,11 @@ SKINS.glass = {
       'kick-size': '26px', 'kick-mb': '22px', 'kick-caps': 'uppercase', 'kick-w': '600',
       'title-w': '800', 'title-lh': '1.08',
       'sub-mt': '26px', 'sub-lh': '1.5',
-      'glow': T.glow ? 'drop-shadow(0 0 ' + (T.glow * 10) + 'px var(--acc))' : 'none',
+      /* 광채는 두 겹 — 좁고 진한 심지 + 넓고 옅은 번짐. 한 겹 광채는 스티커처럼 떠 보인다 */
+      'glow': T.glow
+        ? 'drop-shadow(0 0 ' + (T.glow * 5) + 'px ' + alpha(T.accent, 'b3') + ') drop-shadow(0 0 ' +
+          (T.glow * 16) + 'px ' + alpha(T.accent, '59') + ')'
+        : 'none',
       'cc-fill': 'rgba(10,14,24,.84)', 'cc-line': 'rgba(255,255,255,.16)', 'cc-lw': '1.5px',
       'cc-r': Math.round(m * .014) + 'px', 'cc-bd': 'blur(10px)',
       'cc-shadow': '0 8px 24px rgba(0,0,0,.45)', 'cc-ink': '#fff'
@@ -125,6 +147,8 @@ SKINS.flat = {
   vars: function (T) {
     return {
       'surf-fill': T.bg2, 'surf-line': T.line, 'surf-lw': '1px',
+      /* glass 가 그림자를 갖게 된 뒤에도 flat 은 이름대로 평평해야 한다 — 상속을 끊는다 */
+      'surf-shadow': 'none',
       'r-lg': '14px', 'r-md': '12px', 'r-ms': '11px', 'r-sm': '10px', 'r-xs': '8px',
       'bd-1': 'none', 'bd-2': 'none', 'bd-3': 'none', 'bd-4': 'none',
       'glow': 'none',

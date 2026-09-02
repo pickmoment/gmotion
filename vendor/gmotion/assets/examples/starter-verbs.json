@@ -1,0 +1,81 @@
+{
+  "title": "새 동사 4종",
+  "message": "걸러지고, 돌고, 짚고, 견준다 — 새 패턴 4종의 쇼케이스",
+  "theme": "midnight",
+  "scenes": [
+    {
+      "pattern": "heroReveal",
+      "purpose": "쇼케이스 오프닝",
+      "kicker": "NEW PATTERNS",
+      "title": "네 가지 새 동사",
+      "sub": "funnel · cycle · anatomy · featureMatrix"
+    },
+    {
+      "pattern": "funnel",
+      "purpose": "단계별 감소를 폭으로 보여준다",
+      "transition": "pushLeft",
+      "kicker": "걸러진다",
+      "title": "가입은 많고 결제는 적다",
+      "unit": "명",
+      "stages": [
+        { "label": "방문", "value": 48000 },
+        { "label": "가입", "value": 9600, "note": "이메일 인증 포함" },
+        { "label": "온보딩 완료", "value": 4300 },
+        { "label": "첫 결제", "value": 860 }
+      ]
+    },
+    {
+      "pattern": "cycle",
+      "purpose": "성장 루프가 돈다",
+      "transition": "fade",
+      "kicker": "돈다",
+      "title": "성장 플라이휠",
+      "center": { "label": "제품", "icon": "rocket" },
+      "steps": [
+        { "label": "콘텐츠 발행", "icon": "pencil" },
+        { "label": "유입", "icon": "users" },
+        { "label": "전환", "icon": "check" },
+        { "label": "추천", "icon": "speech" }
+      ]
+    },
+    {
+      "pattern": "anatomy",
+      "purpose": "구조의 부위를 짚는다",
+      "transition": "zoomIn",
+      "kicker": "짚는다",
+      "title": "파이프라인 해부",
+      "art": "aiBrain",
+      "parts": [
+        { "label": "수집기", "note": "네 채널을 자동 동기화" },
+        { "label": "정규화 층", "note": "결정·근거·상태로 쪼갠다" },
+        { "label": "색인", "note": "한 곳에서 답이 나온다" },
+        { "label": "감사 로그", "note": "누가 언제 무엇을 바꿨나" }
+      ]
+    },
+    {
+      "pattern": "featureMatrix",
+      "purpose": "선택지를 기준별로 견준다",
+      "transition": "pushLeft",
+      "kicker": "견준다",
+      "title": "왜 이쪽인가",
+      "cols": [
+        { "label": "스프레드시트", "icon": "grid" },
+        { "label": "위키", "icon": "doc" },
+        { "label": "우리", "icon": "rocket", "highlight": true }
+      ],
+      "rows": [
+        { "label": "자동 동기화", "values": [false, false, true] },
+        { "label": "결정 추적", "values": [false, true, true] },
+        { "label": "도입 기간", "values": ["6주", "3주", "2일"] },
+        { "label": "검색 한 곳", "values": [false, false, true] }
+      ]
+    },
+    {
+      "pattern": "heroReveal",
+      "purpose": "클로징",
+      "transition": "zoomOut",
+      "title": "동사가 늘면\n말할 수 있는 문장이 는다",
+      "rule": true
+    }
+  ]
+}

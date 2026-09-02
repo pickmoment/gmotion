@@ -723,3 +723,102 @@ arrow1(1.35) → step2(1.59) 로 순서가 정확하다. 문제는 그리는 방
 
 **검증.** `gm test` 163건 통과 — 문서 개수 대조 검사(§18)에 걸리는 표기를 건드리지 않았다.
 설치본·vendor 동일.
+
+## 22. 산출물 시각·모션 품질 패스 — 빛의 방향과 이징의 결 (2026-09-02)
+
+**왜.** 씬별 정지 화면을 떠 놓고 보면 세 가지가 아마추어 티를 냈다.
+(1) 다크 테마의 `blob` 배경이 단색 타원 + `feGaussianBlur` 라 채도가 죽어 잿빛 얼룩처럼
+보이고 그라디언트 밴딩이 생겼다. (2) 기본 스킨(glass)의 카드가 그림자도 하이라이트도
+없는 반투명 면 하나라 배경에서 떠오르지 못하고 윤곽이 뭉갰다. (3) 이징이 `power2/3`
+일변도라 등장이 밋밋하고, 트랜지션 선언에 적은 이징(clayPop 의 elastic 등)을 런타임이
+기본값으로 덮어써 탄성 전환이 탄성 없이 재생됐다.
+
+타이밍(씬 시작 시각·트윈 수)은 하나도 건드리지 않았다 — 스냅샷 기준값 갱신 없이
+`gm test` 163건이 그대로 통과한다. 바뀌는 것은 곡선의 결과 픽셀의 질감뿐이다.
+
+### `assets/gsapgraph.js`
+- **TOKENS.e** — enter `power3.out`→`power4.out`, dramatic `power4.out`→`expo.out`,
+  move·draw `power2.inOut`→`power3.inOut`, overshoot `back.out(1.6)`→`back.out(1.4)`
+  (덜 튀고 더 정확하게 안착). **ENERGY** ease 도 한 단씩 올렸다: E1 `power3.out` ·
+  E2 `power4.out` · E3 `expo.out`. 빠르게 출발해 길게 감속하는 곡선이 전문 모션의 결이다.
+- **`.gg-stage` 배경** — 상단에 액센트 기운(`tint(accent, 17)`, 밝은 테마는 `0a`)을
+  라디얼로 한 겹 더 깔았다. 화면에 색온도가 생기고 평평한 남색이 사라진다.
+  `tint(hex, aa)` 헬퍼 추가 — 헥스가 아니면 그대로 돌려줘 커스텀 테마에 안전하다.
+- **TRANSITIONS.fade** — 나가는 씬 `scale:1.012`, 들어오는 씬 `scale:.988` 드리프트.
+  기본 전환이 정지 화면 겹침이 아니라 숨 쉬는 크로스디졸브가 된다.
+- **cardsCascade** — 위로 들어오는 기본 등장에 `scale:.97` 안착을 더했다.
+
+### `assets/skins.js`
+- **glass** — "값을 옮겨 적었을 뿐, 손대지 않는다" 시대를 끝내고 빛의 방향을 정했다.
+  빛은 위에서 온다: 위쪽 헤어라인 하이라이트(inset), 윗면이 살짝 밝은 광택 그라디언트
+  (`surf-fill`, 다크 테마만), 낮게 깔린 그림자(`surf-shadow`). 밝은 테마는 흰 하이라이트
+  대신 그림자가 형태를 만든다 — `darkBg()`(WCAG 휘도) 로 가른다.
+- **glow** — 한 겹 10px 광채를 두 겹(좁고 진한 심지 5px + 넓고 옅은 번짐 16px)으로.
+  한 겹 광채는 스티커처럼 떠 보인다. `hub-ring`·`target-ring` 에도 옅은 외곽 번짐 추가.
+- **flat** — glass 가 그림자를 갖게 됐으므로 `surf-shadow:'none'` 을 명시해 상속을 끊었다.
+  플랫은 이름대로 평평해야 한다. brutalist·clay·paper·neon 은 원래 자기 그림자가 있다.
+
+### `assets/vectors.js`
+- **DECOR.blob** — 블러 타원을 버리고 라디얼 그라디언트 오브로. 심지(×1.35)는 진하고
+  가장자리는 길게 사라진다 — 잿빛 얼룩이 발광하는 오라가 되고 밴딩이 없어진다.
+  결정적 난수 소비 순서는 그대로라 배치가 안 바뀐다.
+- **DECOR.mesh** — 2스톱 선형 감쇠에 중간 스톱(52%, ×.45)을 넣어 꼬리를 길게 뺐다.
+
+### `assets/runtime.js`
+- **트랜지션 이징** — 선언에 `ease` 가 있으면 그 값이 이긴다(`p.rest.ease || 기본값`).
+  clayPop 의 `elastic.out`/`back.in` 이 처음으로 실제로 재생된다. 들어오는 쪽 기본을
+  `power2.out`→`power3.out` 으로 올렸다.
+
+### 문서
+`references/theming.md` 의 에너지 표·모션 토큰 값, `MANUAL.md`·`theming.md`·`SKILL.md` 의
+glass 설명("기존 산출물과 같은 모습" → 빛의 3겹)을 실제와 맞췄다.
+
+**검증.** `gm test` 163건 통과(스냅샷 갱신 없음 — 타이밍 불변의 증명) ·
+`gm check` 통과(transform/opacity 만 애니메이션) · 예제 8종 재빌드 후 씬별 스크린샷
+대조: 다크 카드에 윤곽·부양이 생기고, blob 이 발광 오라로, 라이트 리포트 카드는
+낮은 엘리베이션으로. brutalist/clay/paper/neon 재질은 전후 동일. 클레이 전환·키네틱
+마스크 리빌 중간 프레임 정상.
+
+## 23. 씬 패턴 4종 추가 — funnel · cycle · anatomy · featureMatrix (2026-09-02)
+
+**왜.** 패턴은 "문장의 동사"인데(direction.md §2), 전문 explainer 의 단골 동사 넷이
+비어 있었다. (1) 단계마다 걸러져 **줄어든다**(전환 퍼널 — chart 17종에도 없다),
+(2) 과정이 **돌고 돈다**(플라이휠 — processFlow 는 직선 일방향), (3) 한 비주얼의 부위를
+**짚는다**(해부도 — zoomDetail 은 한 곳만), (4) 여럿을 여러 기준으로 **견준다**
+(비교표 — splitCompare 는 2자까지). 20종 → 24종.
+
+### `assets/gsapgraph.js`
+- **funnel(§21)** — `stages[]`. 중앙 정렬 바가 위→아래로 좁아진다. 폭 = 바닥 .36 +
+  값 비례 .64(순수 비례는 마지막 단이 라벨을 못 담는다). 색은 `CH.mix` 시퀀셜 램프 —
+  **마지막 단이 순수 액센트**라 시선이 결론에 모인다. 글자색은 바 색의 WCAG 휘도(> .3)로
+  가른다. 단 사이 "↓ n%" 통과율(`rates`, 기본 true). 바는 scaleX 로 중앙에서 벌어지고
+  값은 `tw.count` 로 올라간다(단위는 카운트 대상 밖 — textContent 를 갈아치우기 때문).
+  note 는 바 밖 오른쪽(`gg-fnSide`) — 안에 넣으면 좁은 단에서 라벨을 밀어낸다.
+- **cycle(§22)** — `steps[]` + 선택 `center{}`. `ringOf` 타원 위에 노드를 놓고 노드 사이를
+  잘게 쪼갠 폴리라인 원호(+ `arrowParts` 꺽쇠)로 잇는다. processFlow 와 같은 문법:
+  선이 자라고 꺽쇠가 닫는다. 마지막 원호가 처음으로 돌아가 고리를 닫으면
+  `fx:pulse` 로 전체가 한 번 맥동한다 — "반복이 시작됐다"는 신호.
+- **anatomy(§23)** — `parts[]` + `art|icon`(필수). 가로: 콜아웃이 좌우로 번갈아 붙고
+  지시선은 점(비주얼 주위 원 위) → 꺾임 → 라벨. 세로: 지시선을 흩뿌리면 꼬여서,
+  비주얼에서 내려온 **레일 하나**가 점들을 꿰는 구조로 갈랐다. 점 팝 → 선 드로우 →
+  라벨 순서로 부위 하나씩.
+- **featureMatrix(§24)** — `cols[]`(≤4) × `rows[]`. 열 헤더는 미니 카드, 행은 표면 토큰을
+  읽는 줄무늬 행. `values` 는 true(✓ good) · false(✕ dim) · 문자열. `highlight` 열에는
+  표가 다 찬 **마지막에** 링(`target-ring`)이 감긴다 — 결론은 마지막에. E3 는 임팩트 동반.
+- REQUIRED · MAXITEMS(전부 6, matrix 10) · ITEM_KEYS(`stages` `parts`) 등록.
+  featureMatrix 의 `values` 개수가 열 수와 다르면 validate 가 짚는다.
+- CSS: `gg-fn*` `gg-co*` `gg-anat*` `gg-fm*` — 전부 스킨 프리미티브(표면·반경·링 토큰)만
+  읽으므로 6종 스킨·15종 테마에 자동으로 따라간다.
+
+### 문서 · 예제 · 앱
+- `SKILL.md` `MANUAL.md` `references/spec.md` — "패턴 24종"으로. spec.md 에 4종의 필드·예시
+  절 추가. `direction.md` — 동사 표 4행, 밀도 표에 funnel·cycle·anatomy(6) 추가.
+- `assets/examples/starter-verbs.json` — 4종을 한 편에 담은 쇼케이스. 스냅샷 기준값에
+  추가됐다(기존 예제 기준값은 그대로 — 이 작업은 기존 산출물 타이밍을 안 바꾼다).
+- 앱: `src/engine/schema.ts` 폼 스키마 4종 + `blankScene` 기본값,
+  `ItemsEditor` 에 `values`(쉼표 입력, O/X ↔ true/false) · `highlight`(체크) 필드.
+
+**검증.** `gm test` 164건 통과(기준값은 starter-verbs 추가분만 갱신 — diff 순증 확인) ·
+`gm check` 8/8 OK(transform/opacity 만) · 16:9 다크/라이트 · 9:16 씬별 스크린샷 육안 검수 ·
+재생 중간 프레임(퍼널 카운트 진행, 사이클 원호 드로우) 정상 · `npm run build`(tsc) ·
+`vitest` 24건 · `cargo test` 11건 통과. `~/.claude/skills` 설치본 없음 — 동기화 대상 없음.

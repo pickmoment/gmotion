@@ -216,7 +216,9 @@
   /*
    * opacity 와 transform 의 이징을 분리한다. 같은 이징으로 묶으면 둘 중 하나가 반드시 어색해진다.
    *  - opacity: 양쪽 선형(none). 가속을 걸면 두 씬이 같이 흐려지는 순간이 생겨 화면이 빈다
-   *  - transform: 나가는 쪽 power2.in(가속해 밀려남), 들어오는 쪽 power2.out(감속해 안착)
+   *  - transform: 나가는 쪽 power2.in(가속해 밀려남), 들어오는 쪽 power3.out(감속해 안착)
+   *  - 트랜지션이 이징을 직접 적었으면(clayPop 의 elastic 등) 그 값이 이긴다 —
+   *    예전에는 기본값이 덮어써서 탄성 전환이 탄성 없이 재생됐다
    */
   function splitOpacity(v) {
     var op = v.opacity, rest = Object.assign({}, v);
@@ -236,7 +238,7 @@
     var p = splitOpacity(t.inFrom);
     master.set(el, { opacity: p.op != null ? 0 : 1 }, at);
     if (p.hasRest) {
-      var r = Object.assign({}, p.rest); r.duration = d; r.ease = 'power2.out';
+      var r = Object.assign({}, p.rest); r.duration = d; r.ease = p.rest.ease || 'power3.out';
       master.from(el, r, at + lag);
     }
     if (p.op != null) {
@@ -248,7 +250,7 @@
     var fast = name.indexOf('push') === 0 || name === 'cut' ? 1 : .85;
     var d = D(dur * fast), p = splitOpacity(t.out);
     if (p.hasRest) {
-      var r = Object.assign({}, p.rest); r.duration = D(dur); r.ease = 'power2.in';
+      var r = Object.assign({}, p.rest); r.duration = D(dur); r.ease = p.rest.ease || 'power2.in';
       master.to(el, r, at);
     }
     if (p.op != null) master.to(el, { opacity: p.op, duration: d, ease: 'none' }, at);

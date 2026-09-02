@@ -174,7 +174,7 @@ gm validate my.json
 ### 4-2. 씬 하나
 
 ```jsonc
-{ "pattern": "dataCounter",         // 필수. 20종 중 하나
+{ "pattern": "dataCounter",         // 필수. 24종 중 하나
   "purpose": "비용을 숫자로 못 박는다", // 이 씬이 무엇을 하는 씬인지
   "title":   "찾는 데만 하루가 든다",
   "kicker":  "지난 분기",             // 제목 위 작은 글자
@@ -189,12 +189,12 @@ gm validate my.json
 
 `title` 에 `\n` 을 넣으면 줄이 나뉘고 줄 단위로 나타난다.
 
-### 4-3. 패턴 20종
+### 4-3. 패턴 24종
 
 어떤 패턴이 있는지, 각각 무슨 필드를 받는지는 명령으로 확인한다.
 
 ```bash
-gm info patterns                 # 20종 전부 + 필드
+gm info patterns                 # 24종 전부 + 필드
 gm pattern convergence           # 하나만 자세히
 ```
 
@@ -291,7 +291,7 @@ gm info themes    gm info skins    gm info trans    gm info aspects    gm info e
 
 | 이름 | 모습 | 어울리는 곳 |
 |---|---|---|
-| `glass` | 반투명 패널 + 배경 블러. **기본값** | 기존 산출물과 같은 모습 |
+| `glass` | 반투명 패널 + 배경 블러 + 위에서 오는 빛(하이라이트·광택·그림자). **기본값** | 범용 |
 | `flat` | 불투명 면 + 얇은 테두리. 블러 없음 | 문서·인쇄·저사양 화면 |
 | `brutalist` | 직각 + 굵은 잉크 테두리 + 어긋난 하드 그림자 | 포스터·편집 디자인 |
 | `clay` | 큰 반경 + 이중 그림자로 점토 볼륨 | 친근한 설명·교육 |
@@ -528,7 +528,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | 명령 | 내용 |
 |---|---|
 | `gm info` | 전체 요약 |
-| `gm info patterns` | 씬 패턴 20종과 필드 |
+| `gm info patterns` | 씬 패턴 24종과 필드 |
 | `gm info themes` | 테마 목록 |
 | `gm info skins` | 스킨 6종 + 디자인 프리미티브 48종 |
 | `gm info trans` | 트랜지션 15종 |
@@ -942,7 +942,7 @@ ffmpeg -framerate 30 -i frames/%05d.png -c:v prores_ks -profile:v 3 out.mov
 
 | 파일 | 내용 |
 |---|---|
-| `references/spec.md` | 스펙 JSON 전체 필드 — 패턴 20종의 필드와 예시 |
+| `references/spec.md` | 스펙 JSON 전체 필드 — 패턴 24종의 필드와 예시 |
 | `references/direction.md` | 씬 구성을 짜는 법 — 내러티브 아크, 패턴 고르기, 리듬 |
 | `references/charts.md` | 차트 17종 — 어떤 데이터에 어떤 차트, 색의 역할 |
 | `references/theming.md` | 테마·화면비·에너지·모션 토큰 |

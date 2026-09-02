@@ -82,7 +82,7 @@
 
 | 필드 | 뜻 |
 |---|---|
-| `pattern` | **필수.** 20종 중 하나 (`gm info patterns`) |
+| `pattern` | **필수.** 24종 중 하나 (`gm info patterns`) |
 | `id` | 씬 식별자. 생략하면 title 에서 만든다 |
 | `purpose` | 이 씬이 무엇을 하는 씬인지. 타임코드 시트에 남고, **쓰다 막히면 그 씬은 필요 없는 씬이다** |
 | `hold` | 내용이 다 나온 뒤 머무는 초. 생략하면 글자 수로 추정한다. **자막에 맞추면 무시된다** |
@@ -193,7 +193,7 @@ node <skill>/assets/gm.js info chart       # 차트 17종
 
 ---
 
-# 패턴 20종
+# 패턴 24종
 
 ## heroReveal — 히어로 리빌
 오프닝·클로징. 한 씬에 메시지 하나.
@@ -459,3 +459,73 @@ waterfall slope dumbbell bullet heatmap sparkline`
   "by": "3주차 이탈 사용자",
   "role": "인터뷰 7명 중 5명이 같은 말" }
 ```
+
+## funnel — 퍼널
+단계마다 걸러져 줄어든다. **폭이 값을 지고**, 단 사이에 통과율이 붙는다. 마지막 단이 결론이다.
+
+```jsonc
+{ "pattern": "funnel",
+  "title": "가입은 많고 결제는 적다",
+  "unit": "명",                          // 모든 단의 공통 단위 (단별 unit 이 이긴다)
+  "stages": [                            // 필수. 6개까지
+    { "label": "방문", "value": 48000 },
+    { "label": "가입", "value": 9600, "note": "이메일 인증 포함" },   // note 는 바 밖 오른쪽
+    { "label": "첫 결제", "value": 860 }
+  ],
+  "rates": true }                        // 단 사이 "↓ 20%" 통과율. 기본 true
+```
+
+`value` 를 생략하면 폭이 선형으로 좁아지기만 한다(수치·통과율 없이 모양만).
+색은 시퀀셜 램프 — 마지막 단이 순수 액센트라 시선이 결론에 모인다.
+
+## cycle — 사이클
+순환·플라이휠·반복 루프. 단계가 원을 돌고, **마지막 화살표가 처음으로 돌아가 고리를 닫는다.**
+닫히는 순간 전체가 한 번 맥동한다.
+
+```jsonc
+{ "pattern": "cycle",
+  "title": "성장 플라이휠",
+  "center": { "label": "제품", "icon": "rocket" },   // 선택. 고리 한가운데
+  "steps": [                             // 필수. 6개까지
+    { "label": "콘텐츠 발행", "icon": "pencil" },
+    { "label": "유입", "icon": "users" },
+    { "label": "전환", "icon": "check" }
+  ] }
+```
+
+`processFlow` 가 직선 일방향이라면 cycle 은 "이 과정이 돌고 돈다"다.
+
+## anatomy — 해부도
+한 비주얼의 부위를 짚는다. 중앙 비주얼에 **지시선 콜아웃이 하나씩** 붙는다(점 → 선 → 라벨).
+
+```jsonc
+{ "pattern": "anatomy",
+  "title": "파이프라인 해부",
+  "art": "aiBrain",                      // art 또는 icon 필수 — 중앙 비주얼
+  "parts": [                             // 필수. 6개까지
+    { "label": "수집기", "note": "네 채널을 자동 동기화" },
+    { "label": "색인", "note": "한 곳에서 답이 나온다" }
+  ] }
+```
+
+가로 포맷은 좌우 번갈아 콜아웃이 붙고, 세로 포맷은 비주얼에서 내려온 레일 하나가
+점들을 꿴다. `zoomDetail` 이 "하나만 자세히"라면 anatomy 는 "전부 이름을 붙인다"다.
+
+## featureMatrix — 기능 매트릭스
+여럿을 여러 기준으로 견준다. 행이 기준, 열이 후보. **`highlight` 열에 마지막에 링이 감긴다** — 결론은 마지막에.
+
+```jsonc
+{ "pattern": "featureMatrix",
+  "title": "왜 이쪽인가",
+  "cols": [                              // 필수. 4개까지
+    { "label": "스프레드시트", "icon": "grid" },
+    { "label": "우리", "icon": "rocket", "highlight": true }
+  ],
+  "rows": [                              // 필수. 6개까지. values 는 열 순서대로
+    { "label": "자동 동기화", "values": [false, true] },     // true ✓(good) · false ✕(dim)
+    { "label": "도입 기간", "values": ["6주", "2일"] }        // 문자열은 그대로
+  ] }
+```
+
+`splitCompare` 가 2자 대비라면 featureMatrix 는 다자·다기준이다. `values` 개수는
+열 수와 같아야 한다 — 다르면 validate 가 짚는다.

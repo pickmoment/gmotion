@@ -64,6 +64,10 @@ validate            밀도·길이·리듬 경고를 읽고 고친다
 | 이건 실제 화면이다 | `deviceShow` | `frame` `screen{}` |
 | 숫자가 이런 모양이다 | `chart` (17종) | `chart` `data{}` — `references/charts.md` |
 | 이런 게 끝없이 이어진다 | `marquee` | `items[]` `rows` |
+| 단계마다 걸러져 줄어든다 | `funnel` | `stages[]` (`value` 로 폭) |
+| 이 과정이 돌고 돈다 | `cycle` | `steps[]` `center{}` |
+| 이 부분이 각각 무엇인지 짚는다 | `anatomy` | `art\|icon` `parts[]` |
+| 여럿을 여러 기준으로 견준다 | `featureMatrix` | `cols[]` (`highlight`) `rows[]` |
 
 **같은 패턴을 3연속 쓰면 validate 가 경고한다.** 세 씬 연속 `cardsCascade` 는
 세 화면이 같은 화면으로 읽힌다 — 내용이 달라도 그렇다.
@@ -78,7 +82,7 @@ validate            밀도·길이·리듬 경고를 읽고 고친다
 |---|---|---|
 | `dataCounter` | 4 | 숫자 다섯 개는 하나도 안 남는다 |
 | `cameraJourney` | 5 | 정류장마다 카메라가 움직인다 — 6개면 2분이 된다 |
-| `processFlow` `explodedDiagram` `timeline` | 6 | 한 줄에 여섯이 최대 |
+| `processFlow` `explodedDiagram` `timeline` `funnel` `cycle` `anatomy` | 6 | 한 줄(또는 한 고리)에 여섯이 최대 |
 | `convergence` `divergence` | 7 | 모이는 동작이 보여야 한다 |
 | `networkBuild` `zoomDetail` | 8 | 선이 8개 넘으면 그물이 된다 |
 | `cardsCascade` | 9 | 스태거가 9개를 넘으면 지루해진다 |

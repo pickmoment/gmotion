@@ -47,6 +47,10 @@ function lum(hex) {
   });
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 }
+/** #rrggbb 에 16진수 알파를 붙인다 — 헥스가 아니면 그대로 돌려준다(커스텀 테마 방어). */
+function tint(hex, aa) {
+  return /^#[0-9a-fA-F]{6}$/.test(String(hex)) ? hex + aa : hex;
+}
 function tc(sec) {
   var m = Math.floor(sec / 60), r = sec - m * 60;
   return pad(m, 2) + ':' + pad(r.toFixed(2), 5);
@@ -251,17 +255,17 @@ var ASPECTS = {
 var TOKENS = {
   d: { micro: .2, fast: .35, normal: .6, slow: 1.0, cine: 1.4 },
   e: {
-    enter: 'power3.out', exit: 'power2.in', move: 'power2.inOut',
-    dramatic: 'power4.out', overshoot: 'back.out(1.6)', soft: 'sine.inOut',
-    draw: 'power2.inOut', count: 'power2.out'
+    enter: 'power4.out', exit: 'power2.in', move: 'power3.inOut',
+    dramatic: 'expo.out', overshoot: 'back.out(1.4)', soft: 'sine.inOut',
+    draw: 'power3.inOut', count: 'power2.out'
   },
   s: { tight: .04, normal: .08, loose: .15 }
 };
 /* 에너지 레벨 — 지속시간 배율, 등장 이징, 이동 거리 배율, 트랜지션 길이 */
 var ENERGY = {
-  E1: { label: 'E1 차분 — 느린 호흡, 절제된 카메라', dm: 1.35, hm: 1.25, ease: 'power2.out', dist: .8, trans: 1.0, sm: 1.3 },
-  E2: { label: 'E2 표준 — 기본값', dm: 1.0, hm: 1.0, ease: 'power3.out', dist: 1.0, trans: .8, sm: 1.0 },
-  E3: { label: 'E3 하이에너지 — 크래시 줌·오버슈트·비트 컷', dm: .7, hm: .78, ease: 'power4.out', dist: 1.25, trans: .5, sm: .7 }
+  E1: { label: 'E1 차분 — 느린 호흡, 절제된 카메라', dm: 1.35, hm: 1.25, ease: 'power3.out', dist: .8, trans: 1.0, sm: 1.3 },
+  E2: { label: 'E2 표준 — 기본값', dm: 1.0, hm: 1.0, ease: 'power4.out', dist: 1.0, trans: .8, sm: 1.0 },
+  E3: { label: 'E3 하이에너지 — 크래시 줌·오버슈트·비트 컷', dm: .7, hm: .78, ease: 'expo.out', dist: 1.25, trans: .5, sm: .7 }
 };
 
 /* 포맷별 타이포 스케일 — 계산식보다 표가 예측 가능하다. 단위 px, 스테이지 좌표계. */
@@ -647,7 +651,7 @@ function relCurve(x1, y1, x2, y2, bow) {
  * 안 더하면 밀도 경고와 자막 앵커링이 조용히 그 패턴만 건너뛴다.
  * ------------------------------------------------------------------ */
 var ITEM_KEYS = ['items', 'stats', 'steps', 'nodes', 'layers', 'events',
-                 'lines', 'stops', 'sources', 'targets', 'orbits'];
+                 'lines', 'stops', 'sources', 'targets', 'orbits', 'stages', 'parts'];
 
 /** 씬이 가진 항목 배열 — 차트는 data 안에 한 겹 더 들어 있다. */
 function itemListOf(sc) {
@@ -1064,7 +1068,7 @@ PATTERNS.cardsCascade = {
     } else {
       var v = dir === 'left' ? { x: ctx.px(60), opacity: 0, skewX: ctx.skew('x') }
             : dir === 'scale' ? { scale: .88, opacity: 0 }
-            : { y: ctx.px(44), opacity: 0, skewY: ctx.skew() };
+            : { y: ctx.px(44), scale: .97, opacity: 0, skewY: ctx.skew() };
       v.duration = ctx.d('fast') * 1.25; v.ease = ctx.ei;
       var stC = ctx.st(n > 6 ? 'tight' : 'normal');
       enterItems(tw, ctx, it, '.gg-cascadeCard', t, stC, v);
@@ -2095,6 +2099,316 @@ PATTERNS.quote = {
   }
 };
 
+/* --- 21. funnel — 단계마다 걸러져 줄어든다. 줄어드는 것 자체가 메시지. --- */
+PATTERNS.funnel = {
+  label: '퍼널',
+  use: '전환 퍼널, 단계별 선별·감소. 위가 넓고 아래가 좁다 — 마지막 단이 결론이다.',
+  fields: 'stages[](필수: {label,value,note}) · title · kicker · unit · rates(단 사이 통과율, 기본 true)',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var st = items(sc.stages || sc.items), n = st.length;
+    var hasHead = !!(sc.title || sc.kicker), topY = ctx.safe + (ctx.wide ? 28 : 94), hd;
+    if (hasHead) {
+      hd = head(sc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: ctx.wide ? 'left' : 'center' },
+        { title: Math.round(ctx.fs.title * .7) });
+      H.push(hd.html);
+      t = hd.end;
+    }
+    var mid = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
+    var vals = st.map(function (x) { return num(x.value, parseFloat(x.value) || 0); });
+    var numeric = vals.some(function (v) { return v > 0; });
+    var hi = Math.max.apply(null, vals.concat([1]));
+    var rates = sc.rates !== false && numeric;
+    var maxW = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1180 : 920);
+    var gap = ctx.wide ? 46 : 44;
+    var barH = clamp(Math.round((ctx.H * (ctx.wide ? .54 : .48) - (n - 1) * gap) / n), 62, ctx.wide ? 100 : 112);
+    var totalH = n * barH + (n - 1) * gap, y0 = Math.round(mid - totalH / 2);
+    st.forEach(function (x, i) {
+      /* 폭이 값을 진다 — 바닥(.36)을 깔고 그 위에 비례를 얹는다. 순수 비례로 하면
+         마지막 단이 라벨도 못 담을 만큼 좁아진다. 값이 없으면 선형으로 좁아진다. */
+      var ratio = numeric ? .36 + .64 * (vals[i] / hi) : 1 - (n > 1 ? i * (.55 / (n - 1)) : 0);
+      var w = Math.round(maxW * ratio);
+      var fill = CH.mix(ctx.T.accent, ctx.T.bg2, (1 - (i + 1) / n) * .58);
+      /* 글자색은 대비로 고른다 — 액센트가 밝은 테마(파스텔)면 어두운 잉크가 이긴다 */
+      var txt = lum(fill) > .3 ? '#12141a' : '#fff';
+      var y = y0 + i * (barH + gap);
+      H.push('<div class="gg-fnRow" data-i="' + i + '" style="left:' + Math.round(ctx.cx - w / 2) + 'px;top:' + y +
+        'px;width:' + w + 'px;height:' + barH + 'px">' +
+        '<div class="gg-fnBar" style="background:' + fill + '"></div>' +
+        '<div class="gg-fnIn" style="color:' + txt + '">' +
+        '<span class="gg-fnLb" style="font-size:' + Math.round(ctx.fs.body * 1.02) + 'px">' + esc(x.label || '') + '</span>' +
+        (numeric ? '<span class="gg-fnNum" style="font-size:' + Math.round(ctx.fs.body * 1.28) + 'px">' +
+          '<span class="gg-fnVal">0</span><em class="gg-fnUnit">' + esc(x.unit || sc.unit || '') + '</em></span>' : '') +
+        '</div>' +
+        /* 노트는 바 밖 오른쪽 — 바 안에 넣으면 좁은 단에서 라벨을 밀어낸다 */
+        (x.note ? '<div class="gg-fnSide">' + esc(x.note) + '</div>' : '') +
+        '</div>');
+      if (rates && i < n - 1 && vals[i] > 0) {
+        var r = Math.round(vals[i + 1] / vals[i] * 100);
+        H.push('<div class="gg-fnRate" data-i="' + i + '" style="left:' + Math.round(ctx.cx - 130) + 'px;top:' +
+          Math.round(y + barH + gap / 2 - 17) + 'px;width:260px">↓ ' + r + '%</div>');
+      }
+    });
+    var beat = ctx.d('fast') * 1.05;
+    st.forEach(function (x, i) {
+      var row = q('.gg-fnRow[data-i="' + i + '"]');
+      tw.from(row, t, { y: ctx.px(26), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+      /* 바는 중앙에서 양쪽으로 벌어진다 — 깔때기의 대칭이 살아 있어야 한다 */
+      tw.fromTo(row + ' .gg-fnBar', t + ctx.d('micro') * .5, { scaleX: 0 },
+        { scaleX: 1, duration: ctx.d('fast') * 1.3, ease: ctx.ei });
+      if (numeric) tw.count(row + ' .gg-fnVal', t + ctx.d('micro'), ctx.d('normal') * 1.1, 0, vals[i], { dec: num(x.dec, 0) });
+      if (rates && i < n - 1 && vals[i] > 0) {
+        tw.from(q('.gg-fnRate[data-i="' + i + '"]'), t + beat * .7,
+          { y: -ctx.px(12), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+      }
+      t += beat * .8;
+    });
+    t += ctx.d('normal') * .7;
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(st) + (sc.title || '')) };
+  }
+};
+
+/* --- 22. cycle — 순환 고리. 마지막 화살표가 처음으로 돌아가 고리를 닫는다. --- */
+PATTERNS.cycle = {
+  label: '사이클',
+  use: '순환·플라이휠·반복 루프. 단계가 원을 돌고, 고리가 닫히는 순간이 클라이맥스다.',
+  fields: 'steps[](필수: {label,icon,note}) · center{label,icon}(선택) · title · kicker',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var st = items(sc.steps || sc.items), n = Math.max(st.length, 1);
+    var C = typeof sc.center === 'string' ? { label: sc.center } : sc.center;
+    var hasHead = !!(sc.title || sc.kicker), topY = ctx.safe + (ctx.wide ? 24 : 84), hd;
+    if (hasHead) {
+      hd = head(sc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: 'center' },
+        { title: Math.round(ctx.fs.title * .7) });
+      H.push(hd.html);
+      t = hd.end;
+    }
+    var mid = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
+    var rx = ctx.wide ? Math.min(540, (ctx.W - ctx.safe * 2) * .3) : (ctx.W - ctx.safe * 2) * .36;
+    var ry = rx * (ctx.wide ? .56 : 1.18);
+    var p = ringOf(n, ctx.cx, mid, rx, ry, -90);
+    /* 노드 사이 원호 — 타원 위를 잘게 쪼갠 폴리라인이라 draw 가 안전하게 걸린다 */
+    function arcPts(a1, a2) {
+      var out = [], k = 12;
+      for (var s = 0; s <= k; s++) {
+        var a = (a1 + (a2 - a1) * s / k) * Math.PI / 180;
+        out.push([ctx.cx + Math.cos(a) * rx, mid + Math.sin(a) * ry]);
+      }
+      return out;
+    }
+    var off = 360 / n * .27;
+    var svg = ['<svg class="gg-svg" viewBox="0 0 ' + ctx.W + ' ' + ctx.H + '" aria-hidden="true">'];
+    for (var i = 0; i < n; i++) {
+      var a1 = p[i].ang + off, a2 = p[i].ang + 360 / n - off;
+      var pts = arcPts(a1, a2);
+      var d = pts.map(function (pt, s) { return (s ? ' L' : 'M') + r2(pt[0]) + ' ' + r2(pt[1]); }).join('');
+      var last = pts[pts.length - 1], prev = pts[pts.length - 2];
+      var head2 = arrowParts(prev[0], prev[1], last[0], last[1], 18).head;
+      svg.push('<path class="gg-arrow" data-i="' + i + '" d="' + d + '"/>' +
+        '<path class="gg-arrow" data-i="' + i + '" data-head="1" d="' + head2 + '"/>');
+    }
+    svg.push('</svg>');
+    H.push(svg.join(''));
+    if (C) {
+      var cw = ctx.wide ? 280 : 250;
+      H.push('<div class="gg-center" style="left:' + Math.round(ctx.cx - cw / 2) + 'px;top:' + Math.round(mid - 70) +
+        'px;width:' + cw + 'px;min-height:140px">' + visual(ctx, C, 52, 116) +
+        '<div class="gg-centerLb" style="font-size:' + Math.round(ctx.fs.sub * .88) + 'px">' + esc(C.label || '') + '</div></div>');
+    }
+    var nw = ctx.wide ? 230 : 240;
+    st.forEach(function (x, i) {
+      H.push('<div class="gg-node gg-cycN" data-i="' + i + '" style="left:' + Math.round(p[i].x - nw / 2) +
+        'px;top:' + Math.round(p[i].y - (x.icon || x.art ? 74 : 46)) + 'px;width:' + nw + 'px">' +
+        visual(ctx, x, 44, 96) +
+        '<div class="gg-nodeLb" style="font-size:' + Math.round(ctx.fs.body * .98) + 'px">' + esc(x.label || '') + '</div>' +
+        (x.note ? '<div class="gg-nodeNote">' + esc(x.note) + '</div>' : '') + '</div>');
+    });
+    if (C) {
+      tw.from(q('.gg-center'), t, { scale: .72, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
+      t += ctx.d('fast') * .8;
+    }
+    /* 단계 → 원호 → 다음 단계. processFlow 와 같은 문법 — 선이 자라고 꺽쇠가 닫는다. */
+    var beat = ctx.d('fast') * 1.05, aw = ctx.d('fast') * .8;
+    st.forEach(function (x, i) {
+      tw.from(q('.gg-cycN[data-i="' + i + '"]'), t,
+        { scale: .78, opacity: 0, duration: beat, ease: TOKENS.e.overshoot });
+      if (hasArt(x)) artIn(tw, ctx, '.gg-cycN[data-i="' + i + '"]', t + beat * .4);
+      t += beat * .62;
+      var sel = '.gg-arrow[data-i="' + i + '"]';
+      tw.draw(q(sel + ':not([data-head])'), t, aw * .72, TOKENS.e.move);
+      tw.draw(q(sel + '[data-head]'), t + aw * .64, aw * .36, TOKENS.e.move);
+      t += aw * .66;
+    });
+    /* 고리가 닫혔다 — 전체가 한 번 맥동한다. 반복이 시작됐다는 신호. */
+    tw.fx('pulse', t, q('.gg-cycN'));
+    t += ctx.d('fast');
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(st) + (sc.title || '')) };
+  }
+};
+
+/* --- 23. anatomy — 한 비주얼의 부위를 짚는다. 콜아웃이 차례로 붙는다. --- */
+PATTERNS.anatomy = {
+  label: '해부도',
+  use: '제품·구조의 부위 설명. 중앙 비주얼에 지시선 콜아웃이 하나씩 붙는다.',
+  fields: 'parts[](필수: {label,note}) · art|icon(필수, 중앙 비주얼) · title · kicker',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var pt = items(sc.parts || sc.items), n = pt.length;
+    var hasHead = !!(sc.title || sc.kicker), topY = ctx.safe + (ctx.wide ? 26 : 88), hd;
+    if (hasHead) {
+      hd = head(sc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: 'center' },
+        { title: Math.round(ctx.fs.title * .68) });
+      H.push(hd.html);
+      t = hd.end;
+    }
+    var mid = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
+    var az = ctx.wide ? Math.min(470, Math.round(ctx.H * .44)) : Math.min(Math.round(ctx.W * .5), 480);
+    var ay = ctx.wide ? mid : (hasHead ? topY + hd.h + 60 : ctx.safe + 60) + az / 2;
+    /* 중앙 비주얼 — 일러스트가 기본, 없으면 픽토그램을 크게 드로우한다 */
+    if (sc.art && VEC.ART[sc.art]) {
+      H.push('<div class="gg-anatArt" style="left:' + Math.round(ctx.cx - az / 2) + 'px;top:' + Math.round(ay - az / 2) +
+        'px">' + ctx.art(sc.art, az) + '</div>');
+      artIn(tw, ctx, '.gg-anatArt', t, { scale: .84, dur: ctx.d('normal'), st: ctx.st('normal') });
+    } else if (sc.icon) {
+      var isz = Math.round(az * .56);
+      H.push('<div class="gg-anatArt" style="left:' + Math.round(ctx.cx - isz / 2) + 'px;top:' + Math.round(ay - isz / 2) +
+        'px">' + ctx.icon(sc.icon, isz, 'gg-drawIc') + '</div>');
+      tw.draw(q('.gg-anatArt path'), t, ctx.d('slow'), TOKENS.e.draw);
+      tw.from(q('.gg-anatArt'), t, { scale: .84, opacity: 0, duration: ctx.d('normal'), ease: ctx.ei });
+    }
+    t += ctx.d('normal') * .8;
+    var svg = ['<svg class="gg-svg" viewBox="0 0 ' + ctx.W + ' ' + ctx.H + '" aria-hidden="true">'];
+    var rr = az * .52;
+    if (ctx.wide) {
+      /* 콜아웃은 좌우로 번갈아 붙는다. 지시선: 점 → 꺾임 → 라벨 */
+      var cw = Math.min(420, (ctx.W - az) / 2 - ctx.safe - 160);
+      var rs = Math.ceil(n / 2), rowGap = Math.min(180, Math.round(ctx.H * .56 / Math.max(rs, 1)));
+      pt.forEach(function (x, i) {
+        var side = i % 2 === 0 ? 1 : -1, row = Math.floor(i / 2);
+        var rowsThis = side > 0 ? Math.ceil(n / 2) : Math.floor(n / 2);
+        var yy = Math.round(mid - (rowsThis - 1) * rowGap / 2 + row * rowGap);
+        var cx2 = side > 0 ? ctx.cx + az / 2 + 150 : ctx.cx - az / 2 - 150 - cw;
+        var ang = Math.atan2(yy - mid, side * (az / 2 + 150));
+        var dx = ctx.cx + Math.cos(ang) * rr, dy = mid + Math.sin(ang) * rr;
+        var edge = side > 0 ? cx2 - 12 : cx2 + cw + 12;
+        var elbow = side > 0 ? cx2 - 46 : cx2 + cw + 46;
+        svg.push('<circle class="gg-dot gg-anatDot" data-i="' + i + '" cx="' + r2(dx) + '" cy="' + r2(dy) + '" r="9"/>');
+        svg.push('<path class="gg-link gg-anatLn" data-i="' + i + '" d="M' + r2(dx) + ' ' + r2(dy) +
+          ' L' + r2(elbow) + ' ' + yy + ' L' + r2(edge) + ' ' + yy + '"/>');
+        H.push('<div class="gg-co" data-i="' + i + '" style="left:' + Math.round(cx2) + 'px;top:' + (yy - 34) +
+          'px;width:' + Math.round(cw) + 'px;text-align:' + (side > 0 ? 'left' : 'right') + '">' +
+          '<div class="gg-coLb" style="font-size:' + Math.round(ctx.fs.body * 1.08) + 'px">' + esc(x.label || '') + '</div>' +
+          (x.note ? '<div class="gg-coNote">' + esc(x.note) + '</div>' : '') + '</div>');
+      });
+    } else {
+      /* 세로 포맷 — 비주얼에서 내려온 레일 하나가 점들을 꿴다. 지시선을 흩뿌리면 꼬인다 */
+      var railX = ctx.safe + 30, rowY0 = Math.round(ay + az / 2 + 86), rowGap2 = 128;
+      var lastY = rowY0 + (n - 1) * rowGap2;
+      var ea = 165 * Math.PI / 180;
+      var ex = ctx.cx + Math.cos(ea) * rr, ey = ay + Math.sin(ea) * rr;
+      svg.push('<path class="gg-link gg-anatRail" d="M' + r2(ex) + ' ' + r2(ey) +
+        ' L' + railX + ' ' + rowY0 + ' L' + railX + ' ' + lastY + '"/>');
+      var cw2 = ctx.W - ctx.safe * 2 - 74;
+      pt.forEach(function (x, i) {
+        var yy = rowY0 + i * rowGap2;
+        svg.push('<circle class="gg-dot gg-anatDot" data-i="' + i + '" cx="' + railX + '" cy="' + yy + '" r="9"/>');
+        H.push('<div class="gg-co" data-i="' + i + '" style="left:' + (railX + 34) + 'px;top:' + (yy - 22) +
+          'px;width:' + cw2 + 'px">' +
+          '<div class="gg-coLb" style="font-size:' + Math.round(ctx.fs.body * 1.06) + 'px">' + esc(x.label || '') + '</div>' +
+          (x.note ? '<div class="gg-coNote">' + esc(x.note) + '</div>' : '') + '</div>');
+      });
+    }
+    svg.push('</svg>');
+    H.push(svg.join(''));
+    var beat = ctx.d('fast') * .95;
+    if (!ctx.wide) {
+      /* 레일이 먼저 내려오고, 점과 라벨이 그 위에 선다 */
+      tw.draw(q('.gg-anatRail'), t, ctx.d('normal'), TOKENS.e.move);
+      t += ctx.d('fast') * .6;
+    }
+    pt.forEach(function (x, i) {
+      tw.from(q('.gg-anatDot[data-i="' + i + '"]'), t,
+        { scale: 0, opacity: 0, transformOrigin: '50% 50%', duration: ctx.d('fast'), ease: TOKENS.e.overshoot });
+      if (ctx.wide) tw.draw(q('.gg-anatLn[data-i="' + i + '"]'), t + ctx.d('micro'), ctx.d('fast') * .9, TOKENS.e.move);
+      tw.from(q('.gg-co[data-i="' + i + '"]'), t + ctx.d('fast') * .55,
+        { y: ctx.px(14), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+      t += beat * .75;
+    });
+    t += ctx.d('fast') * .6;
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(pt) + (sc.title || '')) };
+  }
+};
+
+/* --- 24. featureMatrix — 여럿을 여러 기준으로 견준다. highlight 열이 주인공. --- */
+PATTERNS.featureMatrix = {
+  label: '기능 매트릭스',
+  use: '경쟁사·요금제·선택지 비교. 행이 기준, 열이 후보. highlight 열에 링이 감긴다.',
+  fields: 'cols[](필수: {label,icon,highlight}) · rows[](필수: {label,values[]}) · title · kicker — values 는 true|false|문자열',
+  build: function (sc, ctx) {
+    var tw = new TW(), q = ctx.q, H = [], t = 0;
+    var cols = items(sc.cols).slice(0, 4), c = cols.length;
+    var rows = items(sc.rows || sc.items), n = rows.length;
+    var hasHead = !!(sc.title || sc.kicker), topY = ctx.safe + (ctx.wide ? 26 : 88), hd;
+    if (hasHead) {
+      hd = head(sc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: ctx.wide ? 'left' : 'center' },
+        { title: Math.round(ctx.fs.title * .68) });
+      H.push(hd.html);
+      t = hd.end;
+    }
+    var mid = hasHead ? bodyCy(ctx, topY, hd.h) : ctx.cy;
+    var maxW = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1320 : 940);
+    var lw = ctx.wide ? 300 : 180, gap = 14, rGap = 10;
+    var cw = Math.floor((maxW - lw - gap * c) / c);
+    var hasIco = cols.some(function (x) { return x.icon; });
+    var headH = hasIco ? (ctx.wide ? 118 : 112) : 76;
+    var rowH = ctx.wide ? 86 : 94;
+    var totalH = headH + 18 + n * rowH + (n - 1) * rGap;
+    var x0 = Math.round((ctx.W - maxW) / 2), y0 = Math.round(mid - totalH / 2);
+    var hiIdx = -1;
+    cols.forEach(function (x, j) {
+      if (x.highlight && hiIdx < 0) hiIdx = j;
+      H.push('<div class="gg-fmHead" data-i="' + j + '" style="left:' + (x0 + lw + gap + j * (cw + gap)) +
+        'px;top:' + y0 + 'px;width:' + cw + 'px;height:' + headH + 'px;font-size:' + Math.round(ctx.fs.body * 1.02) + 'px">' +
+        (x.icon ? ctx.icon(x.icon, 40) : '') + '<span>' + esc(x.label || '') + '</span></div>');
+    });
+    rows.forEach(function (x, i) {
+      var cells = arr(x.values).slice(0, c).map(function (v, j) {
+        var inner = v === true ? ctx.icon('check', 36, 'gg-fmMark gg-fmYes')
+          : v === false ? ctx.icon('x', 30, 'gg-fmMark gg-fmNo')
+          : '<span class="gg-fmMark gg-fmTxt" style="font-size:' + Math.round(ctx.fs.body * .96) + 'px">' + esc(String(v == null ? '' : v)) + '</span>';
+        return '<div class="gg-fmCell" style="flex:0 0 ' + cw + 'px;margin-left:' + gap + 'px">' + inner + '</div>';
+      }).join('');
+      H.push('<div class="gg-fmRow" data-i="' + i + '" style="left:' + x0 + 'px;top:' + (y0 + headH + 18 + i * (rowH + rGap)) +
+        'px;width:' + maxW + 'px;height:' + rowH + 'px">' +
+        '<div class="gg-fmRowLb" style="flex:0 0 ' + lw + 'px;font-size:' + Math.round(ctx.fs.body * .98) + 'px">' +
+        esc(x.label || '') + '</div>' + cells + '</div>');
+    });
+    if (hiIdx >= 0) {
+      H.push('<div class="gg-fmHi" style="left:' + (x0 + lw + gap + hiIdx * (cw + gap) - 10) + 'px;top:' + (y0 - 10) +
+        'px;width:' + (cw + 20) + 'px;height:' + (totalH + 20) + 'px"></div>');
+    }
+    enterItems(tw, ctx, cols, '.gg-fmHead', t, ctx.st('tight') * 1.5,
+      { y: ctx.px(24), scale: .95, opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+    t += ctx.d('fast') * .9 + ctx.st('tight') * 1.5 * (c - 1);
+    var stR = ctx.st('normal');
+    enterItems(tw, ctx, rows, '.gg-fmRow', t, stR, { y: ctx.px(22), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+    /* 판정 마크는 행이 자리를 잡은 뒤 튀어나온다 — 표가 채워지는 리듬 */
+    enterItems(tw, ctx, rows, '.gg-fmRow', t, stR,
+      { scale: 0, opacity: 0, duration: ctx.d('fast'), ease: TOKENS.e.overshoot },
+      { inner: ' .gg-fmMark', lead: ctx.d('micro') * 1.5 });
+    t += ctx.d('fast') * 1.2 + stR * (n - 1);
+    if (hiIdx >= 0) {
+      /* 주인공 열의 링은 표가 다 찬 뒤에 감긴다 — 결론은 마지막에 */
+      tw.from(q('.gg-fmHi'), t, { scale: .96, opacity: 0, transformOrigin: '50% 50%',
+        duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
+      if (ctx.energy === 'E3') tw.fx('impact', t);
+      t += ctx.d('fast');
+    }
+    return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(rows) + itemsText(cols) + (sc.title || '')) };
+  }
+};
+
 /* 패턴별 필수 필드 — validate 가 쓴다. 없으면 만들 수 없는 것만 넣는다. */
 var REQUIRED = {
   heroReveal: ['title'], kineticType: ['lines|title'], cardsCascade: ['items'],
@@ -2103,14 +2417,17 @@ var REQUIRED = {
   timeline: ['events|items'], splitCompare: ['left', 'right'], convergence: ['sources|items', 'target'],
   divergence: ['source', 'targets|items'], orbit: ['center', 'orbits|items'],
   matchCut: ['anchor', 'to'], cameraJourney: ['stops|items'], quote: ['text|title'],
-  deviceShow: ['frame|screen'], chart: ['chart', 'data|items|series'], marquee: ['items']
+  deviceShow: ['frame|screen'], chart: ['chart', 'data|items|series'], marquee: ['items'],
+  funnel: ['stages|items'], cycle: ['steps|items'],
+  anatomy: ['parts|items', 'art|icon'], featureMatrix: ['rows|items', 'cols']
 };
 /* 씬 길이 상한(초) — 카메라 순회처럼 여러 지점을 훑는 패턴은 원래 길다 */
 var MAXSEC = { cameraJourney: 20, timeline: 16, zoomDetail: 15, convergence: 14 };
 /* 밀도 상한 — 넘으면 씬을 나누라고 경고한다. 애니메이션은 정보량을 줄여주지 않는다. */
 var MAXITEMS = {
   cardsCascade: 9, networkBuild: 8, processFlow: 6, explodedDiagram: 6, zoomDetail: 8,
-  dataCounter: 4, timeline: 6, convergence: 7, divergence: 7, orbit: 10, cameraJourney: 5, kineticType: 6
+  dataCounter: 4, timeline: 6, convergence: 7, divergence: 7, orbit: 10, cameraJourney: 5, kineticType: 6,
+  funnel: 6, cycle: 6, anatomy: 6, featureMatrix: 10
 };
 /* 프레임 안에 들어가는 줄·항목 수 상한 — 화면 목업은 정보 밀도가 금방 넘친다 */
 var MAXSCREEN = 7;
@@ -2121,7 +2438,7 @@ var MAXSCREEN = 7;
  * ================================================================== */
 var TRANSITIONS = {
   cut:       { label: '컷 — 즉시 교체. 리듬을 만들 때', out: null, inFrom: null, d: .001 },
-  fade:      { label: '페이드 — 개념이 부드럽게 바뀔 때(기본)', out: { opacity: 0 }, inFrom: { opacity: 0 }, d: .7 },
+  fade:      { label: '페이드 — 개념이 부드럽게 바뀔 때(기본)', out: { opacity: 0, scale: 1.012 }, inFrom: { opacity: 0, scale: .988 }, d: .7 },
   pushLeft:  { label: '푸시 좌 — 진행·다음 단계', out: { xPercent: -22, opacity: 0 }, inFrom: { xPercent: 22, opacity: 0 }, d: .8 },
   pushRight: { label: '푸시 우 — 되돌아가기·회상', out: { xPercent: 22, opacity: 0 }, inFrom: { xPercent: -22, opacity: 0 }, d: .8 },
   pushUp:    { label: '푸시 상 — 층을 올라감·심화', out: { yPercent: -18, opacity: 0 }, inFrom: { yPercent: 18, opacity: 0 }, d: .8 },
@@ -2614,6 +2931,12 @@ function validate(spec, opts) {
       if (scN > MAXSCREEN) warnings.push(tag + '프레임 안 줄·항목이 ' + scN + '개다 — ' + MAXSCREEN +
         '개를 넘으면 화면이 아니라 문서가 된다.');
     }
+    /* 매트릭스는 행의 값 수가 열 수와 맞아야 한다 — 모자라면 그 칸이 빈다 */
+    if (sc.pattern === 'featureMatrix') {
+      var fmC = arr(sc.cols).length;
+      var bad = items(sc.rows || sc.items).filter(function (r) { return arr(r.values).length !== fmC; }).length;
+      if (fmC && bad) warnings.push(tag + 'values 개수가 열 수(' + fmC + ')와 다른 행이 ' + bad + '개다 — 빈 칸이 생긴다.');
+    }
   });
 
   var c = compile(spec, opts);
@@ -2719,7 +3042,9 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-scale{position:absolute;left:50%;top:50%;width:' + A.w + 'px;height:' + A.h + 'px;transform-origin:center center;' +
   'transform:translate(-50%,-50%)}',
 '.gg-stage{position:relative;width:100%;height:100%;overflow:hidden;transform-origin:center center;' +
-  'background:radial-gradient(120% 90% at 50% 0%,' + T.bg2 + ' 0%,' + T.bg + ' 62%);isolation:isolate;perspective:1600px}',
+  /* 3겹 배경 — 상단 액센트 기운(아주 옅게) + 상단광 + 바탕. 밝은 테마는 기운을 반으로 줄인다 */
+  'background:radial-gradient(85% 60% at 72% -12%,' + tint(T.accent, lum(T.bg) > .5 ? '0a' : '17') + ' 0%,transparent 60%),' +
+  'radial-gradient(120% 90% at 50% 0%,' + T.bg2 + ' 0%,' + T.bg + ' 62%);isolation:isolate;perspective:1600px}',
 /* 자막이 켜져 있을 때 씬 전체를 위로 일괄 리프팅 — GSAP 트랜지션과 충돌하지 않도록 독립 래퍼를 쓴다 */
 '.gg-scenes-wrap{position:absolute;inset:0;transform-origin:center center;' +
   'transition:transform .28s cubic-bezier(.16,1,.3,1);will-change:transform}',
@@ -3006,6 +3331,38 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
    transform 을 래퍼에 두어야 GSAP 이 안쪽 글자에 거는 transform 과 부딪히지 않는다. */
 '.gg-kstack,.gg-kcut{position:absolute;transform:translateY(-50%)}',
 '.gg-kl{font-weight:900;line-height:1.1;letter-spacing:var(--tight);will-change:transform}',
+/* 퍼널 — 바 색은 빌더가 시퀀셜 램프로 인라인한다(마지막 단이 순수 액센트) */
+'.gg-fnRow{position:absolute}',
+'.gg-fnBar{position:absolute;inset:0;border-radius:var(--r-sm);box-shadow:var(--surf-shadow)}',
+'.gg-fnIn{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;' +
+  'gap:18px;padding:0 30px;white-space:nowrap;overflow:hidden}',
+'.gg-fnLb{font-weight:700;letter-spacing:var(--tight);overflow:hidden;text-overflow:ellipsis}',
+'.gg-fnSide{position:absolute;left:100%;margin-left:26px;top:50%;transform:translateY(-50%);' +
+  'color:var(--dim);font-size:22px;white-space:nowrap}',
+'.gg-fnNum{font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;flex:0 0 auto}',
+'.gg-fnUnit{font-style:normal;font-size:.62em;font-weight:700;margin-left:.12em;opacity:.85}',
+'.gg-fnRate{position:absolute;text-align:center;font-size:23px;font-weight:700;color:var(--dim);' +
+  'font-variant-numeric:tabular-nums;letter-spacing:.02em}',
+/* 해부도 */
+'.gg-anatArt{position:absolute}',
+'.gg-co{position:absolute}',
+'.gg-coLb{font-weight:800;letter-spacing:var(--tight);line-height:1.28}',
+'.gg-coNote{margin-top:7px;font-size:22px;color:var(--dim);line-height:1.42}',
+'.gg-anatLn{opacity:.7}',
+/* 기능 매트릭스 */
+'.gg-fmHead{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+  'gap:9px;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);' +
+  'backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow);font-weight:800;text-align:center;padding:0 12px}',
+'.gg-fmRow{position:absolute;display:flex;align-items:stretch;background:var(--surf-fill);' +
+  'border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);backdrop-filter:var(--bd-1)}',
+'.gg-fmRowLb{display:flex;align-items:center;font-weight:700;color:var(--ink2);padding:0 26px;' +
+  'overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+'.gg-fmCell{display:flex;align-items:center;justify-content:center}',
+'.gg-fmYes{color:var(--good)}',
+'.gg-fmNo{color:var(--dim);opacity:.55}',
+'.gg-fmTxt{font-weight:700;color:var(--ink)}',
+'.gg-fmHi{position:absolute;border:var(--surf-lw2) solid var(--acc);border-radius:var(--r-md);' +
+  'box-shadow:var(--target-ring);pointer-events:none;z-index:25}',
 /* 플레이어 */
 /* 플레이어는 마우스를 올리기 전까지 완전히 숨는다 — 화면에 남는 건 작품뿐이어야 한다.
    opacity 0 이어도 hover 와 키보드 포커스는 그대로 잡힌다. */

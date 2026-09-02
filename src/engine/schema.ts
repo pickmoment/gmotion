@@ -1,5 +1,5 @@
 /**
- * 패턴 20종의 편집 스키마.
+ * 패턴 24종의 편집 스키마.
  *
  * 엔진이 필드 목록을 문자열로만 알려 주므로(`gm pattern <이름>`), 폼을 그리려면
  * 구조화된 선언이 필요하다. 여기 있는 내용은 `references/spec.md` 를 그대로 옮긴
@@ -27,6 +27,8 @@ export type ItemFieldKey =
   | "hub"
   | "ring"
   | "emphasis"
+  | "values"
+  | "highlight"
   | "scale";
 
 export type Field =
@@ -433,6 +435,70 @@ export const PATTERNS: Record<string, PatternSchema> = {
       { k: "icon", key: "icon", label: "아이콘" },
     ],
   },
+  funnel: {
+    label: "퍼널",
+    use: "단계마다 걸러져 줄어든다. 마지막 단이 결론이다",
+    max: 6,
+    fields: [
+      { k: "text", key: "title", label: "제목" },
+      items("stages", "단", { req: true, extra: ["value", "unit"] }),
+      { k: "text", key: "unit", label: "공통 단위", hint: "단별 unit 이 이긴다" },
+      { k: "bool", key: "rates", label: "통과율 표시", def: true, hint: "단 사이 ↓ %" },
+    ],
+  },
+  cycle: {
+    label: "사이클",
+    use: "순환·플라이휠. 마지막 화살표가 고리를 닫는다",
+    max: 6,
+    fields: [
+      { k: "text", key: "title", label: "제목" },
+      items("steps", "단계", { req: true }),
+      single("center", "중심", "고리 한가운데. 생략 가능", false),
+    ],
+  },
+  anatomy: {
+    label: "해부도",
+    use: "중앙 비주얼의 부위를 지시선으로 짚는다",
+    max: 6,
+    fields: [
+      { k: "text", key: "title", label: "제목" },
+      {
+        k: "select",
+        key: "art",
+        label: "일러스트",
+        opts: opt.art,
+        hint: "art 또는 아이콘 중 하나는 필수",
+      },
+      { k: "icon", key: "icon", label: "아이콘", hint: "art 가 없을 때 크게 드로우된다" },
+      items("parts", "부위", { req: true }),
+    ],
+  },
+  featureMatrix: {
+    label: "기능 매트릭스",
+    use: "행이 기준, 열이 후보. highlight 열에 링이 감긴다",
+    max: 6,
+    fields: [
+      { k: "text", key: "title", label: "제목" },
+      {
+        k: "items",
+        key: "cols",
+        label: "열(후보)",
+        req: true,
+        primary: "label",
+        fields: ["icon", "highlight"],
+        hint: "4개까지. highlight 를 켠 열이 주인공",
+      },
+      {
+        k: "items",
+        key: "rows",
+        label: "행(기준)",
+        req: true,
+        primary: "label",
+        fields: ["values", "say"],
+        hint: "값은 열 순서대로. O·X 또는 글자",
+      },
+    ],
+  },
 };
 
 /** 모든 패턴이 받는 공통 필드 — 폼 하단 "씬 공통" 에 그린다. */
@@ -584,6 +650,31 @@ export function blankScene(pattern: string): Record<string, unknown> {
       break;
     case "quote":
       s.text = "인용문";
+      break;
+    case "funnel":
+      s.title = "제목";
+      s.stages = [
+        { label: "1단", value: 1000 },
+        { label: "2단", value: 420 },
+        { label: "3단", value: 90 },
+      ];
+      break;
+    case "cycle":
+      s.title = "제목";
+      s.steps = ["1단계", "2단계", "3단계"];
+      break;
+    case "anatomy":
+      s.title = "제목";
+      s.icon = "database";
+      s.parts = [{ label: "부위 1" }, { label: "부위 2" }];
+      break;
+    case "featureMatrix":
+      s.title = "제목";
+      s.cols = [{ label: "후보 A" }, { label: "후보 B", highlight: true }];
+      s.rows = [
+        { label: "기준 1", values: [false, true] },
+        { label: "기준 2", values: ["6주", "2일"] },
+      ];
       break;
   }
   return s;

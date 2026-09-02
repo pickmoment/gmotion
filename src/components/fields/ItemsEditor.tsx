@@ -27,6 +27,8 @@ const LABELS: Record<ItemFieldKey, string> = {
   ring: "궤도",
   emphasis: "강조",
   scale: "배율",
+  values: "값들",
+  highlight: "주인공 열",
 };
 
 const TONES = ["", "good", "bad", "warn", "dim"];
@@ -240,7 +242,7 @@ export function ItemsEditor({
                         />
                       );
                     }
-                    if (f === "hub" || f === "emphasis") {
+                    if (f === "hub" || f === "emphasis" || f === "highlight") {
                       return (
                         <div className="field check" key={f}>
                           <label>
@@ -304,6 +306,36 @@ export function ItemsEditor({
                                 .map(Number)
                                 .filter((n) => !Number.isNaN(n));
                               patch(i, "spark", nums.length ? nums : undefined);
+                            }}
+                          />
+                        </div>
+                      );
+                    }
+                    if (f === "values") {
+                      /* featureMatrix 행의 값 — O/✓/true → true, X/✕/false/- → false, 나머지는 글자 그대로 */
+                      const vals = Array.isArray(o.values) ? (o.values as unknown[]) : [];
+                      const show = vals
+                        .map((v) => (v === true ? "O" : v === false ? "X" : String(v)))
+                        .join(", ");
+                      return (
+                        <div className="field wide" key={f}>
+                          <label>{LABELS[f]}</label>
+                          <input
+                            defaultValue={show}
+                            placeholder="O, X, 6주  (열 순서대로)"
+                            onBlur={(e) => {
+                              const toks = e.target.value
+                                .split(",")
+                                .map((s) => s.trim())
+                                .filter(Boolean)
+                                .map((s) =>
+                                  /^(o|✓|true)$/i.test(s)
+                                    ? true
+                                    : /^(x|✕|false|-)$/i.test(s)
+                                      ? false
+                                      : s,
+                                );
+                              patch(i, "values", toks.length ? toks : undefined);
                             }}
                           />
                         </div>

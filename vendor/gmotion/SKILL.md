@@ -68,7 +68,7 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 | 파일 | 언제 |
 |---|---|
 | `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 흔한 실패 |
-| `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 패턴 20종의 필드와 예시 |
+| `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 패턴 24종의 필드와 예시 |
 | `references/charts.md` | **차트를 넣을 때.** 어떤 차트인가, 색은 어떤 일을 하는가, 데이터 형태와 옵션 |
 | `references/theming.md` | 테마·**스킨**·화면비·에너지·재생 모드·모션 토큰 |
 | `references/api.md` | CLI, 검수 쿼리, agent-browser 캡처, 산출물 구조, GSAP 함정 |
@@ -246,7 +246,7 @@ node <skill>/assets/gm.js build spec.json -o 발표.html --present
    **미룬 것**이다 — 안 봤다는 사실을 밝히고 넘긴다.
 9. **재질은 색과 따로 고른다.** 테마가 색을, `skin` 이 표면·선·타이포의 모양을
    정한다(6종, `gm info skins`). 같은 내용을 문서 톤으로도 포스터 톤으로도 낼 수
-   있으므로, 용도가 분명하면 스킨을 함께 고른다 — 기본값 `glass` 는 기존 모습이다.
+   있으므로, 용도가 분명하면 스킨을 함께 고른다 — 기본값은 `glass` 다.
 
 ## 구성
 
