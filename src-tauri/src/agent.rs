@@ -346,7 +346,13 @@ mod tests {
     }
 
     /* Windows 대응 — 같은 계약을 cmd 로 검증한다. 한글·정확일치 대신 ASCII·contains 를
-       쓴다: cmd 의 echo 는 CRLF 를 내고 코드페이지에 따라 비ASCII 가 깨질 수 있다. */
+       쓴다: cmd 의 echo 는 CRLF 를 내고 코드페이지에 따라 비ASCII 가 깨질 수 있다.
+       run() 이 bin 을 파일 경로로 검증하므로 ComSpec 절대경로를 준다. */
+
+    #[cfg(windows)]
+    fn cmd_exe() -> String {
+        std::env::var("ComSpec").unwrap_or_else(|_| r"C:\Windows\System32\cmd.exe".into())
+    }
 
     /// 실행·스트리밍·종료 코드 왕복 (Windows).
     #[cfg(windows)]
@@ -361,7 +367,7 @@ mod tests {
         let out = super::run(
             emit,
             super::RunOpts {
-                bin: "cmd".into(),
+                bin: cmd_exe(),
                 args: vec!["/C".into(), "(echo one)&(echo two 1>&2)&exit /b 3".into()],
                 cwd: None,
                 timeout_sec: 20,
@@ -391,7 +397,7 @@ mod tests {
         let out = super::run(
             emit,
             super::RunOpts {
-                bin: "cmd".into(),
+                bin: cmd_exe(),
                 args: vec!["/C".into(), "more & echo end".into()],
                 cwd: None,
                 timeout_sec: 15,
@@ -413,7 +419,7 @@ mod tests {
         let out = super::run(
             emit,
             super::RunOpts {
-                bin: "cmd".into(),
+                bin: cmd_exe(),
                 args: vec!["/C".into(), "ping -n 60 127.0.0.1 > NUL".into()],
                 cwd: None,
                 timeout_sec: 10, /* clamp 하한이 10 이다 */
