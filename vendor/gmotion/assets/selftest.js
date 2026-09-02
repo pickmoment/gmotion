@@ -140,6 +140,42 @@ function unit() {
   } else {
     notes.push('itemKeys 가 아직 노출되지 않는다 — 항목 필드 목록이 두 곳에 중복돼 있을 수 있다.');
   }
+
+  /* --- MotionPath 경로는 요소의 x/y 에 그대로 얹힌다(더해지지 않는다) — path 시작점이
+         그 시각 요소가 서 있는 오프셋과 다르면 요소가 순간이동하고 도착점도 그만큼 밀린다.
+         발산형 칩이 `set` 으로 중심 오프셋을 받아 둔 채 출발점 기준 path(relCurve)를 타서
+         제자리를 지나 화면 밖까지 튕겨 나간 회귀를 여기서 잡는다. --- */
+  function ptsOf(d) {
+    var ns = String(d).match(/-?\d+(?:\.\d+)?/g) || [];
+    return { start: ns.slice(0, 2).join(','), end: ns.slice(-2).join(',') };
+  }
+  function offsetAt(tw, o) {
+    var x = 0, y = 0;
+    tw.forEach(function (p) {
+      if (p.k !== 'set' || p.t !== o.t || p.at > o.at || !p.v) return;
+      if (typeof p.v.x === 'number') x = p.v.x;
+      if (typeof p.v.y === 'number') y = p.v.y;
+    });
+    return x + ',' + y;
+  }
+  var paths = G.compile({ scenes: [
+    { pattern: 'divergence', source: { label: '원천' }, targets: ['하나', '둘', '셋'] },
+    { pattern: 'convergence', sources: ['하나', '둘', '셋'], target: { label: '결과' } },
+    { pattern: 'networkBuild', flow: true, nodes: ['가', '나', '다'] }
+  ] });
+  var jump = [], rest = [], nPath = 0;
+  paths.scenes.forEach(function (s) {
+    s.tw.forEach(function (o) {
+      if (o.k !== 'path') return;
+      nPath++;
+      var pt = ptsOf(o.d);
+      if (pt.start !== offsetAt(s.tw, o)) jump.push(s.pattern + ' ' + o.t + ' M' + pt.start);
+      if (s.pattern === 'divergence' && pt.end !== '0,0') rest.push(o.t + ' -> ' + pt.end);
+    });
+  });
+  truthy('path 트윈을 실제로 검사했다', nPath >= 8, 'path 트윈이 ' + nPath + '개뿐이다');
+  is('path 시작점이 요소 오프셋과 같다', jump.join(' · '), '');
+  is('발산형 칩은 제자리(0,0)에 선다', rest.join(' · '), '');
 }
 
 /* ================================================================== *

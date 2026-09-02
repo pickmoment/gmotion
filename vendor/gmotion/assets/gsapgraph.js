@@ -641,6 +641,19 @@ function relCurve(x1, y1, x2, y2, bow) {
   var b = num(bow, 0) * len, mx = dx / 2, my = dy / 2;
   return 'M0 0 Q' + r2(mx - dy / len * b) + ' ' + r2(my + dx / len * b) + ' ' + r2(dx) + ' ' + r2(dy);
 }
+/**
+ * `relCurve` 의 반대. 요소가 **도착점**에 놓여 있을 때 쓴다 — 같은 곡선을
+ * `(x2,y2)` 기준 상대 좌표로 내므로 path 가 `(x1-x2, y1-y2)` 에서 시작해 `0 0` 으로 끝난다.
+ * MotionPath 는 path 좌표를 요소의 x/y 에 **그대로 얹는다**(더하지 않는다). 그래서 요소를
+ * `set` 으로 출발점에 미리 옮겨 두고 `relCurve` 를 걸면 그 오프셋이 한 번 더 더해진 것처럼
+ * 보이며 도착점을 지나쳐 튕겨 나간다. 도착점에 놓인 요소는 이 함수를 쓴다.
+ */
+function relCurveTo(x1, y1, x2, y2, bow) {
+  var dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy) || 1;
+  var b = num(bow, 0) * len;
+  return 'M' + r2(-dx) + ' ' + r2(-dy) + ' Q' + r2(-dx / 2 - dy / len * b) + ' ' +
+    r2(-dy / 2 + dx / len * b) + ' 0 0';
+}
 
 /** 항목 배열을 {label,icon,note,...} 로 정규화. 문자열도 받는다. */
 /* ------------------------------------------------------------------ *
@@ -1680,10 +1693,11 @@ PATTERNS.divergence = {
     t += ctx.d('normal') * .55;
     tg.forEach(function (x, i) {
       var p = pos[i], sel = q('.gg-chip[data-i="' + i + '"]');
-      /* 중심에서 시작해 곡선을 따라 제자리로 */
+      /* 중심에서 시작해 곡선을 따라 제자리로. 칩의 홈 좌표가 도착점이라 path 도
+         도착점 기준이어야 한다 — relCurve 를 쓰면 출발 오프셋이 한 번 더 얹혀 밖으로 튕긴다. */
       tw.set(sel, 0, { x: r2(ctx.cx - p.x), y: r2(cy - p.y), scale: .45, opacity: 0 });
       tw.path(sel, t + i * ctx.st('normal'), ctx.d('normal') * 1.2,
-        relCurve(ctx.cx, cy, p.x, p.y, .1), { ease: ctx.ei });
+        relCurveTo(ctx.cx, cy, p.x, p.y, .1), { ease: ctx.ei });
       tw.to(sel, t + i * ctx.st('normal'), { scale: 1, opacity: 1, duration: ctx.d('normal') * 1.15, ease: ctx.ei });
     });
     t += ctx.d('normal') * 1.15 + ctx.st('normal') * (n - 1);
