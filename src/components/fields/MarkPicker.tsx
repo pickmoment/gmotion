@@ -95,7 +95,8 @@ export function MarkPicker({
 
   const handleSelect = (key: string, hasText: boolean) => {
     if (hasText) {
-      const defaultText = currentText || (key === "stamp" ? "PASS" : key === "ribbon" ? "핵심" : "NEW");
+      const defaultText =
+        currentText || (key === "stamp" ? "PASS" : key === "ribbon" ? "핵심" : "NEW");
       onChange(`${key}:${defaultText}`);
     } else {
       onChange(key);
@@ -118,10 +119,7 @@ export function MarkPicker({
           onClick={() => setOpen((o) => !o)}
         >
           {currentSvg ? (
-            <div
-              className="mark-chip-thumb"
-              dangerouslySetInnerHTML={{ __html: currentSvg }}
-            />
+            <div className="mark-chip-thumb" dangerouslySetInnerHTML={{ __html: currentSvg }} />
           ) : (
             <span className="dim">＋</span>
           )}
@@ -194,10 +192,7 @@ export function MarkPicker({
                   }}
                   title={m.label}
                 >
-                  <div
-                    className="mark-grid-svg"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                  />
+                  <div className="mark-grid-svg" dangerouslySetInnerHTML={{ __html: svg }} />
                   <div className="mark-grid-label">
                     <span>{m.key}</span>
                     {m.custom && <span className="badge-custom-sm">C</span>}
@@ -205,9 +200,7 @@ export function MarkPicker({
                 </button>
               );
             })}
-            {!filteredMarks.length && (
-              <p className="dim pad">검색된 마크가 없습니다.</p>
-            )}
+            {!filteredMarks.length && <p className="dim pad">검색된 마크가 없습니다.</p>}
           </div>
         </div>
       )}

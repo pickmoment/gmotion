@@ -46,7 +46,7 @@ export function ArtPicker({
     if (!q.trim()) return allArts;
     const query = q.toLowerCase();
     return allArts.filter(
-      (a) => a.key.toLowerCase().includes(query) || a.label.toLowerCase().includes(query)
+      (a) => a.key.toLowerCase().includes(query) || a.label.toLowerCase().includes(query),
     );
   }, [allArts, q]);
 
@@ -64,10 +64,7 @@ export function ArtPicker({
           onClick={() => setOpen((o) => !o)}
         >
           {currentSvg ? (
-            <div
-              className="art-chip-thumb"
-              dangerouslySetInnerHTML={{ __html: currentSvg }}
-            />
+            <div className="art-chip-thumb" dangerouslySetInnerHTML={{ __html: currentSvg }} />
           ) : (
             <span className="dim">＋</span>
           )}
@@ -89,9 +86,7 @@ export function ArtPicker({
         )}
       </div>
       {hint && <p className="hint">{hint}</p>}
-      {value && !currentDef && (
-        <p className="warn-inline">등록되지 않은 일러스트 키입니다.</p>
-      )}
+      {value && !currentDef && <p className="warn-inline">등록되지 않은 일러스트 키입니다.</p>}
 
       {open && (
         <div className="picker art-popover">
@@ -116,18 +111,13 @@ export function ArtPicker({
                   }}
                   title={a.label}
                 >
-                  <div
-                    className="art-grid-svg"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                  />
+                  <div className="art-grid-svg" dangerouslySetInnerHTML={{ __html: svg }} />
                   <span className="art-grid-name">{a.key}</span>
                   {a.custom && <span className="badge-custom-sm">커스텀</span>}
                 </button>
               );
             })}
-            {!filteredArts.length && (
-              <p className="dim pad">검색된 일러스트가 없습니다.</p>
-            )}
+            {!filteredArts.length && <p className="dim pad">검색된 일러스트가 없습니다.</p>}
           </div>
         </div>
       )}

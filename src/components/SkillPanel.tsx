@@ -58,28 +58,40 @@ export function SkillPanel({ onClose }: { onClose: () => void }) {
       <div className="modal-box">
         <div className="pane-head">
           <h2>gmotion 스킬 설치</h2>
-          <button type="button" className="ghost" onClick={onClose}>닫기</button>
+          <button type="button" className="ghost" onClick={onClose}>
+            닫기
+          </button>
         </div>
 
         <p className="hint">
-          이 앱은 스킬 전체를 안에 들고 있다. 설치하면 Claude Code나 AI Agent가 같은 엔진으로 스펙을 만들고,
-          앱이 그걸 그대로 열어 편집한다.
+          이 앱은 스킬 전체를 안에 들고 있다. 설치하면 Claude Code나 AI Agent가 같은 엔진으로 스펙을
+          만들고, 앱이 그걸 그대로 열어 편집한다.
         </p>
 
         <div className="field">
           <label>설치 위치</label>
           <div className="icon-row">
-            <select value={targetType} onChange={(e) => setTargetType(e.target.value as TargetType)}>
+            <select
+              value={targetType}
+              onChange={(e) => setTargetType(e.target.value as TargetType)}
+            >
               <option value="user-claude">사용자 전역 (Claude Code) — ~/.claude/skills</option>
               <option value="user-agents">사용자 전역 (AI Agents) — ~/.agents/skills</option>
-              <option value="project-claude">프로젝트 (Claude Code) — &lt;선택 폴더&gt;/.claude/skills</option>
-              <option value="project-agents">프로젝트 (AI Agents) — &lt;선택 폴더&gt;/.agents/skills</option>
+              <option value="project-claude">
+                프로젝트 (Claude Code) — &lt;선택 폴더&gt;/.claude/skills
+              </option>
+              <option value="project-agents">
+                프로젝트 (AI Agents) — &lt;선택 폴더&gt;/.agents/skills
+              </option>
             </select>
             {(targetType === "project-claude" || targetType === "project-agents") && (
-              <button type="button" onClick={async () => {
-                const d = await dialogs.openDir();
-                if (d) setProjectDir(d);
-              }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  const d = await dialogs.openDir();
+                  if (d) setProjectDir(d);
+                }}
+              >
                 폴더 고르기
               </button>
             )}
@@ -93,14 +105,20 @@ export function SkillPanel({ onClose }: { onClose: () => void }) {
               <li>
                 <span>상태</span>
                 <strong className={st.installed ? (st.up_to_date ? "ok" : "warn") : "dim"}>
-                  {!st.installed ? "설치 안 됨" : st.up_to_date ? "최신" : `갱신 필요 — ${diffCount}개 파일`}
+                  {!st.installed
+                    ? "설치 안 됨"
+                    : st.up_to_date
+                      ? "최신"
+                      : `갱신 필요 — ${diffCount}개 파일`}
                 </strong>
               </li>
               <li>
                 <span>엔진 버전</span>
                 <strong>
                   번들 {st.bundled_version}
-                  {st.installed_version && st.installed_version !== st.bundled_version && ` · 설치본 ${st.installed_version}`}
+                  {st.installed_version &&
+                    st.installed_version !== st.bundled_version &&
+                    ` · 설치본 ${st.installed_version}`}
                 </strong>
               </li>
               <li>
@@ -113,15 +131,31 @@ export function SkillPanel({ onClose }: { onClose: () => void }) {
               <details className="diff">
                 <summary>차이 {diffCount}개</summary>
                 <ul>
-                  {st.missing.map((f) => <li key={`m${f}`}><span className="tag miss">없음</span>{f}</li>)}
-                  {st.differing.map((f) => <li key={`d${f}`}><span className="tag diff">다름</span>{f}</li>)}
+                  {st.missing.map((f) => (
+                    <li key={`m${f}`}>
+                      <span className="tag miss">없음</span>
+                      {f}
+                    </li>
+                  ))}
+                  {st.differing.map((f) => (
+                    <li key={`d${f}`}>
+                      <span className="tag diff">다름</span>
+                      {f}
+                    </li>
+                  ))}
                 </ul>
               </details>
             )}
             {st.extra.length > 0 && (
               <details className="diff">
-                <summary>번들에 없는 파일 {st.extra.length}개 (설치는 이걸 건드리지 않는다)</summary>
-                <ul>{st.extra.map((f) => <li key={f}>{f}</li>)}</ul>
+                <summary>
+                  번들에 없는 파일 {st.extra.length}개 (설치는 이걸 건드리지 않는다)
+                </summary>
+                <ul>
+                  {st.extra.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
               </details>
             )}
           </>
@@ -131,20 +165,33 @@ export function SkillPanel({ onClose }: { onClose: () => void }) {
         {err && <p className="warn-inline">{err}</p>}
 
         <div className="modal-ops">
-          <button type="button" className="primary" disabled={busy}
-                  onClick={() => run(() => api.skillInstall(effectiveRoot), st?.installed ? "갱신했다." : "설치했다.")}>
+          <button
+            type="button"
+            className="primary"
+            disabled={busy}
+            onClick={() =>
+              run(() => api.skillInstall(effectiveRoot), st?.installed ? "갱신했다." : "설치했다.")
+            }
+          >
             {st?.installed ? "덮어써 갱신" : "설치"}
           </button>
-          <button type="button" disabled={busy || !st?.installed}
-                  onClick={() => st && shell.revealItemInDir(st.target)}>
+          <button
+            type="button"
+            disabled={busy || !st?.installed}
+            onClick={() => st && shell.revealItemInDir(st.target)}
+          >
             폴더 열기
           </button>
-          <button type="button" className="danger" disabled={busy || !st?.installed}
-                  onClick={async () => {
-                    if (await ask(`${st?.target} 를 지운다. 계속할까?`, "스킬 제거")) {
-                      void run(() => api.skillRemove(effectiveRoot), "지웠다.");
-                    }
-                  }}>
+          <button
+            type="button"
+            className="danger"
+            disabled={busy || !st?.installed}
+            onClick={async () => {
+              if (await ask(`${st?.target} 를 지운다. 계속할까?`, "스킬 제거")) {
+                void run(() => api.skillRemove(effectiveRoot), "지웠다.");
+              }
+            }}
+          >
             제거
           </button>
         </div>

@@ -7,7 +7,12 @@ import { useDesignStore } from "../../lib/designStore";
 export function IconGlyph({ name, size = 20 }: { name: string; size?: number }) {
   const key = ICONS.resolve(name) ?? name;
   const d = ICONS.path(key);
-  if (!d) return <span className="glyph-missing" title={`없는 아이콘: ${name}`}>?</span>;
+  if (!d)
+    return (
+      <span className="glyph-missing" title={`없는 아이콘: ${name}`}>
+        ?
+      </span>
+    );
   return (
     <svg
       viewBox="0 0 24 24"
@@ -58,7 +63,7 @@ export function IconPicker({
         return customKeys.filter(
           (k) =>
             k.toLowerCase().includes(query) ||
-            library.icons[k].aliases.some((a) => a.toLowerCase().includes(query))
+            library.icons[k].aliases.some((a) => a.toLowerCase().includes(query)),
         );
       }
       return customKeys;

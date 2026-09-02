@@ -119,9 +119,7 @@ export function FramePicker({
         )}
       </div>
       {hint && <p className="hint">{hint}</p>}
-      {value && !currentDef && (
-        <p className="warn-inline">등록되지 않은 프레임 키입니다.</p>
-      )}
+      {value && !currentDef && <p className="warn-inline">등록되지 않은 프레임 키입니다.</p>}
 
       {open && (
         <div className="picker frame-popover">
@@ -161,10 +159,7 @@ export function FramePicker({
                   }}
                   title={f.label}
                 >
-                  <div
-                    className="frame-grid-svg"
-                    dangerouslySetInnerHTML={{ __html: res.svg }}
-                  />
+                  <div className="frame-grid-svg" dangerouslySetInnerHTML={{ __html: res.svg }} />
                   <div className="frame-grid-label">
                     <span>{f.key}</span>
                     {f.custom && <span className="badge-custom-sm">C</span>}
@@ -172,9 +167,7 @@ export function FramePicker({
                 </button>
               );
             })}
-            {!filteredFrames.length && (
-              <p className="dim pad">검색된 프레임이 없습니다.</p>
-            )}
+            {!filteredFrames.length && <p className="dim pad">검색된 프레임이 없습니다.</p>}
           </div>
         </div>
       )}

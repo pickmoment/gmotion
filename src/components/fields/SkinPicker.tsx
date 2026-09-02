@@ -92,8 +92,8 @@ export function SkinPicker({
       </div>
       {inline ? (
         <p className="hint">
-          스펙의 <code>skin</code> 에 정의가 직접 들어 있다 — 파일 한 장으로 모습이 재현된다. 이름으로
-          바꾸려면 JSON 에서 <code>skin</code> 을 문자열로 고친다.
+          스펙의 <code>skin</code> 에 정의가 직접 들어 있다 — 파일 한 장으로 모습이 재현된다.
+          이름으로 바꾸려면 JSON 에서 <code>skin</code> 을 문자열로 고친다.
         </p>
       ) : (
         hint && <p className="hint">{hint}</p>
@@ -128,16 +128,20 @@ export function SkinPicker({
                 <span className="skin-card-name">
                   {s.key}
                   {s.custom && <span className="badge-custom">커스텀</span>}
-                  {s.dark && <span className="badge-dark" title="어두운 테마 전용">다크</span>}
+                  {s.dark && (
+                    <span className="badge-dark" title="어두운 테마 전용">
+                      다크
+                    </span>
+                  )}
                 </span>
-                <span className="skin-card-desc">{s.label.split("—").slice(1).join("—").trim()}</span>
+                <span className="skin-card-desc">
+                  {s.label.split("—").slice(1).join("—").trim()}
+                </span>
               </button>
             ))}
           </div>
           <div className="theme-popover-foot">
-            <span className="hint">
-              테마는 색, 스킨은 재질 — 둘은 곱해서 쓴다
-            </span>
+            <span className="hint">테마는 색, 스킨은 재질 — 둘은 곱해서 쓴다</span>
             {onOpenDesignPanel && (
               <button
                 type="button"

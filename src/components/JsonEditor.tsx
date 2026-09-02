@@ -23,7 +23,11 @@ export function JsonEditor({ spec, onChange }: { spec: Spec; onChange: (s: Spec)
   return (
     <div className="pane-body json-editor">
       <div className="json-bar">
-        {err ? <span className="warn-inline">{err}</span> : <span className="dim">JSON 이 유효하면 즉시 반영된다</span>}
+        {err ? (
+          <span className="warn-inline">{err}</span>
+        ) : (
+          <span className="dim">JSON 이 유효하면 즉시 반영된다</span>
+        )}
       </div>
       <CodeMirror
         value={text}

@@ -95,7 +95,11 @@ export function FieldRenderer({
       return (
         <div className="field wide">
           <Label f={field} />
-          <textarea rows={field.rows ?? 3} value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />
+          <textarea
+            rows={field.rows ?? 3}
+            value={(v as string) ?? ""}
+            onChange={(e) => set(e.target.value)}
+          />
           <Hint f={field} />
         </div>
       );
@@ -125,7 +129,9 @@ export function FieldRenderer({
               onChange={(e) => set(e.target.checked === !!field.def ? undefined : e.target.checked)}
             />
             {field.label}
-            {field.def !== undefined && <span className="dim"> (기본 {field.def ? "켬" : "끔"})</span>}
+            {field.def !== undefined && (
+              <span className="dim"> (기본 {field.def ? "켬" : "끔"})</span>
+            )}
           </label>
           <Hint f={field} />
         </div>

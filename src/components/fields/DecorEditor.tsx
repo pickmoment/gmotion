@@ -158,7 +158,9 @@ export function DecorEditor({
       <div className="decor-active-layers">
         {isDefault && (
           <div className="decor-status-box">
-            <span className="dim">테마 기본 배경이 적용됩니다. 커스텀 조합을 추가하려면 아래 버튼을 누르세요.</span>
+            <span className="dim">
+              테마 기본 배경이 적용됩니다. 커스텀 조합을 추가하려면 아래 버튼을 누르세요.
+            </span>
           </div>
         )}
         {isFalse && (
@@ -173,10 +175,7 @@ export function DecorEditor({
               const custom = !!library.decors[k];
               return (
                 <div key={`${k}-${idx}`} className="decor-layer-chip">
-                  <div
-                    className="decor-chip-thumb"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                  />
+                  <div className="decor-chip-thumb" dangerouslySetInnerHTML={{ __html: svg }} />
                   <div className="decor-chip-info">
                     <strong>{k}</strong>
                     {custom && <span className="badge-custom-sm">커스텀</span>}
@@ -213,11 +212,7 @@ export function DecorEditor({
           </div>
         )}
 
-        <button
-          type="button"
-          className="decor-add-btn"
-          onClick={() => setOpen((o) => !o)}
-        >
+        <button type="button" className="decor-add-btn" onClick={() => setOpen((o) => !o)}>
           ＋ 배경 레이어 추가 {open ? "▲" : "▼"}
         </button>
       </div>
@@ -258,10 +253,7 @@ export function DecorEditor({
                   }}
                   title={d.label}
                 >
-                  <div
-                    className="decor-grid-svg"
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                  />
+                  <div className="decor-grid-svg" dangerouslySetInnerHTML={{ __html: svg }} />
                   <div className="decor-grid-label">
                     <span>{d.key}</span>
                     {d.custom && <span className="badge-custom-sm">C</span>}
@@ -269,9 +261,7 @@ export function DecorEditor({
                 </button>
               );
             })}
-            {!filteredDecors.length && (
-              <p className="dim pad">검색된 배경이 없습니다.</p>
-            )}
+            {!filteredDecors.length && <p className="dim pad">검색된 배경이 없습니다.</p>}
           </div>
         </div>
       )}

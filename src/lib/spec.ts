@@ -42,7 +42,11 @@ export function moveScene(spec: Spec, from: number, to: number): Spec {
 }
 
 /** 값이 비었으면 키 자체를 지운다 — 스펙에 빈 문자열이 남으면 엔진이 헤더를 그린다. */
-export function setField(obj: Record<string, unknown>, key: string, value: unknown): Record<string, unknown> {
+export function setField(
+  obj: Record<string, unknown>,
+  key: string,
+  value: unknown,
+): Record<string, unknown> {
   const next = { ...obj };
   const empty =
     value === undefined ||

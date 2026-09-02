@@ -78,7 +78,10 @@ export function ThemePicker({
           </div>
           <span className="theme-name-text">
             <strong>{currentKey}</strong>
-            <span className="dim"> — {currentDef?.label.split("—")[0] || currentDef?.label || "기본"}</span>
+            <span className="dim">
+              {" "}
+              — {currentDef?.label.split("—")[0] || currentDef?.label || "기본"}
+            </span>
           </span>
           {currentDef?.custom && <span className="badge-custom">커스텀</span>}
           <span className="caret">{open ? "▴" : "▾"}</span>
@@ -146,7 +149,9 @@ export function ThemePicker({
                   className={`theme-card-item ${isSelected ? "on" : ""}`}
                   style={{
                     backgroundColor: colors.bg,
-                    borderColor: isSelected ? colors.accent : colors.panelLine || colors.line || colors.dim,
+                    borderColor: isSelected
+                      ? colors.accent
+                      : colors.panelLine || colors.line || colors.dim,
                     color: colors.ink,
                   }}
                   onClick={() => {
@@ -176,9 +181,7 @@ export function ThemePicker({
                 </button>
               );
             })}
-            {!filteredThemes.length && (
-              <p className="dim pad">검색된 테마가 없습니다.</p>
-            )}
+            {!filteredThemes.length && <p className="dim pad">검색된 테마가 없습니다.</p>}
           </div>
 
           {onOpenDesignPanel && (

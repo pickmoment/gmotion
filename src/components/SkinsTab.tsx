@@ -15,7 +15,16 @@ import { designTokenContract, listSkins, skinPreviewVars } from "../lib/design";
 import { designStore, useDesignStore } from "../lib/designStore";
 import { GG } from "../engine/boot";
 
-const GROUP_ORDER = ["표면", "모서리 반경", "배경 블러", "링", "연결선", "타이포", "광채", "화면 자막"];
+const GROUP_ORDER = [
+  "표면",
+  "모서리 반경",
+  "배경 블러",
+  "링",
+  "연결선",
+  "타이포",
+  "광채",
+  "화면 자막",
+];
 
 type Draft = {
   key: string;
@@ -94,13 +103,13 @@ export function SkinsTab({
         }
         return true;
       }),
-    [skins, cat, q]
+    [skins, cat, q],
   );
 
   /* 기반 스킨의 값 — 편집기의 placeholder 가 된다. 비워 두면 이 값이 쓰인다. */
   const inherited = useMemo(
     () => (draft ? GG.resolveSkin(draft.base, currentTheme, "16:9").vars : {}),
-    [draft?.base, currentTheme]
+    [draft?.base, currentTheme],
   );
 
   /* 지금 편집 중인 상태를 그대로 스킨 정의로 — 미리보기와 저장이 같은 것을 본다 */
@@ -171,7 +180,7 @@ export function SkinsTab({
     const snippet = JSON.stringify({ skin: draftDef }, null, 2);
     void navigator.clipboard.writeText(snippet).then(
       () => onNotify?.("스펙에 붙일 JSON 을 복사했다 — 파일 한 장으로 모습이 재현된다"),
-      () => onNotify?.("복사에 실패했다")
+      () => onNotify?.("복사에 실패했다"),
     );
   };
 
@@ -196,7 +205,12 @@ export function SkinsTab({
         />
         <div className="tab-pills">
           {["전체", "기본", "커스텀"].map((c) => (
-            <button key={c} type="button" className={cat === c ? "on" : ""} onClick={() => setCat(c)}>
+            <button
+              key={c}
+              type="button"
+              className={cat === c ? "on" : ""}
+              onClick={() => setCat(c)}
+            >
               {c}
             </button>
           ))}
@@ -204,9 +218,9 @@ export function SkinsTab({
       </div>
 
       <p className="hint studio-lead">
-        테마가 <strong>색</strong>을, 스킨이 <strong>재질</strong>을 정한다. 스킨은 디자인 프리미티브{" "}
-        {contract.length}종의 값 묶음이고, 스타일시트의 클래스가 그 값만 읽으므로 스킨 하나를 갈면 카드·노드·
-        스텝·칩·패널·연결선이 전부 따라온다.
+        테마가 <strong>색</strong>을, 스킨이 <strong>재질</strong>을 정한다. 스킨은 디자인
+        프리미티브 {contract.length}종의 값 묶음이고, 스타일시트의 클래스가 그 값만 읽으므로 스킨
+        하나를 갈면 카드·노드· 스텝·칩·패널·연결선이 전부 따라온다.
       </p>
 
       {draft ? (
@@ -226,11 +240,17 @@ export function SkinsTab({
             </div>
             <div className="field">
               <label>설명</label>
-              <input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} />
+              <input
+                value={draft.label}
+                onChange={(e) => setDraft({ ...draft, label: e.target.value })}
+              />
             </div>
             <div className="field">
               <label>기반 스킨</label>
-              <select value={draft.base} onChange={(e) => setDraft({ ...draft, base: e.target.value })}>
+              <select
+                value={draft.base}
+                onChange={(e) => setDraft({ ...draft, base: e.target.value })}
+              >
                 {skins
                   .filter((s) => s.key !== draft.key)
                   .map((s) => (
@@ -263,7 +283,12 @@ export function SkinsTab({
               <button type="button" className="action-btn apply-btn" onClick={save}>
                 저장
               </button>
-              <button type="button" className="action-btn" onClick={copyInline} title="스펙 JSON 으로 복사">
+              <button
+                type="button"
+                className="action-btn"
+                onClick={copyInline}
+                title="스펙 JSON 으로 복사"
+              >
                 스펙에 인라인 복사
               </button>
               <button type="button" className="action-btn" onClick={() => setDraft(null)}>
@@ -317,7 +342,11 @@ export function SkinsTab({
               <p className="skin-card-desc">{s.label}</p>
               <div className="studio-card-actions">
                 {onApplySkin && (
-                  <button type="button" className="action-btn apply-btn" onClick={() => onApplySkin(s.key)}>
+                  <button
+                    type="button"
+                    className="action-btn apply-btn"
+                    onClick={() => onApplySkin(s.key)}
+                  >
                     적용
                   </button>
                 )}

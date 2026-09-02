@@ -63,13 +63,33 @@ export function SceneList({
               <div className="label">{sceneLabel(s)}</div>
               <div className="row sub">
                 {i > 0 && t && <span className="trans">←{t.trans}</span>}
-                {t?.matched != null && <span className="matched">자막 {Math.round(t.matched * 100)}%</span>}
+                {t?.matched != null && (
+                  <span className="matched">자막 {Math.round(t.matched * 100)}%</span>
+                )}
               </div>
               <div className="ops" onClick={(e) => e.stopPropagation()}>
-                <button type="button" title="위로" disabled={i === 0} onClick={() => onMove(i, i - 1)}>↑</button>
-                <button type="button" title="아래로" disabled={i === scenes.length - 1} onClick={() => onMove(i, i + 1)}>↓</button>
-                <button type="button" title="복제" onClick={() => onDuplicate(i)}>⧉</button>
-                <button type="button" className="danger" title="삭제" onClick={() => onRemove(i)}>×</button>
+                <button
+                  type="button"
+                  title="위로"
+                  disabled={i === 0}
+                  onClick={() => onMove(i, i - 1)}
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  title="아래로"
+                  disabled={i === scenes.length - 1}
+                  onClick={() => onMove(i, i + 1)}
+                >
+                  ↓
+                </button>
+                <button type="button" title="복제" onClick={() => onDuplicate(i)}>
+                  ⧉
+                </button>
+                <button type="button" className="danger" title="삭제" onClick={() => onRemove(i)}>
+                  ×
+                </button>
               </div>
             </li>
           );
@@ -92,7 +112,9 @@ export function SceneList({
               <span className="dim">{k}</span>
             </button>
           ))}
-          <button type="button" className="ghost" onClick={() => setAdding(false)}>닫기</button>
+          <button type="button" className="ghost" onClick={() => setAdding(false)}>
+            닫기
+          </button>
         </div>
       ) : (
         <button type="button" className="add block" onClick={() => setAdding(true)}>

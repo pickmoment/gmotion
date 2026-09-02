@@ -1,5 +1,11 @@
 import { GG, SKINS, THEMES_REGISTRY, VECTORS } from "../engine/boot";
-import type { CustomDesignLibrary, SkinDefinition, Spec, SpecDesign, ThemeColors } from "../engine/types";
+import type {
+  CustomDesignLibrary,
+  SkinDefinition,
+  Spec,
+  SpecDesign,
+  ThemeColors,
+} from "../engine/types";
 
 /* ── 1. 색상 파싱 & WCAG AA 대비율 계산 ────────────────────────────────── */
 
@@ -31,7 +37,7 @@ export function parseHexOrRgb(color: string): [number, number, number] {
 
 export function relativeLuminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r / 255, g / 255, b / 255].map((val) =>
-    val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4)
+    val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4),
   );
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
@@ -146,7 +152,7 @@ export function renderDecorSvg(
   theme: string | ThemeColors,
   level: number = 1,
   w: number = 360,
-  h: number = 200
+  h: number = 200,
 ): string {
   const T = resolveThemeColors(theme);
   const decor = VECTORS.DECOR[key];
@@ -163,7 +169,7 @@ export function renderDecorSvg(
 export function renderMarkSvg(
   key: string,
   theme: string | ThemeColors,
-  text: string = "강조"
+  text: string = "강조",
 ): string {
   const T = resolveThemeColors(theme);
   const mark = VECTORS.MARK[key];
@@ -194,7 +200,7 @@ export function renderFrameSvg(
   key: string,
   theme: string | ThemeColors,
   w: number = 240,
-  h: number = 160
+  h: number = 160,
 ): { svg: string; inner: { x: number; y: number; w: number; h: number } } {
   const T = resolveThemeColors(theme);
   const frame = VECTORS.FRAME[key];
@@ -253,28 +259,102 @@ export const FRAME_CATEGORIES: Record<string, string[]> = {
 
 export const ICON_CATEGORIES: Record<string, string[]> = {
   "지표·비즈니스": [
-    "trendup", "trenddown", "chart", "pie", "won", "dollar", "wallet", "cart",
-    "target", "rocket", "trophy", "award", "coin", "percent", "briefcase", "barChart",
+    "trendup",
+    "trenddown",
+    "chart",
+    "pie",
+    "won",
+    "dollar",
+    "wallet",
+    "cart",
+    "target",
+    "rocket",
+    "trophy",
+    "award",
+    "coin",
+    "percent",
+    "briefcase",
+    "barChart",
   ],
   네비게이션: [
-    "arrow", "right", "up", "down", "check", "x", "plus", "minus",
-    "compass", "link", "globe", "pin", "map", "menu", "more", "search",
+    "arrow",
+    "right",
+    "up",
+    "down",
+    "check",
+    "x",
+    "plus",
+    "minus",
+    "compass",
+    "link",
+    "globe",
+    "pin",
+    "map",
+    "menu",
+    "more",
+    "search",
   ],
   미디어: [
-    "play", "pause", "video", "music", "mic", "camera", "image",
-    "volume", "film", "speaker", "radio", "disc", "tv",
+    "play",
+    "pause",
+    "video",
+    "music",
+    "mic",
+    "camera",
+    "image",
+    "volume",
+    "film",
+    "speaker",
+    "radio",
+    "disc",
+    "tv",
   ],
   "보안·설정": [
-    "lock", "unlock", "shield", "key", "gear", "sliders", "eye",
-    "user", "users", "fingerprint", "bell", "info", "warn", "question",
+    "lock",
+    "unlock",
+    "shield",
+    "key",
+    "gear",
+    "sliders",
+    "eye",
+    "user",
+    "users",
+    "fingerprint",
+    "bell",
+    "info",
+    "warn",
+    "question",
   ],
   "기술·코드": [
-    "laptop", "server", "cloud", "database", "terminal", "code",
-    "cpu", "bot", "git", "zap", "battery", "wifi", "bluetooth",
+    "laptop",
+    "server",
+    "cloud",
+    "database",
+    "terminal",
+    "code",
+    "cpu",
+    "bot",
+    "git",
+    "zap",
+    "battery",
+    "wifi",
+    "bluetooth",
   ],
   "자연·사물": [
-    "heart", "star", "fire", "bolt", "bulb", "sun", "moon",
-    "leaf", "flag", "gift", "sparkles", "coffee", "droplet", "book",
+    "heart",
+    "star",
+    "fire",
+    "bolt",
+    "bulb",
+    "sun",
+    "moon",
+    "leaf",
+    "flag",
+    "gift",
+    "sparkles",
+    "coffee",
+    "droplet",
+    "book",
   ],
 };
 
@@ -403,13 +483,14 @@ export function generateDecorSvg(
     opacity?: number;
     blur?: number;
     colorMode?: "accent" | "accent2" | "both" | "dim";
-  } = {}
+  } = {},
 ): string {
   const count = opts.count ?? 4;
   const scale = opts.scale ?? 1.0;
   const opacity = opts.opacity ?? 0.18;
   const blur = opts.blur ?? 12;
-  const col1 = opts.colorMode === "accent2" ? "{accent2}" : opts.colorMode === "dim" ? "{dim}" : "{accent}";
+  const col1 =
+    opts.colorMode === "accent2" ? "{accent2}" : opts.colorMode === "dim" ? "{dim}" : "{accent}";
   const col2 = opts.colorMode === "both" ? "{accent2}" : col1;
 
   if (pattern === "blob") {
@@ -421,11 +502,11 @@ export function generateDecorSvg(
     const blobs: string[] = [];
     for (let i = 0; i < count; i++) {
       const cxRatio = Math.round((0.2 + (i * 0.6) / Math.max(1, count - 1)) * 100) / 100;
-      const cyRatio = Math.round((0.25 + ((i % 2) * 0.45)) * 100) / 100;
+      const cyRatio = Math.round((0.25 + (i % 2) * 0.45) * 100) / 100;
       const r = Math.round(140 * scale);
       const fill = i % 2 === 0 ? col1 : col2;
       blobs.push(
-        `<circle cx="{W}*${cxRatio}" cy="{H}*${cyRatio}" r="${r}" fill="${fill}" opacity="${opacity}"${filterAttr}/>`
+        `<circle cx="{W}*${cxRatio}" cy="{H}*${cyRatio}" r="${r}" fill="${fill}" opacity="${opacity}"${filterAttr}/>`,
       );
     }
     return `${filterDef}${blobs.join("\n")}`;
@@ -438,7 +519,7 @@ export function generateDecorSvg(
       const fill = i % 2 === 0 ? col1 : col2;
       const op = Math.round(opacity * (1 - i * 0.15) * 100) / 100;
       waves.push(
-        `<path d="M0 {H}*${yRatio} Q{W}*0.25 {H}*${yRatio - 0.08 * scale} {W}*0.5 {H}*${yRatio} T{W} {H}*${yRatio} L{W} {H} L0 {H}Z" fill="${fill}" opacity="${op}"/>`
+        `<path d="M0 {H}*${yRatio} Q{W}*0.25 {H}*${yRatio - 0.08 * scale} {W}*0.5 {H}*${yRatio} T{W} {H}*${yRatio} L{W} {H} L0 {H}Z" fill="${fill}" opacity="${op}"/>`,
       );
     }
     return waves.join("\n");
@@ -461,7 +542,7 @@ export function generateDecorSvg(
     for (let i = 0; i < n; i++) {
       const angle = (i * 360) / n;
       rays.push(
-        `<line x1="{W}*0.5" y1="{H}*0.5" x2="{W}*0.5" y2="-{H}" stroke="${col1}" stroke-width="${Math.round(2 * scale)}" opacity="${opacity}" transform="rotate(${angle} {W}*0.5 {H}*0.5)"/>`
+        `<line x1="{W}*0.5" y1="{H}*0.5" x2="{W}*0.5" y2="-{H}" stroke="${col1}" stroke-width="${Math.round(2 * scale)}" opacity="${opacity}" transform="rotate(${angle} {W}*0.5 {H}*0.5)"/>`,
       );
     }
     return rays.join("\n");
@@ -472,7 +553,7 @@ export function generateDecorSvg(
     for (let i = 1; i <= count; i++) {
       const r = Math.round(i * 65 * scale);
       rings.push(
-        `<circle cx="{W}*0.5" cy="{H}*0.5" r="${r}" fill="none" stroke="${i % 2 === 0 ? col2 : col1}" stroke-width="${Math.round(2 * scale)}" opacity="${opacity}" stroke-dasharray="${i % 2 === 0 ? "4 8" : "none"}"/>`
+        `<circle cx="{W}*0.5" cy="{H}*0.5" r="${r}" fill="none" stroke="${i % 2 === 0 ? col2 : col1}" stroke-width="${Math.round(2 * scale)}" opacity="${opacity}" stroke-dasharray="${i % 2 === 0 ? "4 8" : "none"}"/>`,
       );
     }
     return rings.join("\n");
@@ -483,7 +564,7 @@ export function generateDecorSvg(
     for (let i = 0; i < count; i++) {
       const offset = (i - count / 2) * 120 * scale;
       beams.push(
-        `<line x1="{W}*-0.2 + ${offset}" y1="{H}*1.2" x2="{W}*1.2 + ${offset}" y2="{H}*-0.2" stroke="${i % 2 === 0 ? col1 : col2}" stroke-width="${Math.round(20 * scale)}" opacity="${opacity}"/>`
+        `<line x1="{W}*-0.2 + ${offset}" y1="{H}*1.2" x2="{W}*1.2 + ${offset}" y2="{H}*-0.2" stroke="${i % 2 === 0 ? col1 : col2}" stroke-width="${Math.round(20 * scale)}" opacity="${opacity}"/>`,
       );
     }
     return beams.join("\n");
@@ -501,8 +582,13 @@ export function generateMarkSvg(
     dashed?: boolean;
     colorTarget?: string;
     opacity?: number;
-  } = {}
-): { svg: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; draw: boolean; text: boolean } {
+  } = {},
+): {
+  svg: string;
+  where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+  draw: boolean;
+  text: boolean;
+} {
   const sw = opts.strokeWidth ?? 4;
   const bend = opts.bend ?? 0;
   const dash = opts.dashed ? ' stroke-dasharray="6 6"' : "";
@@ -589,7 +675,7 @@ export function generateArtSvg(
     rotate?: number;
     detail?: "simple" | "medium" | "rich";
     accent2Ratio?: number;
-  } = {}
+  } = {},
 ): string {
   const s = opts.scale ?? 1.0;
   const rot = opts.rotate ?? 0;
@@ -654,7 +740,7 @@ export function generateFrameSvg(
     barHeight?: number;
     borderWidth?: number;
     controls?: "dots" | "lines" | "none";
-  } = {}
+  } = {},
 ): string {
   const r = opts.radius ?? 12;
   const bar = opts.barHeight ?? 32;
@@ -715,12 +801,20 @@ export function extractSvgPath(svgMarkup: string): string {
 export function skinPreviewVars(
   skin: string | SkinDefinition,
   theme: string | ThemeColors,
-  aspect = "16:9"
+  aspect = "16:9",
 ): Record<string, string> {
   const c = resolveThemeColors(theme);
   const out: Record<string, string> = {
-    "--bg": c.bg, "--bg2": c.bg2, "--ink": c.ink, "--ink2": c.ink2, "--dim": c.dim,
-    "--acc": c.accent, "--acc2": c.accent2, "--good": c.good, "--warn": c.warn, "--bad": c.bad,
+    "--bg": c.bg,
+    "--bg2": c.bg2,
+    "--ink": c.ink,
+    "--ink2": c.ink2,
+    "--dim": c.dim,
+    "--acc": c.accent,
+    "--acc2": c.accent2,
+    "--good": c.good,
+    "--warn": c.warn,
+    "--bad": c.bad,
     "--line": c.line || "rgba(128,128,128,.16)",
     "--panel": c.panel || c.bg2,
     "--pline": c.panelLine || c.line || "rgba(128,128,128,.16)",
@@ -766,15 +860,18 @@ export function designTokenContract(): { key: string; doc: string; group: string
  */
 
 /** 스펙이 참조하는 커스텀 정의만 골라 design 블록을 만든다. 없으면 null. */
-export function collectSpecDesign(
-  spec: Spec,
-  library: CustomDesignLibrary
-): SpecDesign | null {
+export function collectSpecDesign(spec: Spec, library: CustomDesignLibrary): SpecDesign | null {
   const used = GG.usedDesignNames(spec);
   const out: SpecDesign = {};
   let n = 0;
   const KINDS: (keyof CustomDesignLibrary & keyof SpecDesign)[] = [
-    "themes", "skins", "icons", "arts", "marks", "decors", "frames",
+    "themes",
+    "skins",
+    "icons",
+    "arts",
+    "marks",
+    "decors",
+    "frames",
   ];
   for (const kind of KINDS) {
     const lib = library[kind] as Record<string, unknown>;

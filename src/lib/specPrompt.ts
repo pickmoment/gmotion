@@ -30,7 +30,14 @@ export interface PromptOpts {
 export interface Storyboard {
   title?: string;
   message?: string;
-  scenes: { n?: number; pattern: string; headline?: string; cues?: string; why?: string; peak?: boolean }[];
+  scenes: {
+    n?: number;
+    pattern: string;
+    headline?: string;
+    cues?: string;
+    why?: string;
+    peak?: boolean;
+  }[];
 }
 
 const clock = (s: number) => {
@@ -43,7 +50,10 @@ const clock = (s: number) => {
 /** 자막을 모델이 그대로 인용할 수 있는 모양으로 편다. */
 export function cueBlock(cues: Cue[]): string {
   return cues
-    .map((c, i) => `#${i + 1} [${clock(c.start)} → ${clock(c.end)}] ${c.text.replace(/\s*\n\s*/g, " ")}`)
+    .map(
+      (c, i) =>
+        `#${i + 1} [${clock(c.start)} → ${clock(c.end)}] ${c.text.replace(/\s*\n\s*/g, " ")}`,
+    )
     .join("\n");
 }
 

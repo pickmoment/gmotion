@@ -73,14 +73,20 @@ export function checkOutput(html: string): { lines: CheckLine[]; info: string; f
   must("씬 라벨", /data-pattern="/, "씬마다 패턴 표시 — 검수 추적용");
   must("검수 API", /window\.GGM/, "씬별 시킹 캡처에 필요하다");
   must("폰트 로드 후 조립", /document\.fonts/, "폰트 늦게 오면 레이아웃이 튄다");
-  never("레이아웃 속성 애니메이션", /"(width|height|top|left|margin[A-Za-z]*)":\s*[-\d]/, "transform/opacity 로 바꾼다");
+  never(
+    "레이아웃 속성 애니메이션",
+    /"(width|height|top|left|margin[A-Za-z]*)":\s*[-\d]/,
+    "transform/opacity 로 바꾼다",
+  );
   never(
     "외부 스크립트(CDN GSAP 제외)",
     /<script[^>]+src="(?!https:\/\/cdn\.jsdelivr\.net\/npm\/gsap)/,
     "단일 파일 정책 위반",
   );
   const scenes = (html.match(/class="gg-scene"/g) || []).length;
-  const pats = new Set((html.match(/data-pattern="([a-zA-Z]+)"/g) || []).map((m) => m.split('"')[1]));
+  const pats = new Set(
+    (html.match(/data-pattern="([a-zA-Z]+)"/g) || []).map((m) => m.split('"')[1]),
+  );
   if (scenes >= 4 && pats.size < 2) {
     lines.push({
       ok: false,

@@ -119,7 +119,11 @@ export function extractJson(text: string): { value: unknown; raw: string } | nul
     try {
       const value = JSON.parse(t);
       /* 스펙은 객체이고 scenes 를 가진다 — 모델이 곁들인 다른 JSON 을 집지 않는다 */
-      if (value && typeof value === "object" && Array.isArray((value as { scenes?: unknown }).scenes)) {
+      if (
+        value &&
+        typeof value === "object" &&
+        Array.isArray((value as { scenes?: unknown }).scenes)
+      ) {
         hit = { value, raw: t };
       }
     } catch {

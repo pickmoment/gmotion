@@ -6,7 +6,11 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/tauri";
 
 const DOCS: { path: string; label: string; note: string }[] = [
-  { path: "references/direction.md", label: "연출", note: "내러티브 아크, 패턴 고르기, 밀도·리듬, 흔한 실패" },
+  {
+    path: "references/direction.md",
+    label: "연출",
+    note: "내러티브 아크, 패턴 고르기, 밀도·리듬, 흔한 실패",
+  },
   { path: "references/spec.md", label: "스펙", note: "루트·씬 공통 필드, 패턴 20종의 필드와 예시" },
   { path: "references/charts.md", label: "차트", note: "어떤 차트인가, 색은 어떤 일을 하는가" },
   { path: "references/theming.md", label: "테마", note: "테마·화면비·에너지·재생 모드·모션 토큰" },
@@ -23,7 +27,10 @@ export function DocsPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     api
       .skillFile(sel)
-      .then((t) => { setText(t); setErr(""); })
+      .then((t) => {
+        setText(t);
+        setErr("");
+      })
       .catch((e) => setErr(String(e)));
   }, [sel]);
 
@@ -32,12 +39,19 @@ export function DocsPanel({ onClose }: { onClose: () => void }) {
       <div className="modal-box wide">
         <div className="pane-head">
           <h2>레퍼런스</h2>
-          <button type="button" className="ghost" onClick={onClose}>닫기</button>
+          <button type="button" className="ghost" onClick={onClose}>
+            닫기
+          </button>
         </div>
         <div className="docs">
           <nav>
             {DOCS.map((d) => (
-              <button key={d.path} type="button" className={d.path === sel ? "on" : ""} onClick={() => setSel(d.path)}>
+              <button
+                key={d.path}
+                type="button"
+                className={d.path === sel ? "on" : ""}
+                onClick={() => setSel(d.path)}
+              >
                 <strong>{d.label}</strong>
                 <span className="dim">{d.note}</span>
               </button>

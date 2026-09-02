@@ -23,7 +23,9 @@ export function SceneForm({
   onOpenDesign?: () => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
-  const [openDesignSlot, setOpenDesignSlot] = useState<"decor" | "mark" | "art" | "skin" | null>(null);
+  const [openDesignSlot, setOpenDesignSlot] = useState<"decor" | "mark" | "art" | "skin" | null>(
+    null,
+  );
 
   const schema = PATTERNS[scene.pattern];
 
@@ -259,11 +261,7 @@ export function SceneForm({
 
       {/* ── 5. 타이밍 & 연출 세부 필드 (Timing, Audio, Notes) ── */}
       <div className="scene-details-accordion">
-        <button
-          type="button"
-          className="section-toggle"
-          onClick={() => setShowDetails((s) => !s)}
-        >
+        <button type="button" className="section-toggle" onClick={() => setShowDetails((s) => !s)}>
           {showDetails ? "▾" : "▸"} 씬 타이밍·대사·발표자 노트
           {scene.say && <span className="badge-mini">대사</span>}
           {scene.hold && <span className="badge-mini">{scene.hold}s</span>}
@@ -279,7 +277,9 @@ export function SceneForm({
                 placeholder="내레이션 또는 자막과 일치할 대사 텍스트"
                 onChange={(e) => patch("say", e.target.value)}
               />
-              <p className="hint">자막 싱크 시 이 대사를 기준으로 씬 등장 시각과 길이를 맞춥니다.</p>
+              <p className="hint">
+                자막 싱크 시 이 대사를 기준으로 씬 등장 시각과 길이를 맞춥니다.
+              </p>
             </div>
 
             <div className="field">

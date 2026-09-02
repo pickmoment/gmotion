@@ -21,7 +21,8 @@ export function DocSettings({
   onChange: (s: Spec) => void;
   onOpenDesign?: () => void;
 }) {
-  const set = (k: string, v: unknown) => onChange(setField(spec as Record<string, unknown>, k, v) as unknown as Spec);
+  const set = (k: string, v: unknown) =>
+    onChange(setField(spec as Record<string, unknown>, k, v) as unknown as Spec);
   const sel = (k: string, label: string, opts: Record<string, string>, hint?: string) => (
     <div className="field" key={k}>
       <label>{label}</label>
@@ -46,8 +47,14 @@ export function DocSettings({
       </div>
       <div className="field wide">
         <label>메시지</label>
-        <textarea rows={2} value={spec.message ?? ""} onChange={(e) => set("message", e.target.value)} />
-        <p className="hint">이 영상이 남길 한 줄. 씬 구성의 검증 기준이 된다 — 없으면 경고가 뜬다</p>
+        <textarea
+          rows={2}
+          value={spec.message ?? ""}
+          onChange={(e) => set("message", e.target.value)}
+        />
+        <p className="hint">
+          이 영상이 남길 한 줄. 씬 구성의 검증 기준이 된다 — 없으면 경고가 뜬다
+        </p>
       </div>
 
       <div className="grid">
@@ -91,8 +98,14 @@ export function DocSettings({
               step={0.1}
               value={spec.audio?.offset ?? ""}
               onChange={(e) =>
-                set("audio", setField({ ...(spec.audio ?? {}) }, "offset",
-                  e.target.value === "" ? undefined : Number(e.target.value)))
+                set(
+                  "audio",
+                  setField(
+                    { ...(spec.audio ?? {}) },
+                    "offset",
+                    e.target.value === "" ? undefined : Number(e.target.value),
+                  ),
+                )
               }
             />
             <p className="hint">음성 안에서 첫 대사가 시작하는 시각</p>
@@ -106,8 +119,14 @@ export function DocSettings({
               max={1}
               value={spec.audio?.volume ?? ""}
               onChange={(e) =>
-                set("audio", setField({ ...(spec.audio ?? {}) }, "volume",
-                  e.target.value === "" ? undefined : Number(e.target.value)))
+                set(
+                  "audio",
+                  setField(
+                    { ...(spec.audio ?? {}) },
+                    "volume",
+                    e.target.value === "" ? undefined : Number(e.target.value),
+                  ),
+                )
               }
             />
           </div>

@@ -67,9 +67,15 @@ export interface SpecDesign {
   skins?: Record<string, SkinDefinition>;
   icons?: Record<string, { path: string; aliases?: string[]; label?: string }>;
   arts?: Record<string, { label: string; svg: string }>;
-  marks?: Record<string, { label: string; where?: string; svg: string; draw?: boolean; text?: boolean }>;
+  marks?: Record<
+    string,
+    { label: string; where?: string; svg: string; draw?: boolean; text?: boolean }
+  >;
   decors?: Record<string, { label: string; category?: string; svg: string }>;
-  frames?: Record<string, { label: string; ratio?: number; svg: string; bar?: number; pad?: { x?: number; y?: number } }>;
+  frames?: Record<
+    string,
+    { label: string; ratio?: number; svg: string; bar?: number; pad?: { x?: number; y?: number } }
+  >;
 }
 
 export interface CustomDesignLibrary {
@@ -77,7 +83,16 @@ export interface CustomDesignLibrary {
   skins: Record<string, SkinDefinition>;
   icons: Record<string, { path: string; aliases: string[]; label?: string }>;
   arts: Record<string, { label: string; svg: string }>;
-  marks: Record<string, { label: string; where: "under" | "around" | "behind" | "point" | "corner" | "ribbon"; svg: string; draw?: boolean; text?: boolean }>;
+  marks: Record<
+    string,
+    {
+      label: string;
+      where: "under" | "around" | "behind" | "point" | "corner" | "ribbon";
+      svg: string;
+      draw?: boolean;
+      text?: boolean;
+    }
+  >;
   decors: Record<string, { label: string; category?: string; svg: string }>;
   frames: Record<string, { label: string; ratio: number; svg: string; bar?: number }>;
 }

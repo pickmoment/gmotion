@@ -8,11 +8,25 @@ import type { Item, SceneItem } from "../../engine/types";
 import { IconPicker, IconGlyph } from "./IconPicker";
 import { ArtPicker } from "./ArtPicker";
 const LABELS: Record<ItemFieldKey, string> = {
-  label: "라벨", text: "글", when: "시점", icon: "아이콘", note: "노트",
-  value: "값", unit: "단위", prefix: "접두", dec: "소수 자리",
-  tone: "톤", badge: "배지", ribbon: "리본", art: "일러스트",
-  spark: "미니 추이선", say: "대사(say)", hub: "중심(hub)", ring: "궤도",
-  emphasis: "강조", scale: "배율",
+  label: "라벨",
+  text: "글",
+  when: "시점",
+  icon: "아이콘",
+  note: "노트",
+  value: "값",
+  unit: "단위",
+  prefix: "접두",
+  dec: "소수 자리",
+  tone: "톤",
+  badge: "배지",
+  ribbon: "리본",
+  art: "일러스트",
+  spark: "미니 추이선",
+  say: "대사(say)",
+  hub: "중심(hub)",
+  ring: "궤도",
+  emphasis: "강조",
+  scale: "배율",
 };
 
 const TONES = ["", "good", "bad", "warn", "dim"];
@@ -24,7 +38,8 @@ function toObj(it: SceneItem, primary: ItemFieldKey): Item {
 /** 라벨(또는 primary)만 남았으면 문자열로 접는다. */
 function compact(o: Item, primary: ItemFieldKey): SceneItem {
   const keys = Object.keys(o).filter((k) => o[k] !== undefined && o[k] !== "");
-  if (keys.length === 1 && keys[0] === primary && typeof o[primary] === "string") return o[primary] as string;
+  if (keys.length === 1 && keys[0] === primary && typeof o[primary] === "string")
+    return o[primary] as string;
   const out: Record<string, unknown> = {};
   keys.forEach((k) => (out[k] = o[k]));
   return out as Item;
@@ -105,7 +120,11 @@ export function ItemsEditor({
                     onClick={() => setPickingIconIdx(pickingIconIdx === i ? null : i)}
                     title={o.icon ? `아이콘: ${o.icon} (클릭하여 변경)` : "아이콘 선택"}
                   >
-                    {o.icon ? <IconGlyph name={o.icon as string} size={16} /> : <span className="dim">＋icon</span>}
+                    {o.icon ? (
+                      <IconGlyph name={o.icon as string} size={16} />
+                    ) : (
+                      <span className="dim">＋icon</span>
+                    )}
                   </button>
                 )}
 
@@ -131,12 +150,32 @@ export function ItemsEditor({
                 {o.badge && <span className="item-chip-badge">{o.badge}</span>}
                 {o.ribbon && <span className="item-chip-ribbon">{o.ribbon}</span>}
 
-                <button type="button" className="ghost" onClick={() => setOpenIdx(isOpen ? null : i)}
-                        title="세부 필드">
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => setOpenIdx(isOpen ? null : i)}
+                  title="세부 필드"
+                >
                   {extra ? `⋯${extra}` : "⋯"}
                 </button>
-                <button type="button" className="ghost" onClick={() => move(i, -1)} disabled={i === 0} title="위로">↑</button>
-                <button type="button" className="ghost" onClick={() => move(i, 1)} disabled={i === list.length - 1} title="아래로">↓</button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => move(i, -1)}
+                  disabled={i === 0}
+                  title="위로"
+                >
+                  ↑
+                </button>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() => move(i, 1)}
+                  disabled={i === list.length - 1}
+                  title="아래로"
+                >
+                  ↓
+                </button>
                 <button
                   type="button"
                   className="ghost danger"
@@ -205,7 +244,11 @@ export function ItemsEditor({
                       return (
                         <div className="field check" key={f}>
                           <label>
-                            <input type="checkbox" checked={!!o[f]} onChange={(e) => patch(i, f, e.target.checked)} />
+                            <input
+                              type="checkbox"
+                              checked={!!o[f]}
+                              onChange={(e) => patch(i, f, e.target.checked)}
+                            />
                             {LABELS[f]}
                           </label>
                         </div>
@@ -215,9 +258,14 @@ export function ItemsEditor({
                       return (
                         <div className="field" key={f}>
                           <label>{LABELS[f]}</label>
-                          <select value={(o.tone as string) ?? ""} onChange={(e) => patch(i, "tone", e.target.value)}>
+                          <select
+                            value={(o.tone as string) ?? ""}
+                            onChange={(e) => patch(i, "tone", e.target.value)}
+                          >
                             {TONES.map((t) => (
-                              <option key={t} value={t}>{t || "— 없음"}</option>
+                              <option key={t} value={t}>
+                                {t || "— 없음"}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -231,7 +279,13 @@ export function ItemsEditor({
                             type="number"
                             step={f === "scale" ? 0.05 : f === "value" ? "any" : 1}
                             value={o[f] === undefined ? "" : String(o[f])}
-                            onChange={(e) => patch(i, f, e.target.value === "" ? undefined : Number(e.target.value))}
+                            onChange={(e) =>
+                              patch(
+                                i,
+                                f,
+                                e.target.value === "" ? undefined : Number(e.target.value),
+                              )
+                            }
                           />
                         </div>
                       );
@@ -259,15 +313,21 @@ export function ItemsEditor({
                       return (
                         <div className="field wide" key={f}>
                           <label>{LABELS[f]}</label>
-                          <textarea rows={2} value={(o[f] as string) ?? ""}
-                                    onChange={(e) => patch(i, f, e.target.value)} />
+                          <textarea
+                            rows={2}
+                            value={(o[f] as string) ?? ""}
+                            onChange={(e) => patch(i, f, e.target.value)}
+                          />
                         </div>
                       );
                     }
                     return (
                       <div className="field" key={f}>
                         <label>{LABELS[f]}</label>
-                        <input value={(o[f] as string) ?? ""} onChange={(e) => patch(i, f, e.target.value)} />
+                        <input
+                          value={(o[f] as string) ?? ""}
+                          onChange={(e) => patch(i, f, e.target.value)}
+                        />
                       </div>
                     );
                   })}

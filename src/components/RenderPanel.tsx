@@ -49,12 +49,16 @@ export function RenderPanel({ total, onCancel }: { total: number; onCancel: () =
           <li>
             <span>진행</span>
             <strong>
-              {p ? `${p.frame.toLocaleString()} / ${p.frames.toLocaleString()} 프레임 · ${Math.round(done * 100)}%` : "—"}
+              {p
+                ? `${p.frame.toLocaleString()} / ${p.frames.toLocaleString()} 프레임 · ${Math.round(done * 100)}%`
+                : "—"}
             </strong>
           </li>
           <li>
             <span>남은 길이</span>
-            <strong>{mmss(left)} / {mmss(total)}</strong>
+            <strong>
+              {mmss(left)} / {mmss(total)}
+            </strong>
           </li>
         </ul>
 
