@@ -516,6 +516,19 @@ fieldset.group {
   color: var(--dim);
   line-height: 1.45;
 }
+/* 씬 유형을 바꾼 직후의 요약 — 무엇이 옮겨졌고 무엇이 버려졌는지 */
+.pattern-change-note {
+  margin-top: 5px;
+  padding: 5px 8px;
+  border-left: 2px solid var(--acc);
+  border-radius: 0 var(--r) var(--r) 0;
+  background: rgba(110, 168, 255, 0.08);
+  color: var(--ink2);
+}
+.pattern-change-note strong {
+  color: var(--ok);
+  font-weight: 600;
+}
 .sub-label {
   font-size: 11px;
   color: var(--ink2);

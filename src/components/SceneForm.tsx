@@ -1,8 +1,9 @@
 /** 씬 하나의 폼. 패턴별 필드 + 씬 비주얼 디자인 바 + 타이밍/연출 필드. */
 import { useState } from "react";
 import { GG } from "../engine/boot";
-import { PATTERNS, blankScene } from "../engine/schema";
+import { PATTERNS } from "../engine/schema";
 import type { Scene } from "../engine/types";
+import { changePattern, type PatternChange } from "../lib/patternChange";
 import { ArtPicker } from "./fields/ArtPicker";
 import { DecorEditor } from "./fields/DecorEditor";
 import { FieldRenderer } from "./fields/FieldRenderer";
@@ -331,42 +332,55 @@ export function SceneForm({
 }
 
 /**
- * 패턴을 바꾸면 이전 패턴의 필드가 남아 검증이 시끄러워진다 —
- * 공통 필드만 남기고 새 패턴의 뼈대로 갈아끼운다.
+ * 씬 유형(패턴) 바꾸기 — 내용은 새 유형의 같은 역할 자리로 옮기고(`changePattern`),
+ * 자리가 없어 버린 것은 사용자에게 밝힌다. 되돌리기는 ⌘Z 가 한다.
  */
 function PatternSelect({ scene, onChange }: { scene: Scene; onChange: (s: Scene) => void }) {
-  const KEEP = [
-    "id",
-    "purpose",
-    "hold",
-    "say",
-    "transition",
-    "notes",
-    "decor",
-    "decorLevel",
-    "mark",
-    "art",
-    "textFx",
-  ];
+  /* 방금 이 씬을 바꿔 만든 결과일 때만 요약을 보여 준다 — 참조가 같은 동안만이다 */
+  const [last, setLast] = useState<{ scene: Scene; change: PatternChange } | null>(null);
+  const fresh = last && last.scene === scene ? last.change : null;
+
   return (
     <div className="field pattern-select-field">
-      <label>패턴 (Pattern)</label>
+      <label>씬 유형 (pattern)</label>
       <select
         value={scene.pattern}
         onChange={(e) => {
-          const next = blankScene(e.target.value) as Scene;
-          KEEP.forEach((k) => {
-            if (scene[k] !== undefined) next[k] = scene[k];
-          });
-          onChange(next);
+          const change = changePattern(scene, e.target.value);
+          setLast({ scene: change.scene, change });
+          onChange(change.scene);
         }}
       >
         {Object.entries(PATTERNS).map(([k, p]) => (
-          <option key={k} value={k}>
+          <option key={k} value={k} title={p.use}>
             {k} — {p.label}
           </option>
         ))}
       </select>
+      {fresh ? (
+        <p className="hint pattern-change-note" aria-live="polite">
+          {fresh.carried.length ? (
+            <>
+              옮김 <strong>{fresh.carried.join(" · ")}</strong>
+            </>
+          ) : (
+            "옮길 내용이 없었다"
+          )}
+          {fresh.dropped.length ? <> · 버림 {fresh.dropped.join(" · ")}</> : null}
+          {fresh.notes.map((n) => (
+            <span key={n} className="warn-inline">
+              {" · "}
+              {n}
+            </span>
+          ))}
+          {" · ⌘Z / Ctrl+Z 로 되돌린다"}
+        </p>
+      ) : (
+        <p className="hint">
+          제목·항목·양쪽 비교 같은 내용은 새 유형의 같은 자리로 옮긴다. 자리가 없는 것만 버리고,
+          무엇을 버렸는지 여기 적는다.
+        </p>
+      )}
     </div>
   );
 }
