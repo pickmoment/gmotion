@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export interface ExportKind {
-  key: "html" | "present" | "clean" | "csv" | "mp4";
+  key: "html" | "present" | "clean" | "csv" | "transcript" | "mp4";
   label: string;
   hint: string;
 }
@@ -16,6 +16,11 @@ export const EXPORTS: ExportKind[] = [
   },
   { key: "clean", label: "HTML — 클린", hint: "플레이어 UI 없이. 녹화·캡처용" },
   { key: "csv", label: "타임코드 CSV", hint: "편집기에 넣을 씬별 시작·끝 프레임" },
+  {
+    key: "transcript",
+    label: "HTML — 접근성 대본",
+    hint: "장면 설명·화면 글자·내레이션·전체 캡션을 읽는 문서",
+  },
   {
     key: "mp4",
     label: "MP4 — 영상",

@@ -15,6 +15,7 @@ import { RenderPanel } from "./components/RenderPanel";
 import { RenderSetupPanel } from "./components/RenderSetupPanel";
 import { DesignPanel } from "./components/DesignPanel";
 import { SpecGenPanel } from "./components/SpecGenPanel";
+import { ReviewPanel } from "./components/ReviewPanel";
 import { useSpecStore } from "./lib/useSpecStore";
 import { syncSpecDesign } from "./lib/design";
 import { useDesignStore, onLibrarySaveError } from "./lib/designStore";
@@ -37,12 +38,14 @@ import {
   type CheckLine,
   type SyncInput,
 } from "./lib/build";
+import { accessibleTranscript } from "./lib/transcript";
 import { RENDER_FPS, formatBytes, pickResolution, type Resolution } from "./lib/render";
 import { api, ask, dialogs, shell } from "./lib/tauri";
 import type { Cue, Scene, Spec } from "./engine/types";
 
 type Tab = "form" | "doc" | "json";
-type Modal = null | "skill" | "docs" | "examples" | "check" | "render" | "design" | "gen" | "mp4";
+type Modal =
+  null | "skill" | "docs" | "examples" | "check" | "review" | "render" | "design" | "gen" | "mp4";
 export default function App() {
   const store = useSpecStore(EMPTY_SPEC);
   const { spec } = store;
@@ -365,6 +368,8 @@ export default function App() {
   const embedded = (kind: ExportKind["key"]): string => {
     if (kind === "csv")
       return sync.cues ? `자막 타이밍 ${sync.cues.length}cue 기준` : "추정 타이밍";
+    if (kind === "transcript")
+      return sync.cues ? `장면 설명 · 전체 캡션 ${sync.cues.length}cue` : "장면 설명 · 내레이션";
     const parts: string[] = [];
     if (sync.cues) parts.push(`자막 정렬 ${sync.cues.length}cue`);
     /* 발표용에는 화면 자막이 빠진다 — 실리지 않은 것을 실렸다고 적으면 안 된다. */
@@ -380,11 +385,14 @@ export default function App() {
     const dir = await defaultDir();
     const base = baseName();
     const csv = kind === "csv";
+    const transcript = kind === "transcript";
     const name = csv
       ? `${base}-타임코드.csv`
-      : kind === "present"
-        ? `${base}-발표.html`
-        : `${base}.html`;
+      : transcript
+        ? `${base}-접근성-대본.html`
+        : kind === "present"
+          ? `${base}-발표.html`
+          : `${base}.html`;
     const defaultPath = dir ? `${dir}/${name}` : name;
     const p = await dialogs.saveAs(defaultPath, csv ? "CSV" : "HTML", csv ? "csv" : "html");
     if (!p) return;
@@ -392,7 +400,9 @@ export default function App() {
     try {
       const text = csv
         ? timingCsv(spec, 30, sync)
-        : build(spec, sync, { present: kind === "present", clean: kind === "clean" });
+        : transcript
+          ? accessibleTranscript(spec, result, cues)
+          : build(spec, sync, { present: kind === "present", clean: kind === "clean" });
       await api.writeText(p, text);
       const saved = `${p.split(/[/\\]/).pop()} (${Math.round(text.length / 1024)}KB) — ${embedded(kind)}`;
       /* 열기 실패는 저장 실패가 아니다. 한 try 로 묶으면 저장 성공 메시지가
@@ -636,6 +646,7 @@ export default function App() {
             result={result}
             scene={selected}
             onSceneChange={setSelected}
+            onReview={() => setModal("review")}
           />
           <ValidatePanel result={result} spec={spec} cues={cues} />
         </section>
@@ -689,6 +700,18 @@ export default function App() {
           lines={check.lines}
           info={check.info}
           fail={check.fail}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal === "review" && (
+        <ReviewPanel
+          spec={spec}
+          sync={sync}
+          result={result}
+          onPick={(index) => {
+            setSelected(index);
+            setModal(null);
+          }}
           onClose={() => setModal(null)}
         />
       )}

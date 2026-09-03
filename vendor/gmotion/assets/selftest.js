@@ -76,6 +76,19 @@ function unit() {
     stats: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }] }] });
   truthy('항목 상한 초과를 경고한다', over.warnings.some(function (w) { return w.indexOf('항목이') >= 0; }));
 
+  var unsafeFlash = G.validate({ message: 'x', energy: 'E3', scenes: [
+    { pattern: 'kineticType', lines: ['1','2','3','4','5','6','7','8'], hold: 0, transition: 'fade' },
+    { pattern: 'kineticType', lines: ['1','2','3','4','5','6','7','8'], hold: 0, transition: 'fade' }
+  ] });
+  truthy('1초에 3회를 넘는 플래시를 막는다', unsafeFlash.errors.some(function (e) { return e.indexOf('전체 화면 플래시') >= 0; }));
+
+  var captionQuality = G.validate({ message: 'x', scenes: [{ pattern: 'quote', text: 'x' }] }, { cues: [
+    { start: 0, end: .5, text: '이 자막은 아주 빠르게 지나가서 읽기 어렵습니다' },
+    { start: .4, end: 2, text: '앞 자막과 시간이 겹칩니다' }
+  ] });
+  truthy('빠른 자막을 경고한다', captionQuality.warnings.some(function (w) { return w.indexOf('초당 17자') >= 0; }));
+  truthy('겹친 자막을 경고한다', captionQuality.warnings.some(function (w) { return w.indexOf('겹치는') >= 0; }));
+
   /* --- 자막 동기화 --- */
   var syncSrt = '1\n00:00:00,000 --> 00:00:05,000\n첫째로 이렇게 했습니다.\n\n' +
                 '2\n00:00:05,000 --> 00:00:10,000\n둘째로 저렇게 했습니다.\n\n' +
@@ -641,7 +654,7 @@ function contrast() {
   }
   function lum(rgb) {
     var a = rgb.map(function (v) {
-      v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
     });
     return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
   }
@@ -768,6 +781,10 @@ function output() {
   truthy('자막 데이터가 실린다', withCC.indexOf('"captions"') > 0);
   truthy('씬 래퍼가 실린다', withCC.indexOf('class="gg-scenes-wrap"') > 0);
   truthy('자막 활성 상태 data-cc 가 실린다', withCC.indexOf('data-cc="true"') > 0);
+  var reduced = G.toHTML(nspec, { cues: ncues, reducedMotion: true });
+  truthy('감소 모션 강제가 IR 에 실린다', reduced.indexOf('"reducedMotion":true') > 0);
+  var safeArea = G.toHTML(nspec, { cues: ncues, safeArea: 'shorts' });
+  truthy('검수 안전 영역이 실린다', safeArea.indexOf('9:16 UI 안전 영역') > 0 && safeArea.indexOf('class="gg-safe"') > 0);
   truthy('음성 없이는 audio 태그가 없다', withCC.indexOf('id="gg-audio"') < 0);
   var withAudio = G.toHTML(nspec, { cues: ncues, audioSrc: 'data:audio/mpeg;base64,AAAA' });
   truthy('음성이 실린다', withAudio.indexOf('id="gg-audio"') > 0);

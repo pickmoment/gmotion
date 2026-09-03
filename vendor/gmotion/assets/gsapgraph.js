@@ -77,42 +77,42 @@ function readSec(text, energy) {
 var THEMES = {
   midnight: {
     label: '미드나잇 — 남색 배경, 기본값. 발표 오프닝·기술 explainer',
-    bg: '#0b1020', bg2: '#141b33', ink: '#eef2ff', ink2: '#a5b0d4', dim: '#707ca5',
+    bg: '#0b1020', bg2: '#141b33', ink: '#eef2ff', ink2: '#a5b0d4', dim: '#7783aa',
     accent: '#6ea8ff', accent2: '#a78bfa', good: '#4ade80', warn: '#fbbf24', bad: '#fb7185',
     line: 'rgba(160,180,255,.22)', panel: 'rgba(255,255,255,.05)', panelLine: 'rgba(160,180,255,.16)',
     glow: 1, font: 'display', grain: .04, vig: .42, decor: ['blob', 'grid']
   },
   ink: {
     label: '잉크 — 먹색 배경 + 금색. 다큐·시리즈 오프닝',
-    bg: '#111110', bg2: '#1c1b19', ink: '#f5f1e8', ink2: '#b8ae9c', dim: '#857b69',
+    bg: '#111110', bg2: '#1c1b19', ink: '#f5f1e8', ink2: '#b8ae9c', dim: '#8b8271',
     accent: '#d4a24c', accent2: '#c2703d', good: '#8aa76a', warn: '#d99a3c', bad: '#c15f4e',
     line: 'rgba(212,162,76,.22)', panel: 'rgba(245,241,232,.04)', panelLine: 'rgba(212,162,76,.18)',
     glow: 0, font: 'serif', grain: .07, vig: .5, decor: ['arcs', 'topo']
   },
   paper: {
     label: '페이퍼 — 밝은 배경. 지표 리포트·사내 공유',
-    bg: '#f7f5f0', bg2: '#ecebe4', ink: '#1b1a17', ink2: '#5c5a52', dim: '#746f64',
+    bg: '#f7f5f0', bg2: '#ecebe4', ink: '#1b1a17', ink2: '#5c5a52', dim: '#6e695f',
     accent: '#2563eb', accent2: '#7c3aed', good: '#11813b', warn: '#aa5d05', bad: '#da2323',
     line: 'rgba(27,26,23,.14)', panel: 'rgba(255,255,255,.72)', panelLine: 'rgba(27,26,23,.1)',
     glow: 0, font: 'sans', grain: .05, vig: 0, decor: ['arcs', 'dots']
   },
   mono: {
     label: '모노 — 흑백. 타이포 중심, 절제된 톤',
-    bg: '#0a0a0a', bg2: '#171717', ink: '#fafafa', ink2: '#a3a3a3', dim: '#7a7a7a',
+    bg: '#0a0a0a', bg2: '#171717', ink: '#fafafa', ink2: '#a3a3a3', dim: '#818181',
     accent: '#fafafa', accent2: '#d4d4d4', good: '#fafafa', warn: '#a3a3a3', bad: '#797979',
     line: 'rgba(250,250,250,.2)', panel: 'rgba(250,250,250,.05)', panelLine: 'rgba(250,250,250,.14)',
     glow: 0, font: 'sans', grain: .03, vig: .34, decor: ['stripes', 'arcs']
   },
   neon: {
     label: '네온 — 고채도 + 글로우. 쇼츠·런칭·하이에너지',
-    bg: '#08070f', bg2: '#151030', ink: '#f5f3ff', ink2: '#c4b5fd', dim: '#7b6dba',
+    bg: '#08070f', bg2: '#151030', ink: '#f5f3ff', ink2: '#c4b5fd', dim: '#8274bd',
     accent: '#22d3ee', accent2: '#f472b6', good: '#34d399', warn: '#fbbf24', bad: '#fb7185',
     line: 'rgba(34,211,238,.3)', panel: 'rgba(124,58,237,.12)', panelLine: 'rgba(34,211,238,.24)',
     glow: 2, font: 'display', grain: .03, vig: .46, decor: ['mesh', 'beams']
   },
   warm: {
     label: '웜 — 크림·테라코타. 브랜드·캠페인 감성',
-    bg: '#1a1310', bg2: '#2a1e18', ink: '#fdf6ec', ink2: '#d9bfa8', dim: '#937967',
+    bg: '#1a1310', bg2: '#2a1e18', ink: '#fdf6ec', ink2: '#d9bfa8', dim: '#9c8473',
     accent: '#f59e5b', accent2: '#ef7d6b', good: '#a3b565', warn: '#f0b429', bad: '#e05c4b',
     line: 'rgba(245,158,91,.24)', panel: 'rgba(253,246,236,.05)', panelLine: 'rgba(245,158,91,.18)',
     glow: 1, font: 'serif', grain: .06, vig: .44, decor: ['mesh', 'arcs']
@@ -175,7 +175,7 @@ var THEMES = {
   },
   clay: {
     label: '클레이 — 3D 점토 볼륨과 매트 파스텔. 클레이모피즘·스톱모션·친근한 설명',
-    bg: '#f0ece4', bg2: '#e2dccf', ink: '#26221d', ink2: '#524b42', dim: '#6b6357',
+    bg: '#f0ece4', bg2: '#e2dccf', ink: '#26221d', ink2: '#524b42', dim: '#686054',
     accent: '#a83c16', accent2: '#1a695d', good: '#287538', warn: '#944e00', bad: '#ab2424',
     line: 'rgba(38,34,29,.14)', panel: '#fcfaf6', panelLine: 'rgba(255,255,255,.9)',
     glow: 0, font: 'round', grain: .07, vig: .2, decor: ['clayBlobs', 'dots'],
@@ -3493,6 +3493,43 @@ function validate(spec, opts) {
   var c = compile(spec, opts);
   c.errors.forEach(function (e) { if (errors.indexOf(e) < 0) errors.push(e); });
   c.warnings.forEach(function (w) { if (warnings.indexOf(w) < 0) warnings.push(w); });
+  /* 전체 화면 플래시는 효과 하나씩이 아니라 최종 타임라인의 1초 구간으로 본다.
+     개별 효과가 안전해도 장면 경계에 몰리면 WCAG 2.3.1 한도를 넘을 수 있다. */
+  var flashes = [];
+  c.scenes.forEach(function (s) {
+    s.tw.forEach(function (o) {
+      if (o.k === 'fx' && (o.fn === 'flash' || o.fn === 'impact')) flashes.push(r2(s.at + num(o.at, 0)));
+    });
+  });
+  flashes.sort(function (a, b) { return a - b; });
+  for (var fi = 0; fi < flashes.length; fi++) {
+    var fj = fi;
+    while (fj < flashes.length && flashes[fj] < flashes[fi] + 1) fj++;
+    if (fj - fi > 3) {
+      errors.push('전체 화면 플래시가 ' + flashes[fi] + '초부터 1초 안에 ' + (fj - fi) +
+        '회다 — 3회 이하로 줄이거나 flash·impact 효과를 분산한다.');
+      break;
+    }
+  }
+
+  /* WCAG 는 캡션 내용의 존재를 요구하고 읽기 속도 수치는 규정하지 않는다.
+     아래 값은 gmotion 화면 검수용 보수적 제작 가이드다. */
+  var qc = arr(opts.cues);
+  if (qc.length) {
+    var overlaps = 0, tooFast = 0, tooShort = 0, tooLongLine = 0;
+    qc.forEach(function (q, qi) {
+      var dur = num(q.end, 0) - num(q.start, 0);
+      var chars = String(q.text || '').replace(/\s/g, '').length;
+      if (qi && num(q.start, 0) < num(qc[qi - 1].end, 0)) overlaps++;
+      if (dur > 0 && chars / dur > 17) tooFast++;
+      if (dur > 0 && dur < .8 && chars > 4) tooShort++;
+      if (String(q.text || '').split('\n').some(function (line) { return line.replace(/\s/g, '').length > 28; })) tooLongLine++;
+    });
+    if (overlaps) warnings.push('자막 cue 시간이 겹치는 곳이 ' + overlaps + '개다 — 동시에 두 자막이 필요한지 확인한다.');
+    if (tooFast) warnings.push('읽기 속도가 초당 17자를 넘는 자막이 ' + tooFast + '개다 — cue 를 늘리거나 문장을 줄인다.');
+    if (tooShort) warnings.push('0.8초보다 짧게 보이는 자막이 ' + tooShort + '개다 — 눈에 걸리지 않을 수 있다.');
+    if (tooLongLine) warnings.push('한 줄이 28자를 넘는 자막이 ' + tooLongLine + '개다 — 두 줄로 나누되 화면 정보를 가리지 않는지 본다.');
+  }
   /* 카메라를 직접 쓰는 패턴에 cam 을 적으면 무시된다 — 적어 놓고 안 움직이면 원인을 못 찾는다 */
   arr(spec.scenes).forEach(function (sc, i) {
     if (!sc || !has(sc, 'cam') || String(sc.cam) === 'none') return;
@@ -4109,6 +4146,7 @@ function toHTML(spec, opts) {
     /* 깊이와 셔터는 런타임이 실행할 값이다 — 배경 레이어의 감쇠율과 잔상 세기.
        에너지 배율은 여기서 곱해 둔다 — 런타임에 에너지 표를 또 두지 않는다 */
     depth: depthOf(spec), shutter: r2(shutterOf(spec) * ENERGY[c.energy].shut),
+    reducedMotion: typeof opts.reducedMotion === 'boolean' ? opts.reducedMotion : null,
     present: !!opts.present, title: c.title || '',
     scenes: c.scenes.map(function (s) {
       return { sid: s.sid, id: s.id, pattern: s.pattern, at: s.at, dur: s.dur, ce: s.contentEnd,
@@ -4202,6 +4240,14 @@ function toHTML(spec, opts) {
 opts.noFonts ? '' : fontLinks(F, useMono),
 '<style>',
 css(c),
+opts.safeArea ? [
+  '.gg-safe{position:absolute;z-index:1000;pointer-events:none;border:3px dashed rgba(255,255,255,.82);' +
+    'box-shadow:0 0 0 1px rgba(0,0,0,.65) inset;color:#fff;font:700 22px/1 system-ui,sans-serif}',
+  '.gg-safe::before{content:attr(data-label);position:absolute;top:8px;left:10px;padding:5px 8px;' +
+    'border-radius:4px;background:rgba(0,0,0,.72)}',
+  opts.safeArea === 'shorts' ? '.gg-safe{inset:10% 18% 18% 8%}' :
+    opts.safeArea === 'captions' ? '.gg-safe{inset:6% 6% 18%}' : '.gg-safe{inset:5%}',
+].join('') : '',
 '</style>',
 '</head>',
 '<body>',
@@ -4215,6 +4261,9 @@ scenesHTML,
 hasCC ? '<div class="gg-captions" id="gg-cc" aria-live="off"></div>' : '',
 T.vig ? '<div class="gg-vig" aria-hidden="true"></div>' : '',
 T.grain ? grainSVG() : '',
+opts.safeArea ? '<div class="gg-safe" aria-hidden="true" data-label="' +
+  (opts.safeArea === 'shorts' ? '9:16 UI 안전 영역' : opts.safeArea === 'captions' ? '자막 안전 영역' : '영상 안전 영역') +
+  '"></div>' : '',
 '</main>',
 '</div>',
 '</div>',

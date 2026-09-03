@@ -23,6 +23,10 @@ interface GGMApi {
   captionsOn: boolean;
 }
 
+interface GGMWindow extends Window {
+  GGM?: GGMApi;
+}
+
 /**
  * 부팅 실패 진단에 붙일 CSP. Tauri 는 배포 자산의 응답 **헤더**로 CSP 를 보내므로
  * 문서에는 meta 가 없다 — 헤더를 직접 읽어야 무엇이 막았는지 알 수 있다.
@@ -42,12 +46,14 @@ export function Preview({
   result,
   scene,
   onSceneChange,
+  onReview,
 }: {
   spec: Spec;
   sync: SyncInput;
   result: ValidateResult;
   scene: number;
   onSceneChange: (i: number) => void;
+  onReview: () => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [html, setHtml] = useState("");
@@ -59,6 +65,8 @@ export function Preview({
   const [dead, setDead] = useState("");
   /* 자막 표시는 산출물 안의 상태다 — 다시 빌드해도 보던 대로 유지한다 */
   const [ccOn, setCcOn] = useState(true);
+  const [motion, setMotion] = useState<"system" | "full" | "reduced">("system");
+  const [safeArea, setSafeArea] = useState<"" | "video" | "shorts" | "captions">("");
   const pending = useRef(scene);
   const ccRef = useRef(true);
 
@@ -77,7 +85,11 @@ export function Preview({
   const rebuild = useCallback(
     (force = false) => {
       try {
-        const next = build(spec, sync, { clean: false });
+        const next = build(spec, sync, {
+          clean: false,
+          reducedMotion: motion === "system" ? undefined : motion === "reduced",
+          safeArea: safeArea || undefined,
+        });
         setErr("");
         if (force || next !== lastHtml.current) {
           lastHtml.current = next;
@@ -88,7 +100,7 @@ export function Preview({
         setErr((e as Error).message);
       }
     },
-    [spec, sync],
+    [spec, sync, motion, safeArea],
   );
 
   /* 검증을 통과한 스펙만 다시 그린다. 편집 중간 상태로 미리보기가 깨지지 않게. */
@@ -99,7 +111,11 @@ export function Preview({
     return () => clearTimeout(t);
   }, [spec, sync.cues, sync.captions, sync.audioSrc, result.ok, live, rebuild]);
 
-  const ggm = () => (frame.current?.contentWindow as unknown as { GGM?: GGMApi })?.GGM;
+  const ggm = () => {
+    // Same-origin srcDoc exposes the generated runtime API.
+    const frameWindow = frame.current?.contentWindow as GGMWindow | null | undefined;
+    return frameWindow?.GGM;
+  };
 
   /* 씬 끝을 감시하는 rAF 핸들. 씬을 또 바꾸거나 다시 빌드하면 취소한다. */
   const watch = useRef(0);
@@ -197,12 +213,26 @@ export function Preview({
 
   return (
     <div className="pane preview">
-      <div className="pane-head">
+      <div className="pane-head preview-head">
         <h2>미리보기</h2>
+        <select value={motion} onChange={(e) => setMotion(e.target.value as typeof motion)}>
+          <option value="system">모션: 시스템</option>
+          <option value="full">모션: 전체</option>
+          <option value="reduced">모션: 감소</option>
+        </select>
+        <select value={safeArea} onChange={(e) => setSafeArea(e.target.value as typeof safeArea)}>
+          <option value="">안전 영역: 없음</option>
+          <option value="video">일반 영상</option>
+          <option value="shorts">9:16 쇼츠 UI</option>
+          <option value="captions">자막 영역</option>
+        </select>
         <label className="inline-check">
           <input type="checkbox" checked={live} onChange={(e) => setLive(e.target.checked)} />
-          자동 갱신
+          자동
         </label>
+        <button type="button" className="ghost" onClick={onReview} disabled={!result.ok || !n}>
+          씬 검수
+        </button>
         <button type="button" className="ghost" onClick={() => rebuild(true)}>
           다시 빌드
         </button>

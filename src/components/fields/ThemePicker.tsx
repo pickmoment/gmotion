@@ -162,8 +162,8 @@ export function ThemePicker({
                   <div className="theme-card-top">
                     <strong>{t.key}</strong>
                     {t.custom && <span className="badge-custom">커스텀</span>}
-                    <span className="theme-contrast-badge" title="WCAG AA 대비율 검사">
-                      {contrast.ok ? "AA 통과" : `${contrast.score}%`}
+                    <span className="theme-contrast-badge" title="gmotion 역할별 대비 검사">
+                      {contrast.ok ? "대비 통과" : `${contrast.score}%`}
                     </span>
                   </div>
                   <p className="theme-card-desc" style={{ color: colors.ink2 }}>

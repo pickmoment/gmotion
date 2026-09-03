@@ -1,6 +1,7 @@
 /** 엔진 호출을 한곳에 모은다 — gsap·runtime 주입을 빠뜨리지 않게. */
 import { GG, ASSETS } from "../engine/boot";
 import type { BuildOpts, Cue, Spec, ValidateResult } from "../engine/types";
+import { checkThemeContrast } from "./design";
 
 export interface SyncInput {
   cues: Cue[] | null;
@@ -12,10 +13,24 @@ export const NO_SYNC: SyncInput = { cues: null, captions: false, audioSrc: null 
 
 export function validate(spec: Spec, sync: SyncInput = NO_SYNC): ValidateResult {
   try {
-    return GG.validate(spec, {
+    const result = GG.validate(spec, {
       cues: sync.cues,
       captions: sync.captions && sync.cues ? sync.cues : null,
     });
+    const custom = spec.theme ? spec.design?.themes?.[spec.theme] : undefined;
+    if (!custom) return result;
+    const contrast = checkThemeContrast(custom);
+    const failures = contrast.list.filter((item) => !item.pass);
+    if (!failures.length) return result;
+    return {
+      ...result,
+      warnings: [
+        ...result.warnings,
+        `커스텀 테마 대비 미달 ${failures.length}건 — ${failures
+          .map((item) => `${item.name} ${item.ratio}:1(필요 ${item.need}:1)`)
+          .join(" · ")}`,
+      ],
+    };
   } catch (e) {
     return { ok: false, errors: [`엔진 오류: ${(e as Error).message}`], warnings: [] };
   }

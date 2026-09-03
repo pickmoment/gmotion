@@ -148,6 +148,10 @@ export interface BuildOpts {
   captions?: Cue[] | null;
   audioSrc?: string | null;
   gsap?: string;
+  /** 편집기 검수 전용. true 면 OS 설정과 무관하게 감소 모션으로 조립한다. */
+  reducedMotion?: boolean;
+  /** 편집기 검수 전용 안전 영역. 일반 산출물에는 넣지 않는다. */
+  safeArea?: "video" | "shorts" | "captions";
   runtime?: string;
 }
 

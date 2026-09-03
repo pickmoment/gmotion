@@ -16,10 +16,11 @@
 (function () {
   'use strict';
   var SPEC = __SPEC__;
-  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var RM = SPEC.reducedMotion === true ||
+    (SPEC.reducedMotion == null && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var QS = new URLSearchParams(location.search);
-  if (QS.get('motion') === 'on') RM = false;
-  if (QS.get('motion') === 'off') RM = true;
+  if (SPEC.reducedMotion == null && QS.get('motion') === 'on') RM = false;
+  if (SPEC.reducedMotion == null && QS.get('motion') === 'off') RM = true;
 
   gsap.registerPlugin(DrawSVGPlugin, MorphSVGPlugin, SplitText, CustomEase, CustomWiggle,
                       MotionPathPlugin, ScrambleTextPlugin);

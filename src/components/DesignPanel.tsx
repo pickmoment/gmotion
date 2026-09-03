@@ -828,12 +828,12 @@ function ThemesTab({
                 <span style={{ backgroundColor: colors.ink }} title="ink" />
               </div>
 
-              {/* Contrast and Font Info */}
+              {/* gmotion 역할별 대비 기준과 폰트 정보 */}
               <div className="theme-meta-row" style={{ color: colors.ink2 }}>
                 <span
-                  title={`대비율 점수: ${contrast.score}% (${contrast.list.filter((x) => x.pass).length}/${contrast.list.length} 통과)`}
+                  title={`역할별 대비 점수: ${contrast.score}% (${contrast.list.filter((x) => x.pass).length}/${contrast.list.length} 통과)`}
                 >
-                  WCAG AA: <strong>{contrast.ok ? "100% 통과" : `${contrast.score}%`}</strong>
+                  gmotion 대비: <strong>{contrast.ok ? "100% 통과" : `${contrast.score}%`}</strong>
                 </span>
                 <span>
                   폰트: <strong>{t.def.font || "display"}</strong>
@@ -2160,12 +2160,12 @@ function ThemeEditorModal({
             </div>
           </fieldset>
 
-          {/* WCAG AA Realtime Contrast Inspector */}
+          {/* 실제 사용 역할별 실시간 대비 검사 */}
           <div className="contrast-checker-box">
             <div className="contrast-header">
-              <strong>실시간 WCAG AA 대비율 검사</strong>
+              <strong>실시간 역할별 대비 검사</strong>
               <span className={`contrast-pill ${contrast.ok ? "pass" : "fail"}`}>
-                {contrast.ok ? "모든 대비율 AA 통과" : `일부 대비율 주의 (${contrast.score}%)`}
+                {contrast.ok ? "모든 대비 기준 통과" : `일부 대비 기준 미달 (${contrast.score}%)`}
               </span>
             </div>
             <div className="contrast-list-grid">

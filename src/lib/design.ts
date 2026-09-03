@@ -37,7 +37,7 @@ export function parseHexOrRgb(color: string): [number, number, number] {
 
 export function relativeLuminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r / 255, g / 255, b / 255].map((val) =>
-    val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4),
+    val <= 0.04045 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4),
   );
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
@@ -74,15 +74,16 @@ export interface ContrastCheckResult {
 
 export function checkThemeContrast(colors: ThemeColors): ContrastCheckResult {
   const checks: { key: string; name: string; fg: string; bg: string; need: number }[] = [
-    { key: "ink_bg", name: "본문 글자 (ink)", fg: colors.ink, bg: colors.bg, need: 4.5 },
-    { key: "ink2_bg", name: "보조 글자 (ink2)", fg: colors.ink2, bg: colors.bg, need: 3.0 },
-    { key: "dim_bg", name: "흐린 글자 (dim)", fg: colors.dim, bg: colors.bg, need: 3.0 },
-    { key: "accent_bg", name: "강조색 1 (accent)", fg: colors.accent, bg: colors.bg, need: 3.0 },
-    { key: "accent2_bg", name: "강조색 2 (accent2)", fg: colors.accent2, bg: colors.bg, need: 3.0 },
-    { key: "good_bg", name: "긍정/성공 (good)", fg: colors.good, bg: colors.bg, need: 3.0 },
-    { key: "warn_bg", name: "주의/경고 (warn)", fg: colors.warn, bg: colors.bg, need: 3.0 },
-    { key: "bad_bg", name: "오류/부정 (bad)", fg: colors.bad, bg: colors.bg, need: 3.0 },
+    { key: "ink_bg", name: "본문 글자 (ink)", fg: colors.ink, bg: colors.bg, need: 12 },
+    { key: "ink2_bg", name: "보조 글자 (ink2)", fg: colors.ink2, bg: colors.bg, need: 6 },
+    { key: "dim_bg", name: "설명·자막 (dim)", fg: colors.dim, bg: colors.bg, need: 4.5 },
+    { key: "accent_bg", name: "강조색 1 (accent)", fg: colors.accent, bg: colors.bg, need: 4.5 },
+    { key: "accent2_bg", name: "강조색 2 (accent2)", fg: colors.accent2, bg: colors.bg, need: 4.5 },
+    { key: "good_bg", name: "긍정/성공 (good)", fg: colors.good, bg: colors.bg, need: 4.5 },
+    { key: "warn_bg", name: "주의/경고 (warn)", fg: colors.warn, bg: colors.bg, need: 4.5 },
+    { key: "bad_bg", name: "오류/부정 (bad)", fg: colors.bad, bg: colors.bg, need: 4.5 },
     { key: "ink_bg2", name: "카드 위 본문 (ink/bg2)", fg: colors.ink, bg: colors.bg2, need: 4.5 },
+    { key: "dim_bg2", name: "카드 위 설명 (dim/bg2)", fg: colors.dim, bg: colors.bg2, need: 4.5 },
   ];
 
   const list: ContrastItem[] = checks.map((c) => {
