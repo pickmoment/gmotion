@@ -122,10 +122,12 @@ DECOR.rings = {
   build: function (W, H, T, lv) {
     var o = [.12, .2, .32][lv], cx = W / 2, cy = H / 2, base = Math.min(W, H) * .16;
     var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    /* 기준 불투명도는 바깥 <g> 에 둔다 — 안쪽의 CSS 펄스(ggPulse)가 opacity 를 1↔.45 로 덮어쓰므로
+       원 자체에 두면 배경이어야 할 동심원이 전경 글자 위로 선명하게 올라온다.
+       안쪽 원은 더 옅게 — 중심은 제목·카드가 서는 자리다. 바깥으로 갈수록 살짝 진해진다. */
     for (var i = 0; i < 6; i++) {
-      s.push('<circle class="gg-drPulse" style="animation-delay:' + r2(-i * 1.4) + 's" cx="' + cx + '" cy="' + cy +
-        '" r="' + r2(base * (1 + i * .58)) + '" fill="none" stroke="' + T.accent +
-        '" stroke-width="' + (i < 2 ? 2.2 : 1.4) + '" opacity="' + r2(o * (1 - i * .13)) + '"/>');
+      s.push('<g opacity="' + r2(o * (.5 + i * .1)) + '"><circle class="gg-drPulse" style="animation-delay:' + r2(-i * 1.4) + 's" cx="' + cx + '" cy="' + cy +
+        '" r="' + r2(base * (1 + i * .58)) + '" fill="none" stroke="' + T.accent + '" stroke-width="1.4"/></g>');
     }
     return s.join('') + '</svg>';
   }
@@ -203,9 +205,10 @@ DECOR.constellation = {
       if (d < lim) s.push('<line x1="' + r2(pts[a].x) + '" y1="' + r2(pts[a].y) + '" x2="' + r2(pts[b].x) +
         '" y2="' + r2(pts[b].y) + '" stroke="' + T.accent + '" stroke-width="1" opacity="' + r2(o * (1 - d / lim) * .6) + '"/>');
     }
+    /* 별의 반짝임(ggTwinkle)도 opacity 를 덮어쓴다 — 기준값은 <g> 에 */
     pts.forEach(function (p, i) {
-      s.push('<circle class="gg-drTwinkle" style="animation-delay:' + r2(-i * .7) + 's" cx="' + r2(p.x) + '" cy="' + r2(p.y) +
-        '" r="' + r2(p.r) + '" fill="' + T.accent + '" opacity="' + r2(o) + '"/>');
+      s.push('<g opacity="' + r2(o) + '"><circle class="gg-drTwinkle" style="animation-delay:' + r2(-i * .7) + 's" cx="' + r2(p.x) + '" cy="' + r2(p.y) +
+        '" r="' + r2(p.r) + '" fill="' + T.accent + '"/></g>');
     });
     return s.join('') + '</svg>';
   }
