@@ -67,8 +67,8 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 
 | 파일 | 언제 |
 |---|---|
-| `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 씬 카메라, 흔한 실패 |
-| `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 패턴 28종의 필드와 예시 |
+| `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 씬 카메라, 글자 효과(`*낱말*`·textFx·exitFx·numFx)를 언제 쓰나, 흔한 실패 |
+| `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 인라인 강조·글자 등장/퇴장, 패턴 28종의 필드와 예시 |
 | `references/charts.md` | **차트를 넣을 때.** 어떤 차트인가, 색은 어떤 일을 하는가, 데이터 형태와 옵션 |
 | `references/theming.md` | 테마·**스킨**·화면비·에너지·재생 모드·모션 토큰 |
 | `references/api.md` | CLI, 검수 쿼리, agent-browser 캡처, 산출물 구조, GSAP 함정 |
