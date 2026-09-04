@@ -44,8 +44,9 @@ DrawSVG + MorphSVG + SplitText + MotionPath + ScrambleText)이 인라인되어 �
 | DrawSVG | 선·화살표·축이 그려지는 모든 곳 |
 | MorphSVG | `matchCut` 의 `anchorTo` — 도형이 다른 도형으로 변형 |
 | MotionPath | `convergence`·`divergence` 의 곡선 이동, `networkBuild` 의 `flow` 점 |
-| SplitText | 글자·단어 단위 스태거 |
+| SplitText | 글자·단어 단위 스태거 (`kineticType` 의 `by`, `emphasis` 줄, `textFx: "flip"`) |
 | ScrambleText | `textFx: "scramble"` |
+| (core) | `textFx: "typewriter"`(폭 `steps(n)` 트윈 + 테두리 커서) · `"blur"`(filter) · `"wipe"`(clip-path) · `"glitch"`(set 연쇄, `rm:false` 로 감소 모션 제외) · `"outline"`(CSS 변수 `--sw` 트윈) · `*낱말*` 인라인 강조의 팝 · `exitFx`(마스터에 `amb:1` 로 실려 contentEnd 에 안 잡힘 · split/scramble/type 의 `out:1`) · hold 숨쉬기(CSS 루프 `.gg-em/.gg-breath/.gg-glowT` 를 `animationPlayState` set 으로 풀어 준다 — artLoop 와 같은 방식) |
 | CustomWiggle | `fx: shake` |
 | CustomEase | 이징 등록 |
 

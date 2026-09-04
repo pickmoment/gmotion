@@ -110,6 +110,8 @@
   /* --- IR 한 줄을 씬 타임라인에 올린다 --- */
   function apply(tl, o, scope) {
     var els;
+    /* rm:false — 움직임 자체가 내용인 중간 프레임(글리치 등). 동작을 줄인 환경에서는 건너뛰고 마지막 상태만 남긴다 */
+    if (RM && o.rm === false) return;
     if (o.k === 'cam') {
       /* 앰비언트 카메라는 움직임 자체가 목적이다 — 동작을 줄인 환경에서는 아예 걸지 않는다.
          D() 로 0 초로 만들면 시작 배율이 그대로 남아 화면이 영구히 확대된 채로 선다. */
@@ -185,7 +187,8 @@
       if (!parts.length) return;
       var v = Object.assign({}, o.v);
       v.duration = D(v.duration); v.stagger = ST(o.st);
-      tl.from(parts, v, o.at);
+      /* out — 퇴장. 이미 쪼갠 글자(등장 때의 __split)를 그대로 쓴다 */
+      if (o.out) tl.to(parts, v, o.at); else tl.from(parts, v, o.at);
       return;
     }
     if (o.k === 'count') {
@@ -223,6 +226,12 @@
     if (o.k === 'scramble') {
       /* 글자가 무작위로 섞이다 제자리를 찾는다. 자동재생에서 가장 잘 먹는 타이포 연출. */
       els.forEach(function (el) {
+        if (o.out) {
+          /* 퇴장 — 섞이다 비워진다 */
+          tl.to(el, { duration: D(o.dur), ease: 'none',
+            scrambleText: { text: '', chars: o.chars || 'upperAndLowerCase', speed: num(o.speed, .6), revealDelay: 0 } }, o.at);
+          return;
+        }
         var txt = el.getAttribute('data-txt') || el.textContent;
         el.setAttribute('data-txt', txt);
         tl.fromTo(el, { text: '' },
@@ -239,6 +248,21 @@
         if (!inner) return;
         tl.fromTo(inner, { yPercent: 0 }, { yPercent: -50, duration: D(o.dur),
           ease: o.ease || 'power3.inOut' }, o.at);
+      });
+      return;
+    }
+    if (o.k === 'type') {
+      /* 타자기 — 인라인 상자(.gg-tw)의 폭을 0 에서 글자 폭까지 글자 수 단계로 늘린다.
+         바깥 상자(.gg-in)에 잰 폭을 박아 두어 가운데 정렬이 찍는 동안 흔들리지 않게 한다.
+         커서는 .gg-tw 의 오른쪽 테두리라 폭을 따라온다. 폰트는 build() 전에 로드되어 있다. */
+      els.forEach(function (el) {
+        var steps = 'steps(' + Math.max(1, o.n | 0) + ')';
+        /* out — 백스페이스. 폭은 등장 때 재 놓았으니 0 으로 되돌리기만 한다 */
+        if (o.out) { tl.to(el, { width: 0, duration: D(o.dur), ease: steps }, o.at); return; }
+        var w = el.offsetWidth;
+        if (!w) return;
+        if (el.parentNode && el.parentNode.classList.contains('gg-in')) el.parentNode.style.width = w + 'px';
+        tl.fromTo(el, { width: 0 }, { width: w, duration: D(o.dur), ease: steps }, o.at);
       });
       return;
     }

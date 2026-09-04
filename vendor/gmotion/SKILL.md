@@ -116,7 +116,7 @@ data URI 로 인라인한다. `fit: "contain"|"cover"`. 자세한 것은 `spec.m
 | `assets/examples/starter-youtube.json` | **유튜브 한 편** — 후크 → 챕터 → 랭킹 → 퀴즈 → 챕터 → 근거 → 엔드카드 (7씬, midnight, 16:9) |
 | `assets/examples/starter-vectors.json` | **벡터 세트 쇼케이스** — 마크·배지·리본·프레임과 일러스트 두 쓰임(아이콘 자리 대신 · 카드 뒤 배경) |
 | `assets/examples/starter-charts.json` | **차트 쇼케이스** — 13씬, 데이터의 일마다 다른 형태 |
-| `assets/examples/starter-effects.json` | **효과 쇼케이스** — 모프·곡선 경로·스크램블·롤·마퀴·스택·곡선 와이프 |
+| `assets/examples/starter-effects.json` | **효과 쇼케이스** — 모프·곡선 경로·스크램블·롤·타자기·블러·와이프·플립·글리치·아웃라인·`*낱말*` 인라인 강조·마퀴·스택·곡선 와이프 |
 | `assets/examples/starter-narrated.json` | **자막 동기화** — 씬·항목에 `say` 를 단 예 (5씬 62초). 옆의 `.srt` 와 함께 쓴다 |
 | `assets/examples/starter-fonts.json` | **폰트 비교** — `font` 를 바꿔 가며 빌드해 글자꼴을 고른다 |
 | `assets/examples/starter-paper.json` | **종이 모션 쇼케이스** — 크래프트 테마, 접힘선·줄노트·모눈 배경, 페이지 넘김·종이 떼기·컬 와이프 트랜지션, 메모·스프링노트 프레임 |

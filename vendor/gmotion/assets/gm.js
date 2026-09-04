@@ -269,6 +269,9 @@ if (cmd === 'info') {
   if (!topic || topic === 'skins') dump('스킨 (루트 skin. 표면·선·타이포의 구현부를 갈아 끼운다 — 자세히: gm info skins)', G.skins);
   if (!topic || topic === 'fonts') dump('폰트 (루트 font 로 고른다. 생략하면 테마 기본)', G.fonts);
   if (!topic || topic === 'trans') dump('트랜지션', G.transitions);
+  if (!topic || topic === 'textfx') dump('글자 등장 (씬의 textFx. kineticType 은 줄마다 fx 로도. `*낱말*` 은 인라인 강조 — 색이 들고 mark 가 그 낱말에 붙는다)', G.textFx);
+  if (!topic || topic === 'textfx') dump('글자 퇴장 (씬의 exitFx. 글자만 먼저 나가고 배경·그림은 트랜지션과 함께 간다)', G.exitFx);
+  if (!topic || topic === 'numfx') dump('숫자 표기 (dataCounter 의 numFx)', G.numFx);
   if (!topic || topic === 'cam') dump('씬 카메라 (씬의 cam. 생략하면 패턴에 맞는 기본값. 루트 camera:false 로 전체 정지)', G.cams);
   if (!topic || topic === 'energy') dump('에너지', G.energies);
   if (!topic || topic === 'aspects') dump('화면비', G.aspects);

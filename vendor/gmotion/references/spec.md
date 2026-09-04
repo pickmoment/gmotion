@@ -141,13 +141,81 @@
 | `decor` | 배경 레이어. 이름 또는 배열(`["blob","grid"]`)로 겹친다. `false` 면 없음. 생략하면 루트 → 테마 기본 |
 | `decorLevel` | 배경 세기 `0`(약) `1`(기본) `2`(강) |
 | `skin` | **이 씬만 재질을 갈아 끼운다.** 스킨 이름 또는 인라인 정의. 생략하면 루트 `skin` |
-| `textFx` | 글자 등장 방식. `scramble`(섞이다 정렬) · `roll`(굴러 교체, `matchCut` 전용) |
-| `mark` | 제목에 붙는 강조. `"underline"` `"circle"` `"highlight"` 등. `"badge:NEW"` 처럼 값도 준다 |
+| `textFx` | 글자 등장 방식 8종 — `scramble` `typewriter` `blur` `wipe` `flip` `glitch` `outline` · `roll`(`matchCut` 전용). `gm info textfx`. 아래 [글자 등장](#글자-등장--textfx) |
+| `exitFx` | **글자 퇴장.** 트랜지션 전에 글자만 먼저 나가고 배경·그림·카드는 남는다. `up` `down` `fade` `scramble` `typewriter` `blur` `wipe` `flip` `glitch`. 아래 [글자 퇴장](#글자-퇴장--exitfx) |
+| `mark` | 제목에 붙는 강조. `"underline"` `"circle"` `"highlight"` 등. `"badge:NEW"` 처럼 값도 준다. 제목에 `*낱말*` 이 있으면 **그 낱말에** 붙는다 |
 | `art` | 추상 일러스트 48종. 씬 단위로는 `heroReveal` 이 받는다 — `icon` 과 배타로 둘 중 하나만 쓴다 |
 | `notes` | **발표자 노트.** `--present` 로 빌드했을 때 발표자 창에 뜬다. 여러 줄 가능(`\n`). 없으면 `purpose` 를 대신 쓴다 |
 | `title` `kicker` `sub` | 헤더. 패턴 대부분이 지원 (`kineticType` `matchCut` `quote` 제외) |
 
 `title` 에 `\n` 을 쓰면 줄이 나뉘고 **줄 단위 마스크 리빌**이 걸린다.
+
+### 인라인 강조 — `*낱말*`
+
+`title` `sub` `question` · `quote` 의 `text` · `kineticType` 의 `lines` · `matchCut` 의 `from/to` 제목에서
+**별표로 감싼 낱말만** accent 색이 되고, 줄과 함께 들어오며 살짝 튄다.
+
+```jsonc
+{ "title": "정보는 *어디에나* 있다", "mark": "circle" }   // 동그라미가 "어디에나"에만 감긴다
+{ "title": "찾는 시간이 *41%* 다",   "mark": "underline" }
+```
+
+- 없으면 지금처럼 문장 전체가 한 색이고, `mark` 는 마지막 줄 전체에 붙는다.
+- 한 줄에 여러 개도 되지만 mark 는 **첫 낱말에만** 붙는다. 강조는 하나일 때 강조다.
+- `scramble` 과는 같이 못 쓴다 — 글자를 통째로 갈아 끼우므로 색이 사라진다(validate 가 짚는다).
+- 글자 폭·읽는 시간·길이 검사는 별표를 뺀 글자로 잰다.
+
+### 글자 등장 — `textFx`
+
+헤더 제목(`title`·`question`)·`kineticType`·`quote` 가 같은 값을 받는다. `kineticType` 은 줄마다 `fx` 로 따로 줄 수 있다.
+
+| 값 | 움직임 | 어울리는 곳 |
+|---|---|---|
+| (없음) | 줄 마스크 리빌 — 아래에서 올라온다 | 기본. 어디든 |
+| `scramble` | 글자가 섞이다 제자리를 찾는다 | 데이터·기술 톤, 반전 |
+| `typewriter` | 한 글자씩 찍힌다. 커서가 따라오고 마지막 줄에 남아 깜박인다 | 대화·질문·터미널 톤. `quizReveal` 질문 |
+| `blur` | 흐림이 걷히며 맺힌다 | 다큐·회상·`quote` |
+| `wipe` | 글자 폭만큼의 상자를 왼쪽에서 오른쪽으로 닦아 낸다 | paper·ink 스킨, 문서 톤 |
+| `flip` | 글자 하나하나가 아래 축으로 넘어와 선다 (rotationX) | 숫자·랭킹·출발 안내판 톤 |
+| `glitch` | 여섯 프레임 어긋나고 찢기고 색이 갈린 뒤 맺힌다 | neon·E3 쇼츠 훅. 감소 모션에서는 맺힌 상태만 |
+| `outline` | accent 테두리만 서 있다가 속이 차오르며 테두리가 사라진다 | 오프닝·`heroReveal`·bold 스킨 |
+| `roll` | 두 문장이 굴러 교체된다 | `matchCut` 만 |
+
+### 글자 퇴장 — `exitFx`
+
+트랜지션은 씬을 통째로 걷어 낸다. `exitFx` 를 주면 **글자만 hold 뒤에 먼저 나가고** 배경·일러스트·카드는
+남아 트랜지션과 함께 간다 — "글자가 갈리고 장면은 이어진다"가 읽힌다. matchCut 이 앵커를 남기는 것과
+같은 연결감을 어느 패턴에서나 낼 수 있다.
+
+```jsonc
+{ "pattern": "heroReveal", "title": "글자만 *먼저* 나간다", "exitFx": "up" }
+{ "pattern": "heroReveal", "title": "한 글자씩 지운다", "textFx": "typewriter", "exitFx": "typewriter" }  // 백스페이스
+```
+
+| 값 | 움직임 |
+|---|---|
+| `up` / `down` | 마스크 리빌을 되감는다 — 위로 / 들어온 아래로 |
+| `fade` | 살짝 내려앉으며 사라진다 |
+| `scramble` | 섞이다 비워진다 |
+| `typewriter` | 백스페이스 — `textFx: "typewriter"` 로 찍은 글자만 지울 수 있다(validate 오류) |
+| `blur` | 흐려지며 사라진다 |
+| `wipe` | 왼쪽에서 오른쪽으로 닦여 나간다 |
+| `flip` | 글자가 위 축으로 넘어가며 사라진다 |
+| `glitch` | 찢기고 어긋난 뒤 꺼진다 |
+
+- 나가는 글자: 헤더 제목·`kineticType` 줄(스택 전부, 컷은 마지막 줄)·`quote` 문장. 키커·서브·마크·출처는 페이드로 따라 나간다.
+  컷 모드의 맨 글자 줄(등장 fx 가 없는 줄)은 페이드다.
+- 씬 길이가 퇴장 시간의 70% 만큼 늘어난다(`hold` 는 그대로). 나머지 30% 는 다음 씬의 트랜지션과 겹친다.
+  자막에 맞춘 씬은 대사가 길이를 정하므로 늘리지 않고 끝에 붙인다.
+- 씬별 스크린샷·발표 정지 프레임(`contentEnd`)에는 잡히지 않는다.
+
+**hold 동안에도 글자는 살아 있다.** 등장이 끝나면 `*낱말*` 과 kineticType 의 `emphasis` 줄은 밝기가
+아주 느리게 숨쉬고(3.4초 주기), 글로우 테마(`neon`)에서는 제목·키네틱 줄·인용의 글로우가 숨쉰다(3.8초).
+카메라가 정지 프레임을 없애는 것과 같은 논리라 끄는 스위치는 없다 — 감소 모션에서는 멈춘다.
+
+`typewriter` 는 **줄을 접지 못한다** — 폭을 늘려 찍기 때문이다. 넘치는 줄은 글자를 줄여 한 줄을
+지키고(원래의 .62 까지), 그래도 안 들어가면 validate 가 `\n` 으로 나누라고 짚는다. 걸리는 시간은
+글자 수에 비례한다(한 줄 0.4~2.4초) — 긴 문장에 쓰면 씬이 길어진다.
 
 트랜지션: `cut` `fade` `pushLeft` `pushRight` `pushUp` `zoomIn` `zoomOut` `wipe` `match` `curve` `pageFlip` `paperPeel` `curlWipe` `clayPop` `squish`
 
@@ -285,14 +353,15 @@ node <skill>/assets/gm.js info chart       # 차트 17종
   "lines": [                             // 필수
     "정보는",
     { "text": "어디에나 있다", "emphasis": true, "scale": 1.4 },
-    "필요한 곳만 빼고"
+    { "text": "필요한 *곳만* 빼고", "fx": "typewriter" }   // 줄마다 등장 방식(fx)을 따로 줄 수 있다
   ],
   "mode": "stack",                       // stack 쌓임(기본) · cut 한 줄씩 교체
-  "by": "words" }                        // words(기본) · chars — 글자 단위 스태거
+  "by": "words",                         // words(기본) · chars — 글자 단위 스태거
+  "textFx": "blur" }                     // 전체 줄의 등장 방식. 줄의 fx 가 이긴다
 ```
 
-`emphasis` 는 accent 색 + 1.34배 + 글자 단위 등장. `mode:"cut"` 은 E3 의 기본값이고
-**쇼츠 훅**에 쓴다. 줄 6개까지.
+`emphasis` 는 줄 전체를 accent 색 + 1.34배 + 글자 단위 등장으로. 줄 안의 한 낱말만 집으려면
+`*낱말*`. `mode:"cut"` 은 E3 의 기본값이고 **쇼츠 훅**에 쓴다. 줄 6개까지.
 
 **한 줄은 한 줄로 나온다.** 줄이 화면 폭을 넘으면 엔진이 그 줄만 글자를 줄여 한 줄을
 지킨다(원래 크기의 .62배까지). 그보다 길면 접히는데, 접혀도 다음 줄과 겹치지는 않지만
@@ -380,10 +449,12 @@ node <skill>/assets/gm.js info chart       # 차트 17종
     { "value": 41, "unit": "%", "label": "정보 탐색에 쓰는 시간", "icon": "hourglass" },
     { "value": 3.2, "dec": 1, "unit": "회", "label": "주간 반복 질문" },
     { "value": 18400, "prefix": "₩", "label": "천 단위 구분은 자동" }
-  ] }
+  ],
+  "numFx": "roll" }                      // count(기본) 값이 흘러 올라간다 · roll 자리마다 0~9 띠가 굴러 멈춘다
 ```
 
-`dec` 생략 시 `value` 의 소수 자리를 그대로 쓴다.
+`dec` 생략 시 `value` 의 소수 자리를 그대로 쓴다. `numFx: "roll"` 은 자릿수 롤(odometer) —
+낮은 자리가 더 많이 돌고 높은 자리가 먼저 멈춘다. 쉼표·소수점은 고정. 계기판·매출·카운트다운 톤.
 
 ## timeline — 타임라인
 사건 순서. 축이 그려지는 방향이 시간의 방향.

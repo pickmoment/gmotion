@@ -171,6 +171,12 @@ export interface Engine {
   fonts: Record<string, string>;
   themes: Record<string, string>;
   transitions: Record<string, string>;
+  /** 글자 등장 방식 이름 → 라벨 (scramble·typewriter·blur·wipe·roll) */
+  textFx: Record<string, string>;
+  /** 글자 퇴장 방식 이름 → 라벨 */
+  exitFx: Record<string, string>;
+  /** dataCounter 숫자 표기 이름 → 라벨 (count · roll) */
+  numFx: Record<string, string>;
   /** 씬 카메라 무브 이름 → 라벨 */
   cams: Record<string, string>;
   energies: Record<string, string>;
@@ -232,7 +238,12 @@ export interface Scene {
   skin?: string | SkinDefinition;
   decor?: string | string[] | false;
   decorLevel?: 0 | 1 | 2;
-  textFx?: "scramble" | "roll";
+  /** 글자 등장 방식(`GG.textFx` 의 키). roll 은 matchCut 전용 */
+  textFx?: "scramble" | "typewriter" | "blur" | "wipe" | "flip" | "glitch" | "outline" | "roll";
+  /** 글자 퇴장(`GG.exitFx` 의 키). 글자만 먼저 나가고 배경·그림은 트랜지션과 함께 간다 */
+  exitFx?: "up" | "down" | "fade" | "scramble" | "typewriter" | "blur" | "wipe" | "flip" | "glitch";
+  /** dataCounter 숫자 표기 — roll 은 자리마다 띠가 굴러 멈추는 odometer */
+  numFx?: "count" | "roll";
   mark?: string;
   art?: string;
   notes?: string;

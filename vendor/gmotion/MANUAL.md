@@ -477,7 +477,7 @@ ls ~/.claude/skills/gmotion/assets/examples/
 | `starter-shorts.json` | 쇼츠 세로 (4씬 8초) |
 | `starter-charts.json` | 차트 쇼케이스 (13씬) |
 | `starter-vectors.json` | 배경·마크·프레임·일러스트 쇼케이스 |
-| `starter-effects.json` | 모프·스크램블·마퀴 등 효과 쇼케이스 |
+| `starter-effects.json` | 모프·스크램블·타자기·블러·와이프·플립·글리치·아웃라인·인라인 강조·마퀴 등 효과 쇼케이스 |
 | `starter-narrated.json` | **자막 동기화 예제.** 옆의 `.srt` 와 함께 쓴다 |
 | `starter-fonts.json` | **폰트 비교용.** `"font"` 를 바꿔 가며 빌드해 본다 |
 | `starter-skins.json` | **스킨 비교용.** 씬마다 재질이 다르다 — 한 번 빌드하면 6종이 다 보인다 |
@@ -564,6 +564,8 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info themes` | 테마 목록 |
 | `gm info skins` | 스킨 6종 + 디자인 프리미티브 48종 |
 | `gm info trans` | 트랜지션 15종 |
+| `gm info numfx` | dataCounter 숫자 표기 2종 (count · roll) |
+| `gm info textfx` | 글자 등장 8종 (scramble·typewriter·blur·wipe·flip·glitch·outline·roll) · 글자 퇴장 9종(exitFx) · `*낱말*` 인라인 강조 |
 | `gm info cam` | 씬 카메라 7종 |
 | `gm info energy` | 에너지 3종 |
 | `gm info aspects` | 화면비 4종 |

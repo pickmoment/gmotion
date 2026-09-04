@@ -189,6 +189,110 @@ function unit() {
   truthy('path 트윈을 실제로 검사했다', nPath >= 8, 'path 트윈이 ' + nPath + '개뿐이다');
   is('path 시작점이 요소 오프셋과 같다', jump.join(' · '), '');
   is('발산형 칩은 제자리(0,0)에 선다', rest.join(' · '), '');
+
+  /* --- 인라인 강조 `*낱말*` 과 글자 등장(textFx) --- */
+  var emSpec = { message: 'x', scenes: [
+    { pattern: 'heroReveal', title: '정보는 *어디에나* 있다', mark: 'circle', sub: '*곳만* 빼고' },
+    { pattern: 'kineticType', lines: ['*첫* 줄', { text: '둘째 줄', fx: 'typewriter' }] },
+    { pattern: 'quote', text: '타자기 인용', textFx: 'typewriter' },
+    { pattern: 'heroReveal', title: '흐림', textFx: 'blur' },
+    { pattern: 'heroReveal', title: '닦아 냄', textFx: 'wipe' }
+  ] };
+  var emC = G.compile(emSpec);
+  var emHTML = emC.scenes[0].html;
+  truthy('*낱말* 이 gg-em 으로 감긴다', emHTML.indexOf('<em class="gg-em gg-hasMark">어디에나') >= 0, emHTML.slice(0, 300));
+  truthy('마크가 낱말 안에 붙는다(줄 전체가 아니라)', emHTML.indexOf('gg-line gg-hasMark') < 0);
+  truthy('별표는 화면에 남지 않는다', emHTML.indexOf('*') < 0);
+  truthy('sub 의 *낱말* 도 색이 든다', emHTML.indexOf('<em class="gg-em">곳만</em>') >= 0);
+  is('씬 라벨은 별표를 뺀 글자', emC.scenes[0].title, '정보는 어디에나 있다');
+  truthy('인라인 마크는 등장 뒤 마스크를 연다', emC.scenes[0].tw.some(function (o) {
+    return o.k === 'set' && o.v && o.v.overflow === 'visible' && o.t.indexOf('.gg-mask') >= 0; }));
+  var typeOps = emC.scenes[1].tw.filter(function (o) { return o.k === 'type'; });
+  is('줄 fx 가 씬 textFx 없이도 먹는다(type op 1개)', typeOps.length, 1);
+  is('타자기 단계 수 = 글자 수(공백 포함)', typeOps[0].n, '둘째 줄'.length);
+  truthy('quote 타자기 op', emC.scenes[2].tw.some(function (o) { return o.k === 'type' && o.t.indexOf('.gg-qt') >= 0; }));
+  truthy('blur 는 마스크를 연 채 filter 로 들어온다', emC.scenes[3].html.indexOf('gg-mask gg-open') >= 0 &&
+    emC.scenes[3].tw.some(function (o) { return o.k === 'from' && o.v && /blur/.test(o.v.filter || ''); }));
+  truthy('wipe 는 인라인 상자에 clip-path 를 건다', emC.scenes[4].html.indexOf('class="gg-in"') >= 0 &&
+    emC.scenes[4].tw.some(function (o) { return o.k === 'fromTo' && o.t.indexOf('.gg-in') >= 0 && /inset/.test(o.v.clipPath || ''); }));
+  var fx2 = G.compile({ message: 'x', scenes: [
+    { pattern: 'heroReveal', title: '*넘어와* 선다', mark: 'underline', textFx: 'flip' },
+    { pattern: 'heroReveal', title: '찢긴다\n맺힌다', textFx: 'glitch' },
+    { pattern: 'heroReveal', title: '테두리 *속*', textFx: 'outline' }
+  ] });
+  truthy('flip 은 글자 단위 rotationX split', fx2.scenes[0].tw.some(function (o) {
+    return o.k === 'split' && o.by === 'chars' && o.v && o.v.rotationX < 0; }) && fx2.scenes[0].html.indexOf('gg-mask gg-open') >= 0);
+  var gl = fx2.scenes[1].tw.filter(function (o) { return o.k === 'set' && o.rm === false; });
+  is('glitch 중간 프레임은 감소 모션 제외 표시(2줄 × 6)', gl.length, 12);
+  truthy('glitch 는 맺힌 상태로 끝난다', fx2.scenes[1].tw.some(function (o) {
+    return o.k === 'set' && o.rm !== false && o.v && o.v.clipPath === 'none' && o.v.x === 0; }));
+  truthy('outline 은 --sw 를 트윈하고 인라인 강조도 제 색으로 찬다', fx2.scenes[2].html.indexOf('gg-ol') >= 0 &&
+    fx2.scenes[2].tw.some(function (o) { return o.k === 'from' && o.v && o.v['--sw'] === '0.05em'; }) &&
+    fx2.scenes[2].tw.some(function (o) { return o.k === 'from' && o.t.indexOf('.gg-em') >= 0 && o.v && o.v.color; }));
+  /* hold 마이크로모션 — 루프는 멈춰 있다가 등장 뒤에 풀린다. 글로우는 neon(glow 2)에서만 */
+  var live = G.compile({ message: 'x', theme: 'neon', scenes: [
+    { pattern: 'heroReveal', title: '정보는 *어디에나* 있다' },
+    { pattern: 'kineticType', lines: ['하나', { text: '둘', emphasis: true }] }
+  ] });
+  function releases(tw, sel) {
+    return tw.filter(function (o) { return o.k === 'set' && o.v && o.v.animationPlayState === 'running' && o.t.slice(-sel.length) === sel; });
+  }
+  truthy('강조 낱말 숨쉬기를 풀어 준다', releases(live.scenes[0].tw, '.gg-em').length === 1);
+  truthy('neon 은 제목 글로우를 풀어 준다', releases(live.scenes[0].tw, '.gg-title').length === 1 && live.scenes[0].html.indexOf('gg-title gg-glowT') >= 0);
+  truthy('emphasis 줄에 breath 클래스', live.scenes[1].html.indexOf('gg-breath gg-glowT') >= 0);
+  var reveal0 = Math.min.apply(null, live.scenes[0].tw.filter(function (o) { return o.k === 'from' && o.t.indexOf('.gg-mk') >= 0; }).map(function (o) { return o.at; }));
+  truthy('숨쉬기는 등장 뒤에 시작한다', releases(live.scenes[0].tw, '.gg-em')[0].at > reveal0);
+  var dark = G.compile({ message: 'x', theme: 'midnight', scenes: [{ pattern: 'heroReveal', title: '정보는 *어디에나* 있다' }] });
+  truthy('midnight 은 글로우 없이 숨쉬기만', dark.scenes[0].html.indexOf('gg-glowT') < 0 && releases(dark.scenes[0].tw, '.gg-title').length === 0 &&
+    releases(dark.scenes[0].tw, '.gg-em').length === 1);
+  /* 글자 퇴장 — 마스터(amb)에 실리고, 씬은 퇴장 시간의 70% 만큼 길어지며, contentEnd 는 그대로 */
+  var exBase = G.compile({ message: 'x', scenes: [{ pattern: 'heroReveal', title: '나간다', hold: 1 }] }).scenes[0];
+  var ex = G.compile({ message: 'x', scenes: [
+    { pattern: 'heroReveal', title: '나간다', hold: 1, exitFx: 'up' },
+    { pattern: 'heroReveal', title: '지운다', textFx: 'typewriter', exitFx: 'typewriter' },
+    { pattern: 'kineticType', lines: ['하나', '둘'], exitFx: 'flip' }
+  ] });
+  var exOps = ex.scenes[0].tw.filter(function (o) { return o.amb && o.k !== 'cam'; });
+  truthy('퇴장 op 은 amb 로 마스터에 실린다', exOps.length > 0);
+  truthy('퇴장은 씬 끝에서 시작한다', exOps.every(function (o) { return o.at >= ex.scenes[0].dur - 1; }) &&
+    exOps.some(function (o) { return o.k === 'to' && o.v && o.v.yPercent === -115; }));
+  truthy('씬이 퇴장만큼 길어진다', ex.scenes[0].dur > exBase.dur && ex.scenes[0].dur < exBase.dur + 1);
+  is('contentEnd 는 그대로', ex.scenes[0].contentEnd, exBase.contentEnd);
+  truthy('백스페이스는 type out', ex.scenes[1].tw.some(function (o) { return o.k === 'type' && o.out && o.amb; }));
+  truthy('플립 퇴장은 split out', ex.scenes[2].tw.some(function (o) { return o.k === 'split' && o.out && o.v.rotationX > 0; }));
+  var exBad = G.validate({ message: 'x', scenes: [
+    { pattern: 'heroReveal', title: 'a', exitFx: 'zap' },
+    { pattern: 'heroReveal', title: 'a', exitFx: 'typewriter' }
+  ] });
+  truthy('없는 exitFx 는 오류', exBad.errors.some(function (e) { return e.indexOf('exitFx "zap"') >= 0; }));
+  truthy('백스페이스는 타자기 등장이 있어야 한다', exBad.errors.some(function (e) { return e.indexOf('백스페이스') >= 0; }));
+  /* 자릿수 롤 — 자리마다 띠, 쉼표·소수점은 고정, 낮은 자리가 더 많이 돈다 */
+  var od = G.compile({ message: 'x', scenes: [{ pattern: 'dataCounter', numFx: 'roll',
+    stats: [{ value: 18400, prefix: '₩' }, { value: 3.2, dec: 1 }] }] }).scenes[0];
+  is('18,400 과 3.2 는 굴리는 자리 5+2개', od.html.split('class="gg-od" data-j').length - 1, 7);
+  truthy('쉼표·소수점은 고정 칸', od.html.indexOf('<span class="gg-odS">,</span>') >= 0 && od.html.indexOf('<span class="gg-odS">.</span>') >= 0);
+  var rollOps = od.tw.filter(function (o) { return o.k === 'to' && o.t.indexOf('.gg-odIn') >= 0; });
+  is('자리마다 to 트윈(5+2)', rollOps.length, 7);
+  truthy('롤은 em 단위로 내려간다', rollOps.every(function (o) { return /^-\d+em$/.test(o.v.y); }));
+  truthy('count 트윈은 없다', !od.tw.some(function (o) { return o.k === 'count'; }));
+  var first = od.tw.filter(function (o) { return o.k === 'to' && o.t.indexOf('data-i="0"') >= 0 && o.t.indexOf('.gg-odIn') >= 0; })
+    .map(function (o) { return parseInt(o.v.y, 10); });
+  /* 1,8,4,0,0 → j=0: 1바퀴+1 = -11, j=4: 5바퀴+0 = -50 */
+  is('첫 자리 1 바퀴', first[0], -11);
+  is('마지막 자리 5 바퀴', first[4], -50);
+  truthy('없는 numFx 는 오류', G.validate({ message: 'x', scenes: [{ pattern: 'dataCounter', numFx: 'spin', stats: [{ value: 1 }] }] })
+    .errors.some(function (e) { return e.indexOf('numFx "spin"') >= 0; }));
+  var badFx = G.validate({ message: 'x', scenes: [
+    { pattern: 'heroReveal', title: 'a', textFx: 'zap' },
+    { pattern: 'heroReveal', title: '*a* b', textFx: 'scramble' },
+    { pattern: 'heroReveal', title: 'a', textFx: 'roll' }
+  ] });
+  truthy('없는 textFx 는 오류', badFx.errors.some(function (e) { return e.indexOf('textFx "zap"') >= 0; }));
+  truthy('scramble + *낱말* 은 경고', badFx.warnings.some(function (w) { return w.indexOf('scramble') >= 0 && w.indexOf('*낱말*') >= 0; }));
+  truthy('roll 을 matchCut 밖에 쓰면 경고', badFx.warnings.some(function (w) { return w.indexOf('"roll"') >= 0; }));
+  var longType = G.validate({ message: 'x', scenes: [{ pattern: 'heroReveal', textFx: 'typewriter',
+    title: '이 문장은 타자기로 한 줄에 찍기에는 너무 길어서 화면 폭을 넘어가게 된다' }] });
+  truthy('타자기에 긴 줄은 경고', longType.warnings.some(function (w) { return w.indexOf('typewriter') >= 0 && w.indexOf('접지') >= 0; }));
 }
 
 /* ================================================================== *
@@ -362,6 +466,9 @@ function skins() {
   var known = {};
   THEME_VARS.forEach(function (k) { known[k] = 1; });
   Object.keys(SK.TOKENS).forEach(function (k) { known[k] = 1; });
+  /* 규칙 안에서 스스로 선언하는 애니메이션용 변수(.gg-ol 의 --sw 등)는 토큰이 아니라 정의된 변수다 */
+  var decl = /--([a-zA-Z0-9-]+)\s*:/g, dm;
+  while ((dm = decl.exec(css))) known[dm[1]] = 1;
   var used = {}, m, re = /var\(--([a-zA-Z0-9-]+)\)/g;
   while ((m = re.exec(css))) used[m[1]] = 1;
   var orphan = Object.keys(used).filter(function (k) { return !known[k]; });

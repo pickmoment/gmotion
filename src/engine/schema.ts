@@ -270,6 +270,13 @@ export const PATTERNS: Record<string, PatternSchema> = {
       { k: "text", key: "kicker", label: "키커" },
       { k: "text", key: "sub", label: "서브" },
       {
+        k: "select",
+        key: "numFx",
+        label: "숫자 표기",
+        opts: () => GG.numFx,
+        hint: "count(기본) — 값이 흘러 올라간다 · roll — 자리마다 0~9 띠가 굴러 멈춘다",
+      },
+      {
         k: "items",
         key: "stats",
         label: "지표",
@@ -641,7 +648,15 @@ export const COMMON_FIELDS: Field[] = [
     k: "select",
     key: "textFx",
     label: "글자 효과",
-    opts: () => ({ scramble: "scramble — 섞이다 정렬", roll: "roll — 굴러 교체(matchCut 전용)" }),
+    opts: () => GG.textFx,
+    hint: "제목·kineticType·quote 의 등장 방식. 제목 안의 *낱말* 은 그 낱말만 강조한다",
+  },
+  {
+    k: "select",
+    key: "exitFx",
+    label: "글자 퇴장",
+    opts: () => GG.exitFx,
+    hint: "트랜지션 전에 글자만 먼저 나간다. typewriter(백스페이스)는 글자 효과도 typewriter 여야 한다",
   },
   {
     k: "strings",

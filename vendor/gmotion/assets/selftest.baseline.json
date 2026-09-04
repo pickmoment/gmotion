@@ -77,10 +77,10 @@
     ]
   },
   "starter-effects": {
-    "scenes": 9,
-    "total": 27.78,
-    "tweens": 81,
-    "icons": 18,
+    "scenes": 15,
+    "total": 47.08,
+    "tweens": 162,
+    "icons": 22,
     "errors": 0,
     "ats": [
       0,
@@ -89,9 +89,15 @@
       10.03,
       14.2,
       17.28,
-      20.51,
-      23.09,
-      25.36
+      21.38,
+      24.09,
+      26.58,
+      30.62,
+      33.24,
+      36.58,
+      39.81,
+      42.39,
+      44.66
     ],
     "durs": [
       2.41,
@@ -99,6 +105,12 @@
       4.03,
       4.62,
       3.59,
+      4.55,
+      3.16,
+      2.94,
+      4.49,
+      3.07,
+      3.85,
       3.68,
       3.22,
       2.78,
@@ -129,7 +141,7 @@
   "starter-intro": {
     "scenes": 3,
     "total": 7.9,
-    "tweens": 31,
+    "tweens": 32,
     "icons": 2,
     "errors": 0,
     "ats": [
@@ -146,7 +158,7 @@
   "starter-narrated": {
     "scenes": 5,
     "total": 16.06,
-    "tweens": 38,
+    "tweens": 39,
     "icons": 0,
     "errors": 0,
     "ats": [
@@ -167,7 +179,7 @@
   "starter-narrated +subs": {
     "scenes": 5,
     "total": 62.5,
-    "tweens": 38,
+    "tweens": 39,
     "icons": 0,
     "errors": 0,
     "ats": [
@@ -232,7 +244,7 @@
   "starter-shorts": {
     "scenes": 4,
     "total": 7.66,
-    "tweens": 35,
+    "tweens": 41,
     "icons": 7,
     "errors": 0,
     "ats": [
@@ -278,7 +290,7 @@
   "starter-story": {
     "scenes": 7,
     "total": 28.93,
-    "tweens": 70,
+    "tweens": 71,
     "icons": 13,
     "errors": 0,
     "ats": [

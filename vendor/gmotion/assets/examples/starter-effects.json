@@ -1,6 +1,6 @@
 {
   "title": "GSAP 효과 쇼케이스",
-  "message": "모프·곡선 경로·스크램블·롤·마퀴·스택·곡선 와이프를 한 번에 본다",
+  "message": "모프·곡선 경로·스크램블·롤·타자기·블러·와이프·플립·글리치·아웃라인·인라인 강조·글자 퇴장·자릿수 롤·마퀴·스택·곡선 와이프를 한 번에 본다",
   "theme": "midnight",
   "aspect": "16:9",
   "scenes": [
@@ -100,6 +100,78 @@
       "title": "글자가 섞이다 정렬된다",
       "textFx": "scramble",
       "sub": "ScrambleText",
+      "transition": "fade"
+    },
+    {
+      "id": "em",
+      "pattern": "heroReveal",
+      "purpose": "인라인 강조 — 낱말 하나에만 색과 마크. 글자만 먼저 위로 나간다(exitFx)",
+      "kicker": "INLINE",
+      "title": "정보는 *어디에나* 있다",
+      "mark": "circle",
+      "sub": "*낱말* 만 색이 들고, 마크는 그 낱말에 감긴다",
+      "exitFx": "up",
+      "transition": "pushLeft"
+    },
+    {
+      "id": "type",
+      "pattern": "quote",
+      "purpose": "타자기 — 한 글자씩, 커서가 따라온다. 나갈 때는 백스페이스(exitFx)",
+      "text": "찾는 시간이 *41%* 였다",
+      "by": "현장 인터뷰",
+      "textFx": "typewriter",
+      "exitFx": "typewriter",
+      "transition": "fade"
+    },
+    {
+      "id": "blur",
+      "pattern": "kineticType",
+      "purpose": "블러 — 흐림이 걷히며 맺힌다. 줄마다 fx 를 달리 준다",
+      "textFx": "blur",
+      "lines": [
+        "흐림이 걷히며",
+        { "text": "맺힌다", "emphasis": true },
+        { "text": "그리고 *닦아 낸다*", "fx": "wipe" }
+      ],
+      "transition": "fade"
+    },
+    {
+      "id": "wipe",
+      "pattern": "cardsCascade",
+      "purpose": "와이프 — 헤더 제목이 왼쪽에서 오른쪽으로 닦여 나온다",
+      "kicker": "WIPE",
+      "title": "글자 폭만큼 *닦아 낸다*",
+      "mark": "highlight",
+      "textFx": "wipe",
+      "items": [
+        { "label": "typewriter", "icon": "터미널", "note": "대화·질문·터미널" },
+        { "label": "blur", "icon": "눈", "note": "다큐·회상·인용" },
+        { "label": "wipe", "icon": "연필", "note": "문서·paper 스킨" }
+      ],
+      "transition": "fade"
+    },
+    {
+      "id": "flip3",
+      "pattern": "kineticType",
+      "purpose": "플립·글리치·아웃라인 — 줄마다 다른 등장",
+      "lines": [
+        { "text": "글자가 *넘어와* 선다", "fx": "flip" },
+        { "text": "찢기고 어긋난 뒤", "fx": "glitch", "emphasis": true },
+        { "text": "테두리가 *차오른다*", "fx": "outline" }
+      ],
+      "transition": "fade"
+    },
+    {
+      "id": "odo",
+      "pattern": "dataCounter",
+      "purpose": "자릿수 롤 — 자리마다 띠가 굴러 멈춘다",
+      "kicker": "ODOMETER",
+      "title": "숫자가 *굴러* 맞춰진다",
+      "numFx": "roll",
+      "stats": [
+        { "value": 41, "unit": "%", "label": "정보 탐색에 쓰는 시간", "icon": "시간" },
+        { "value": 18400, "prefix": "₩", "label": "천 단위 쉼표는 고정" }
+      ],
       "transition": "fade"
     },
     {

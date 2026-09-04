@@ -333,6 +333,12 @@ function colsFor(n, wide) {
  *  {k:'cam',   at, dur, v:{scale,x,y,rotate}, ease}      .gg-world 변형
  *  {k:'label', name, at}
  *  {k:'fx',    fn:'impact'|'flash'|'shake'|'pulse', at, t?, v?}
+ *  {k:'scramble', t, at, dur, chars?, speed?, reveal?}   ScrambleText
+ *  {k:'roll',  t, at, dur, ease}                  .gg-rollIn 을 밀어 올린다
+ *  {k:'type',  t, at, dur, n}                     타자기 — .gg-tw 폭을 n 단계로
+ *  어느 op 에나 rm:false 를 달면 감소 모션에서 건너뛴다(중간 프레임용)
+ *  amb:1 은 씬 타임라인이 아니라 마스터에 절대 시각으로 실린다 — contentEnd·자막 압축(ts)에 안 잡힌다(카메라·글자 퇴장)
+ *  split/scramble/type 의 out:1 은 퇴장(to) 방향
  * ================================================================== */
 function TW() { this.list = []; }
 TW.prototype.push = function (o) { this.list.push(o); return this; };
@@ -365,6 +371,10 @@ TW.prototype.scramble = function (t, at, dur, o) {
 /** 롤러처럼 굴러 교체된다 */
 TW.prototype.roll = function (t, at, dur, ease) {
   return this.push({ k: 'roll', t: t, at: r2(at), dur: r2(dur), ease: ease });
+};
+/** 타자기 — 인라인 상자의 폭을 0 에서 글자 폭까지 n 단계로 늘린다. 폭은 런타임이 잰다 */
+TW.prototype.type = function (t, at, dur, n) {
+  return this.push({ k: 'type', t: t, at: r2(at), dur: r2(dur), n: n });
 };
 TW.prototype.cam = function (at, dur, v, ease) { return this.push({ k: 'cam', at: r2(at), dur: r2(dur), v: v, ease: ease }); };
 TW.prototype.label = function (name, at) { return this.push({ k: 'label', name: name, at: r2(at) }); };
@@ -456,15 +466,240 @@ function splitLines(text) {
   if (Array.isArray(text)) return text.map(String);
   return String(text == null ? '' : text).split(/\n+/).filter(function (s) { return s.trim(); });
 }
-function maskLines(text, cls, markSVG) {
+/* ------------------------------------------------------------------ *
+ * 인라인 강조 — `*낱말*` 은 그 낱말만 accent 색이 되고, mark 가 있으면 그 낱말에 붙는다.
+ * title · sub · quote text · kineticType lines · matchCut 제목이 받는다.
+ * 글자 폭·읽는 시간·길이 검사는 표식을 뺀 글자(plain)로 잰다.
+ * ------------------------------------------------------------------ */
+var EM_RE = /\*([^*\n]+)\*/g;
+function hasEm(s) { return /\*[^*\n]+\*/.test(String(s == null ? '' : s)); }
+function plain(s) { return String(s == null ? '' : s).replace(EM_RE, '$1'); }
+function emText(s) {
+  return esc(s).replace(EM_RE, function (m, w) { return '<em class="gg-em">' + w + '</em>'; });
+}
+/*
+ * 글자 등장 방식(textFx). 마스크 리빌이 기본이고 나머지는 그 자리를 대신한다.
+ *  scramble    글자가 섞이다 정렬 (ScrambleText)
+ *  typewriter  한 글자씩 찍힌다 — 커서가 따라오고 마지막 줄에서 깜박인다
+ *  blur        흐림이 걷히며 맺힌다
+ *  wipe        왼쪽에서 오른쪽으로 닦아 낸다 (clip-path)
+ *  flip        글자가 아래 축으로 넘어와 선다 (SplitText chars + rotationX)
+ *  glitch      몇 프레임 찢기고 어긋난 뒤 맺힌다 (x·clip-path·색분리 set 연쇄)
+ *  outline     테두리만 서 있다가 속이 차오른다 (-webkit-text-stroke → color)
+ *  roll        굴러 교체 — matchCut 만
+ * 헤더(head)·kineticType·quote 가 같은 fxInner / revealText 를 쓴다.
+ */
+var TEXT_FX = {
+  scramble:   { label: '스크램블 — 글자가 섞이다 정렬된다' },
+  typewriter: { label: '타자기 — 한 글자씩 찍힌다. 커서가 따라온다' },
+  blur:       { label: '블러 — 흐림이 걷히며 맺힌다' },
+  wipe:       { label: '와이프 — 왼쪽에서 오른쪽으로 닦아 낸다' },
+  flip:       { label: '플립 — 글자가 아래 축으로 넘어와 선다' },
+  glitch:     { label: '글리치 — 찢기고 어긋난 뒤 맺힌다 (neon·E3)' },
+  outline:    { label: '아웃라인 — 테두리만 서 있다가 속이 차오른다' },
+  roll:       { label: '롤 — 굴러 교체된다 (matchCut 전용)' }
+};
+/** 마스크를 열어 두는 등장 — 마스크 밖으로 번지거나(blur) 축을 넘어 돌거나(flip) 어긋난다(glitch) */
+function fxOpen(fx) { return fx === 'blur' || fx === 'flip' || fx === 'glitch'; }
+/** 한 줄의 안쪽 마크업 — typewriter·wipe 는 글자 폭만큼의 인라인 상자가 필요하다 */
+function fxInner(body, fx) {
+  if (fx === 'typewriter') return '<span class="gg-in"><span class="gg-tw">' + body + '</span></span>';
+  if (fx === 'wipe') return '<span class="gg-in">' + body + '</span>';
+  return body;
+}
+function maskLines(text, cls, markSVG, fx) {
   var L = splitLines(text);
+  /* 마크는 `*낱말*` 이 있으면 그 낱말(마지막 줄부터 찾는다)에, 없으면 마지막 줄의 글자 폭에 붙는다 —
+     블록 폭에 맞추면 동그라미가 문장을 다 감싼다. */
+  var emLine = -1;
+  if (markSVG) for (var k = L.length - 1; k >= 0; k--) if (hasEm(L[k])) { emLine = k; break; }
   return L.map(function (l, i) {
-    var inner = '<span class="gg-mask"><span class="gg-mk ' + (cls || '') + '">' + esc(l) + '</span></span>';
-    /* 마크는 마지막 줄의 글자 폭에 맞춰 붙는다 — 블록 폭에 맞추면 동그라미가 문장을 다 감싼다.
-       gg-line 이 inline-block 이라 폭이 글자만큼이 되고, 마스크 밖이라 잘리지 않는다. */
-    if (markSVG && i === L.length - 1) return '<span class="gg-line gg-hasMark">' + inner + markSVG + '</span>';
+    var body;
+    if (i === emLine) {
+      var first = true;
+      body = esc(l).replace(EM_RE, function (m, w) {
+        if (!first) return '<em class="gg-em">' + w + '</em>';
+        first = false;
+        return '<em class="gg-em gg-hasMark">' + w + markSVG + '</em>';
+      });
+    } else body = emText(l);
+    /* blur·flip·glitch 는 마스크 밖으로 나가야 한다 — 잘리면 흐림이 아니라 네모다.
+       outline 은 --sw(테두리 두께)를 트윈할 수 있게 클래스를 단다. */
+    var inner = '<span class="gg-mask' + (fxOpen(fx) ? ' gg-open' : '') + '"><span class="gg-mk ' + (cls || '') +
+      (fx === 'outline' ? ' gg-ol' : '') + '" data-l="' + i + '">' + fxInner(body, fx) + '</span></span>';
+    /* gg-line 이 inline-block 이라 폭이 글자만큼이 되고, 마스크 밖이라 잘리지 않는다. */
+    if (markSVG && emLine < 0 && i === L.length - 1) return '<span class="gg-line gg-hasMark">' + inner + markSVG + '</span>';
     return inner;
   }).join('');
+}
+/**
+ * 텍스트 등장 IR 을 쓴다. sel 은 .gg-mk 들을 잡는 셀렉터(줄마다 data-l), text 는 줄 수·글자 수를
+ * 세기 위한 원문. o: { dur(기본 normal), st(줄 스태거), yp(마스크 리빌 이동량 %), ease,
+ * cursorOff(타자기 — 마지막 줄의 커서도 끈다. 다음 줄이 따로 revealText 로 이어질 때) }
+ * 반환: 등장이 "읽히기 시작하는" 시점의 증가분이 반영된 t — 기존 마스크 리빌의 셈법을 유지한다.
+ */
+function revealText(tw, ctx, sel, text, fx, t, o) {
+  o = o || {};
+  var L = splitLines(text), n = L.length;
+  var dur = num(o.dur, ctx.d('normal')), st = num(o.st, ctx.st('normal'));
+  if (fx === 'scramble') {
+    tw.scramble(sel, t, ctx.d('slow') * 1.15, { speed: .7, reveal: .2 });
+    return t + ctx.d('slow') * .9;
+  }
+  if (fx === 'typewriter') {
+    /* 줄마다 글자 수가 다르니 op 도 줄마다. 커서는 찍는 동안만 보이고 마지막 줄에 남아 깜박인다. */
+    var tt = t, step = .055 * ctx.E.dm;
+    L.forEach(function (l, i) {
+      var s = sel + '[data-l="' + i + '"] .gg-tw', cnt = plain(l).length;
+      var d = r2(clamp(cnt * step, .4, 2.4));
+      tw.set(s, 0, { borderRightWidth: 0 });
+      tw.set(s, tt, { borderRightWidth: '0.07em' });   /* '.07em' 은 GSAP 이 0 으로 읽는다 — 앞자리 0 을 붙인다 */
+      tw.type(s, tt, d, cnt);
+      tt += d;
+      if (i < n - 1 || o.cursorOff) tw.set(s, tt + ctx.d('micro'), { borderRightWidth: 0 });
+      if (i < n - 1) tt += ctx.d('micro');
+    });
+    return tt;
+  }
+  if (fx === 'blur') {
+    tw.from(sel, t, { filter: 'blur(18px)', opacity: 0, scale: 1.05, duration: dur * 1.5, ease: TOKENS.e.move }, st * 1.4);
+    return t + dur * 1.1 + st * 1.4 * (n - 1);
+  }
+  if (fx === 'wipe') {
+    /* 위아래 여유를 크게 둔다 — 낱말에 붙은 마크(밑줄 -.26em, 동그라미 124%)가 상자 밖에 있다 */
+    tw.fromTo(sel + ' .gg-in', t, { clipPath: 'inset(-40% 110% -40% -10%)' },
+      { clipPath: 'inset(-40% -10% -40% -10%)', duration: dur * 1.25, ease: TOKENS.e.move }, st * 1.2);
+    return t + dur * .9 + st * 1.2 * (n - 1);
+  }
+  if (fx === 'flip') {
+    /* 글자마다 아래 축으로 넘어와 선다. 마스크는 열려 있으니(gg-open) 위로 삐져 나가도 잘리지 않는다 */
+    tw.split(sel, t, 'chars', { rotationX: -92, opacity: 0, transformOrigin: '50% 100%', transformPerspective: 640,
+      duration: dur * 1.1, ease: TOKENS.e.overshoot }, ctx.st('tight'));
+    var cnt = plain(text).replace(/\s/g, '').length;
+    return t + dur * .6 + ctx.st('tight') * Math.max(0, cnt - 1) * .6;
+  }
+  if (fx === 'glitch') {
+    /* 여섯 프레임 — 좌우로 어긋나고 가로로 찢기고 색이 갈린 뒤 한 번에 맺힌다. 트윈이 아니라 set 연쇄라
+       감소 모션에서는 프레임을 건너뛰고 마지막 상태만 남긴다(rm:false). 줄마다 조금씩 늦게. */
+    var FR = [[7, 'inset(0 0 62% 0)'], [-8, 'inset(38% 0 0 0)'], [5, 'inset(18% 0 46% 0)'],
+              [-4, 'inset(55% 0 12% 0)'], [3, 'inset(0 0 30% 0)'], [-2, 'inset(6% 0 6% 0)']];
+    var step = .045 * ctx.E.dm, sh = ctx.T.accent2 || ctx.T.accent;
+    L.forEach(function (l, i) {
+      var s = sel + '[data-l="' + i + '"]', t0 = t + st * .6 * i;
+      tw.set(s, 0, { opacity: 0 });
+      FR.forEach(function (f, k) {
+        tw.push({ k: 'set', t: s, at: r2(t0 + k * step), rm: false, v: { opacity: 1, x: ctx.px(f[0]), clipPath: f[1],
+          textShadow: (k % 2 ? '-' : '') + '0.035em 0 ' + sh + ', ' + (k % 2 ? '' : '-') + '0.035em 0 ' + ctx.T.accent } });
+      });
+      tw.set(s, t0 + FR.length * step, { opacity: 1, x: 0, clipPath: 'none', textShadow: 'none' });
+    });
+    return t + FR.length * step + st * .6 * (n - 1) + ctx.d('micro');
+  }
+  if (fx === 'outline') {
+    /* 테두리(--sw)만 있는 글자가 먼저 서고, 잠깐 뒤 속이 차오르며 테두리가 사라진다.
+       from 이라 끝 색은 요소가 원래 갖는 색(ink·accent·emphasis)이다 — 인라인 강조도 제 색으로 찬다. */
+    var t1 = t + ctx.d('fast') * .9;
+    tw.from(sel, t, { opacity: 0, y: ctx.px(10), duration: ctx.d('fast'), ease: ctx.ei }, st);
+    tw.from(sel, t1, { color: 'rgba(0,0,0,0)', '--sw': '0.05em', duration: dur * 1.3, ease: TOKENS.e.move }, st);
+    if (hasEm(text)) tw.from(sel + ' .gg-em', t1, { color: 'rgba(0,0,0,0)', duration: dur * 1.3, ease: TOKENS.e.move }, st);
+    return t1 + dur * .8 + st * (n - 1);
+  }
+  tw.from(sel, t, { yPercent: num(o.yp, 115), duration: dur, ease: o.ease || ctx.ei }, st);
+  return t + dur * .6 + st * (n - 1);
+}
+/** 인라인 강조 낱말이 줄과 함께 들어올 때 살짝 튄다 — 색만으로는 "짚는다"가 안 읽힌다 */
+function emPop(tw, ctx, sel, text, t) {
+  if (!hasEm(text)) return;
+  tw.from(sel + ' .gg-em', t + ctx.d('fast') * .3, { scale: .8, duration: ctx.d('normal'), ease: TOKENS.e.overshoot }, ctx.st('tight'));
+}
+/**
+ * hold 동안 글자가 죽어 있지 않게 한다 — 카메라가 정지 프레임을 없애는 것과 같은 논리.
+ * CSS 루프는 멈춰 있다가(paused) 등장이 끝나는 시점에 풀린다. 시킹으로 되감으면 다시 멈춘다(artLoop 와 같다).
+ *  - 인라인 강조(.gg-em)·emphasis 줄(.gg-breath): 밝기가 아주 느리게 숨쉰다 — transform 은 GSAP 이 쓰니 filter 로
+ *  - 글로우 테마(T.glow ≥ 2, neon): 블록(.gg-glowT)의 text-shadow 가 숨쉰다 — 상속되므로 안쪽 글자에 다 든다
+ * host 는 블록 셀렉터(.gg-title / .gg-kl[data-i] / .gg-qt). 마크업 쪽에서 glowCls(ctx) 를 클래스에 붙여 둔다.
+ */
+function glowCls(ctx) { return ctx.T.glow >= 2 ? ' gg-glowT' : ''; }
+function textLive(tw, ctx, host, text, at, o) {
+  o = o || {};
+  if (hasEm(text)) tw.set(host + ' .gg-em', at, { animationPlayState: 'running' });
+  if (o.breath || (o.glow && ctx.T.glow >= 2)) tw.set(host, at, { animationPlayState: 'running' });
+}
+/*
+ * 글자 퇴장(exitFx) — 트랜지션이 씬을 통째로 걷어 내는 대신 글자만 먼저 나간다.
+ * 배경·일러스트·카드는 남아 트랜지션과 함께 가므로 "글자가 갈리고 장면은 이어진다"가 읽힌다.
+ * 씬 길이가 확정된 뒤(compile 끝)에 끝에서 exitDur 만큼 앞에 얹는다. 씬 타임라인이 아니라
+ * 마스터에 절대 시각으로 실리므로(amb:1) contentEnd·검수 프레임·자막 압축(ts)에 안 잡힌다.
+ */
+var EXIT_FX = {
+  up:         { label: '위로 — 마스크 리빌을 되감는다. 기본 등장과 짝' },
+  down:       { label: '아래로 — 들어온 길로 되돌아간다' },
+  fade:       { label: '페이드 — 살짝 내려앉으며 사라진다' },
+  scramble:   { label: '스크램블 — 섞이다 비워진다' },
+  typewriter: { label: '백스페이스 — 찍은 순서의 반대로 지워진다 (textFx typewriter 와 함께)' },
+  blur:       { label: '블러 — 흐려지며 사라진다' },
+  wipe:       { label: '와이프 — 왼쪽에서 오른쪽으로 닦여 나간다' },
+  flip:       { label: '플립 — 글자가 위 축으로 넘어가며 사라진다' },
+  glitch:     { label: '글리치 — 찢기고 어긋난 뒤 꺼진다' }
+};
+/* 퇴장 fx 를 받는 글자 — 헤더 제목·키네틱 줄(스택 전부, 컷은 마지막 줄)·인용문 */
+var EXIT_TEXT = ['.gg-title .gg-mk', '.gg-kstack .gg-kl .gg-mk', '.gg-kcut:last-of-type .gg-kl .gg-mk', '.gg-qt .gg-mk'];
+/* 곁글자 — fx 와 무관하게 페이드로 따라 나간다 */
+var EXIT_SIDE = ['.gg-kicker', '.gg-sub', '.gg-title .gg-mark', '.gg-qm', '.gg-qby', '.gg-kcut:last-of-type .gg-kl'];
+/** 퇴장에 걸리는 시간(초). 씬 길이를 이만큼의 일부로 늘리는 데도 쓴다 */
+function exitDur(ctx, fx, chars) {
+  var d = ctx.d('normal');
+  if (fx === 'typewriter') return r2(clamp(chars * .035 * ctx.E.dm, .3, 1.6));
+  if (fx === 'glitch') return r2(.045 * ctx.E.dm * 6 + ctx.d('micro'));
+  if (fx === 'scramble' || fx === 'blur') return r2(d * 1.2);
+  return r2(d * .9);
+}
+/** 셀렉터의 첫 클래스가 마크업에 있는지 — 없는 요소에 op 을 내면 IR 만 붓는다 */
+function inHTML(html, sel) { var m = sel.match(/\.([a-zA-Z-]+)/); return !m || html.indexOf(m[1]) >= 0; }
+/** 퇴장 IR 을 만든다. at 은 씬 상대 시각. html 로 있는 요소만 고른다. 반환: op 배열(amb:1 이 붙어 마스터에 실린다) */
+function exitText(ctx, fx, at, chars, html) {
+  var tw = new TW(), q = ctx.q, d = ctx.d('normal'), st = ctx.st('tight');
+  var fin = TOKENS.e.exit || 'power2.in';
+  var present = function (s) { return inHTML(html || '', s); };
+  EXIT_SIDE.filter(present).forEach(function (s) { tw.to(q(s), at, { opacity: 0, y: ctx.px(8), duration: d * .6, ease: fin }); });
+  /* 숨쉬기·글로우 루프는 멈춘다 — 사라지는 글자가 밝아지면 이상하다 */
+  if (present('.gg-em')) tw.set(q('.gg-em'), at, { animationPlayState: 'paused' });
+  if (present('.gg-glowT')) tw.set(q('.gg-glowT'), at, { animationPlayState: 'paused' });
+  /* 마스크 — up/down 은 닫혀 있어야 잘려 나가고(blur·flip·인라인 마크가 열어 둔 것을 되돌린다),
+     blur·flip 은 열려 있어야 번지고 넘어간다 */
+  if (fx === 'up' || fx === 'down') tw.set(q('.gg-mask'), at, { overflow: 'hidden' });
+  else if (fx === 'blur' || fx === 'flip') tw.set(q('.gg-mask'), at, { overflow: 'visible' });
+  EXIT_TEXT.filter(present).forEach(function (s) {
+    var sel = q(s);
+    if (fx === 'up' || fx === 'down') {
+      tw.to(sel, at, { yPercent: fx === 'up' ? -115 : 115, duration: d * .7, ease: fin }, st);
+    } else if (fx === 'fade') {
+      tw.to(sel, at, { opacity: 0, y: ctx.px(10), duration: d * .7, ease: fin }, st);
+    } else if (fx === 'scramble') {
+      tw.push({ k: 'scramble', t: sel, at: r2(at), dur: r2(d * 1.2), out: 1, speed: .7 });
+    } else if (fx === 'typewriter') {
+      tw.set(sel + ' .gg-tw', at, { borderRightWidth: '0.07em' });
+      tw.push({ k: 'type', t: sel + ' .gg-tw', at: r2(at), dur: exitDur(ctx, fx, chars), n: Math.max(1, chars), out: 1 });
+    } else if (fx === 'blur') {
+      tw.to(sel, at, { filter: 'blur(18px)', opacity: 0, scale: 1.04, duration: d * 1.2, ease: TOKENS.e.move }, st);
+    } else if (fx === 'wipe') {
+      tw.fromTo(sel, at, { clipPath: 'inset(-40% -10% -40% -10%)' },
+        { clipPath: 'inset(-40% -10% -40% 110%)', duration: d, ease: TOKENS.e.move }, st);
+    } else if (fx === 'flip') {
+      tw.push({ k: 'split', t: sel, at: r2(at), by: 'chars', out: 1, st: st * .6,
+        v: { rotationX: 90, opacity: 0, transformOrigin: '50% 0%', transformPerspective: 640, duration: d * .8, ease: fin } });
+    } else if (fx === 'glitch') {
+      var FR = [[-6, 'inset(0 0 58% 0)'], [7, 'inset(42% 0 0 0)'], [-5, 'inset(20% 0 44% 0)'],
+                [4, 'inset(52% 0 14% 0)'], [-3, 'inset(0 0 34% 0)'], [2, 'inset(8% 0 8% 0)']];
+      var step = .045 * ctx.E.dm, sh = ctx.T.accent2 || ctx.T.accent;
+      FR.forEach(function (f, k) {
+        tw.push({ k: 'set', t: sel, at: r2(at + k * step), rm: false, v: { x: ctx.px(f[0]), clipPath: f[1],
+          textShadow: (k % 2 ? '-' : '') + '0.035em 0 ' + sh + ', ' + (k % 2 ? '' : '-') + '0.035em 0 ' + ctx.T.accent } });
+      });
+      tw.set(sel, at + FR.length * step, { opacity: 0 });
+    }
+  });
+  return tw.list.map(function (o) { o.amb = 1; return o; });
 }
 /** 마크 스펙(문자열 또는 {type,text})을 SVG 로. 없으면 빈 문자열 */
 function markOf(m, T) {
@@ -487,6 +722,13 @@ function head(sc, ctx, tw, at, pos, size) {
   var titleLines = sc.title ? splitLines(sc.title) : [];
   if (titleLines.length >= 4) tSize = Math.round(tSize * 0.72);
   else if (titleLines.length === 3) tSize = Math.round(tSize * 0.85);
+  var fx = TEXT_FX[sc.textFx] && sc.textFx !== 'roll' ? sc.textFx : '';
+  if (fx === 'typewriter') {
+    /* 타자기는 줄을 접을 수 없다(폭을 늘려 찍는다) — 넘치는 줄이 있으면 kineticType 처럼 글자를 줄인다 */
+    var need = 0;
+    titleLines.forEach(function (l) { need = Math.max(need, estEm(plain(l)) * tSize); });
+    if (need > pos.w) tSize = Math.max(Math.round(tSize * .62), Math.floor(tSize * pos.w / need));
+  }
   var h = [], t = at;
   h.push('<div class="gg-head' + (pos.align === 'center' ? ' gg-c' : '') + '" style="left:' + pos.x + 'px;top:' + pos.y +
     'px;width:' + pos.w + 'px' + (pos.align === 'center' ? ';text-align:center' : '') + '">');
@@ -497,28 +739,33 @@ function head(sc, ctx, tw, at, pos, size) {
   }
   if (sc.title) {
     var mk = markOf(sc.mark, ctx.T);
-    h.push('<h2 class="gg-title" style="font-size:' + tSize + 'px">' + maskLines(sc.title, '', mk.svg) + '</h2>');
-    if (sc.textFx === 'scramble') {
-      /* 글자가 섞이다 제자리를 찾는다. 마스크 리빌 대신 쓰는 등장 방식. */
-      tw.scramble(q('.gg-title .gg-mk'), t, ctx.d('slow') * 1.15, { speed: .7, reveal: .2 });
-      t += ctx.d('slow') * .9;
-    } else {
-      tw.from(q('.gg-title .gg-mk'), t, { yPercent: 115, duration: ctx.d('normal'), ease: ctx.ei }, ctx.st('normal'));
-      t += ctx.d('normal') * .6 + ctx.st('normal') * (splitLines(sc.title).length - 1);
-    }
+    var inlineMark = !!(mk.svg && hasEm(sc.title));
+    h.push('<h2 class="gg-title' + glowCls(ctx) + '" style="font-size:' + tSize + 'px">' + maskLines(sc.title, '', mk.svg, fx) + '</h2>');
+    t = revealText(tw, ctx, q('.gg-title .gg-mk'), sc.title, fx, t);
+    emPop(tw, ctx, q('.gg-title'), sc.title, t - ctx.d('normal') * .6);
     if (mk.svg) {
       /* 마크는 글자가 자리를 잡은 뒤에 그어진다 — 동시에 나오면 둘 다 안 읽힌다 */
       var ms = q('.gg-title .gg-mark');
+      if (inlineMark) {
+        /* 낱말에 붙은 마크는 마스크 안에 있다 — 글자가 다 올라온 뒤 마스크를 열어 줘야 잘리지 않는다.
+           revealText 의 t 는 아직 글자가 움직이는 중이라 멈출 때까지 기다린다. */
+        t += ctx.d('normal') * .4;
+        tw.set(q('.gg-title .gg-mask'), t, { overflow: 'visible' });
+        if (fx === 'typewriter') tw.set(q('.gg-title .gg-tw'), t, { overflow: 'visible' });
+      }
       if (mk.def.draw) tw.draw(ms + ' path', t, ctx.d('normal'), TOKENS.e.move, ctx.st('tight'));
       else tw.from(ms, t, { scale: .6, opacity: 0, duration: ctx.d('fast'), ease: TOKENS.e.overshoot });
       tw.set(ms, t - .01, { opacity: 1 });
       tw.set(ms, 0, { opacity: 0 });
       t += ctx.d('fast') * .6;
     }
+    /* 글자가 다 선 뒤 숨쉬기 시작 — 등장과 겹치면 둘 다 안 읽힌다 */
+    textLive(tw, ctx, q('.gg-title'), sc.title, t + ctx.d('normal') * .4, { glow: true });
   }
   if (sc.sub) {
-    h.push('<p class="gg-sub" style="font-size:' + sSize + 'px">' + esc(sc.sub) + '</p>');
+    h.push('<p class="gg-sub" style="font-size:' + sSize + 'px">' + emText(sc.sub) + '</p>');
     tw.from(q('.gg-sub'), t, { y: ctx.px(24), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
+    textLive(tw, ctx, q('.gg-sub'), sc.sub, t + ctx.d('fast'));
     t += ctx.d('fast') * .5;
   }
   h.push('</div>');
@@ -996,7 +1243,7 @@ PATTERNS.heroReveal = {
 PATTERNS.kineticType = {
   label: '키네틱 타이포',
   use: '선언, 슬로건, 반전 대사. 줄마다 크기·강조를 달리해 리듬을 만든다.',
-  fields: 'lines[](필수: 문자열 또는 {text,emphasis,scale}) · mode(stack|cut) · by(words|chars)',
+  fields: 'lines[](필수: 문자열 또는 {text,emphasis,scale,fx}) · mode(stack|cut) · by(words|chars) · textFx — 줄 안의 `*낱말*` 은 인라인 강조',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var L = lineItems(sc.lines);
@@ -1010,30 +1257,42 @@ PATTERNS.kineticType = {
        validate 가 짧게 쓰라고 짚는다. 접히더라도 아래 흐름 배치라 겹치지는 않는다. */
     var sizes = L.map(function (l) {
       var base = Math.round(ctx.fs.title * num(l.scale, l.emphasis ? 1.34 : 1));
-      var need = estEm(l.text) * base;
+      var need = estEm(plain(l.text)) * base;
       return need > w ? Math.max(Math.round(base * .62), Math.floor(base * w / need)) : base;
     });
+    /* 줄의 fx — 줄에 적은 것이 씬 것을 이긴다. roll 은 matchCut 전용이라 여기서는 기본으로 흐른다 */
+    function fxOf(l) { var f = l.fx || sc.textFx; return TEXT_FX[f] && f !== 'roll' ? f : ''; }
+    /* 마스크 구조(maskLines)로 가는 등장 — scramble 만 .gg-kl 의 글자를 통째로 갈아 끼우므로 맨 글자로 둔다 */
+    function structured(f) { return !!f && f !== 'scramble'; }
 
     if (mode === 'cut') {
       /* 컷 모드 — 한 줄씩 갈아치운다. 각 줄이 화면 중앙을 독점.
          래퍼가 세로 중앙을 잡는다 — 줄이 접혀도 중심이 흔들리지 않고, transform 이
          래퍼에 있어 안쪽 글자를 GSAP 이 마음대로 움직여도 어긋나지 않는다. */
       L.forEach(function (l, i) {
+        var f = fxOf(l);
         H.push('<div class="gg-kcut" style="left:' + ctx.safe + 'px;top:' + ctx.cy + 'px;width:' + w + 'px">' +
-          '<div class="gg-kl gg-c" data-i="' + i + '" style="font-size:' + sizes[i] + 'px' +
-          (l.emphasis ? ';color:var(--acc)' : '') + '">' + esc(l.text) + '</div></div>');
+          '<div class="gg-kl gg-c' + (l.emphasis ? ' gg-breath' : '') + glowCls(ctx) + '" data-i="' + i + '" style="font-size:' + sizes[i] + 'px' +
+          (l.emphasis ? ';color:var(--acc)' : '') + '">' +
+          (structured(f) ? maskLines(l.text, '', '', f) : emText(l.text)) + '</div></div>');
       });
-      var beat = r2(Math.max(.34, readSec(itemsText(L.map(function (l) { return l.text; })), ctx.energy) / L.length * 1.15));
+      var beat = r2(Math.max(.34, readSec(itemsText(L.map(function (l) { return plain(l.text); })), ctx.energy) / L.length * 1.15));
       L.forEach(function (l, i) {
         var s = q('.gg-kl[data-i="' + i + '"]');
-        var fx = l.fx || sc.textFx;
+        var fx = fxOf(l), b = beat;
         tw.set(s, 0, { opacity: 0 });
         tw.set(s, t, { opacity: 1 });
         if (fx === 'scramble') tw.scramble(s, t, beat * .82, { speed: .8, reveal: .15 });
+        else if (structured(fx)) {
+          /* 타자기는 글자 수만큼 걸린다 — 박자가 그보다 짧으면 다 찍히기 전에 갈린다 */
+          var tr = revealText(tw, ctx, s + ' .gg-mk', l.text, fx, t, { dur: ctx.d('fast') * 1.4, st: 0 });
+          b = r2(Math.max(beat, tr - t + ctx.d('fast')));
+        }
         else tw.split(s, t, by, { yPercent: 60, opacity: 0, scale: .86, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('tight'));
         if (ctx.energy === 'E3') tw.fx('impact', t);
-        if (i < L.length - 1) { tw.to(s, t + beat, { opacity: 0, scale: 1.1, duration: ctx.d('micro'), ease: TOKENS.e.exit }); }
-        t += beat;
+        textLive(tw, ctx, s, l.text, t + ctx.d('fast') * 1.5, { breath: !!l.emphasis, glow: true });
+        if (i < L.length - 1) { tw.to(s, t + b, { opacity: 0, scale: 1.1, duration: ctx.d('micro'), ease: TOKENS.e.exit }); }
+        t += b;
       });
       return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, ctx.d('slow')) };
     }
@@ -1045,22 +1304,25 @@ PATTERNS.kineticType = {
        margin-top:gap 이 예전 간격(size*1.16 + gap)을 그대로 재현한다. */
     H.push('<div class="gg-kstack" style="left:' + ctx.safe + 'px;top:' + ctx.cy + 'px;width:' + w + 'px">');
     L.forEach(function (l, i) {
-      H.push('<div class="gg-kl gg-c" data-i="' + i + '" style="font-size:' + sizes[i] + 'px' +
+      H.push('<div class="gg-kl gg-c' + (l.emphasis ? ' gg-breath' : '') + glowCls(ctx) + '" data-i="' + i + '" style="font-size:' + sizes[i] + 'px' +
         (i ? ';margin-top:' + gap + 'px' : '') + (l.emphasis ? ';color:var(--acc)' : '') + '">' +
-        '<span class="gg-mask"><span class="gg-mk">' + esc(l.text) + '</span></span></div>');
+        maskLines(l.text, '', '', fxOf(l)) + '</div>');
     });
     H.push('</div>');
     L.forEach(function (l, i) {
       var s = q('.gg-kl[data-i="' + i + '"] .gg-mk');
-      var fx2 = l.fx || sc.textFx;
-      if (fx2 === 'scramble') {
-        tw.scramble(s, t, ctx.d('slow'), { speed: .8, reveal: .16 });
+      var fx2 = fxOf(l);
+      var tr = t;
+      if (fx2) {
+        tr = revealText(tw, ctx, s, l.text, fx2, t, { st: 0, cursorOff: i < L.length - 1 });
       } else if (l.emphasis) {
         tw.split(q('.gg-kl[data-i="' + i + '"]'), t, by, { yPercent: 100, opacity: 0, duration: ctx.d('normal'), ease: TOKENS.e.overshoot }, ctx.st('tight'));
       } else {
         tw.from(s, t, { yPercent: 112, duration: ctx.d('normal'), ease: ctx.ei });
+        emPop(tw, ctx, s, l.text, t);
       }
-      t += readSec(l.text, ctx.energy) * .48 + ctx.d('fast') * .3;
+      t = Math.max(t + readSec(plain(l.text), ctx.energy) * .48 + ctx.d('fast') * .3, tr);
+      textLive(tw, ctx, q('.gg-kl[data-i="' + i + '"]'), l.text, Math.max(tr, t) + ctx.d('normal') * .5, { breath: !!l.emphasis, glow: true });
     });
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, ctx.d('slow')) };
   }
@@ -1462,13 +1724,41 @@ PATTERNS.zoomDetail = {
 };
 
 /* --- 9. dataCounter — 숫자가 올라간다. 지표 씬의 기본. --- */
+/** 런타임 fmt 와 같은 표기 — 천 단위 쉼표, 소수 자리 */
+function fmtNum(v, dec) {
+  return (dec > 0 ? v.toFixed(dec) : String(Math.round(v))).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+/**
+ * 자릿수 롤(odometer) — 자리마다 0~9 띠가 굴러 멈춘다. count 는 값이 "흘러가는" 표기고,
+ * 롤은 "돌아가다 맞춰지는" 표기다. 낮은 자리가 더 많이 돈다(j 번째 자리는 j+1 바퀴).
+ * 쉼표·소수점은 굴리지 않는다. 반환: {html, ops:[{j, rows}]} — 자리별로 몇 칸 내려야 하는가
+ */
+function odometer(final) {
+  var html = '', cols = [], j = 0;
+  for (var i = 0; i < final.length; i++) {
+    var ch = final[i];
+    if (ch < '0' || ch > '9') { html += '<span class="gg-odS">' + ch + '</span>'; continue; }
+    var spins = 1 + j, d = +ch, rows = '';
+    for (var s = 0; s < spins; s++) for (var k = 0; k <= 9; k++) rows += '<i>' + k + '</i>';
+    for (var k2 = 0; k2 <= d; k2++) rows += '<i>' + k2 + '</i>';
+    html += '<span class="gg-od" data-j="' + j + '"><span class="gg-odIn">' + rows + '</span></span>';
+    cols.push({ j: j, rows: spins * 10 + d });
+    j++;
+  }
+  return { html: html, cols: cols };
+}
+var NUM_FX = {
+  count: { label: '카운트 — 값이 목표까지 흘러 올라간다 (기본)' },
+  roll:  { label: '롤 — 자리마다 0~9 띠가 굴러 멈춘다 (odometer)' }
+};
 PATTERNS.dataCounter = {
   label: '데이터 카운터',
   use: '핵심 지표 1~4개. 숫자가 목표값까지 올라가며 크기로 중요도를 말한다.',
-  fields: 'stats[](필수: {value,unit,prefix,label,icon,dec,note}) · title · kicker · sub',
+  fields: 'stats[](필수: {value,unit,prefix,label,icon,dec,note}) · numFx(count|roll — 자릿수 롤) · title · kicker · sub',
   build: function (sc, ctx) {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var ss = items(sc.stats || sc.items), n = ss.length;
+    var roll = sc.numFx === 'roll';
     var hasHead = !!(sc.title || sc.kicker), topY = ctx.safe + (ctx.wide ? 34 : 104), hd;
     if (hasHead) {
       hd = head(sc, ctx, tw, t, { x: ctx.safe, y: topY, w: ctx.W - ctx.safe * 2, align: 'center' },
@@ -1483,14 +1773,17 @@ PATTERNS.dataCounter = {
     var numSize = Math.round(ctx.fs.num * (n === 1 ? 1.08 : n === 2 ? .86 : n === 3 ? .72 : .6) * (ctx.wide ? 1 : .88));
     var itemH = Math.round(numSize * 1.9);
     var g = gridOf(n, cols, ctx.W, itemW, itemH, gapX, 40, mid);
+    var ods = [];
     ss.forEach(function (x, i) {
       var v = num(x.value, parseFloat(x.value) || 0), dec = num(x.dec, (String(x.value).split('.')[1] || '').length);
+      var val;
+      if (roll) { ods[i] = odometer(fmtNum(v, dec)); val = '<span class="gg-val gg-valRoll">' + ods[i].html + '</span>'; }
+      else val = '<span class="gg-val" data-to="' + v + '" data-dec="' + dec + '">0</span>';
       H.push('<div class="gg-stat" data-i="' + i + '" style="left:' + Math.round(g[i].x) + 'px;top:' + Math.round(g[i].y) +
         'px;width:' + itemW + 'px">' +
         (x.icon ? ctx.icon(x.icon, Math.round(numSize * .42), 'gg-statIc') : '') +
         '<div class="gg-num" style="font-size:' + numSize + 'px">' +
-        '<span class="gg-pre">' + esc(x.prefix || '') + '</span>' +
-        '<span class="gg-val" data-to="' + v + '" data-dec="' + dec + '">0</span>' +
+        '<span class="gg-pre">' + esc(x.prefix || '') + '</span>' + val +
         '<span class="gg-unit" style="font-size:' + Math.round(numSize * .42) + 'px">' + esc(x.unit || '') + '</span></div>' +
         '<div class="gg-statLb" style="font-size:' + Math.round(ctx.fs.body * 1.06) + 'px">' + esc(x.label || '') + '</div>' +
         (x.note ? '<div class="gg-statNote">' + esc(x.note) + '</div>' : '') + '</div>');
@@ -1499,8 +1792,16 @@ PATTERNS.dataCounter = {
     ss.forEach(function (x, i) {
       var s = q('.gg-stat[data-i="' + i + '"]');
       tw.from(s, t, { y: ctx.px(30), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
-      tw.count(s + ' .gg-val', t + ctx.d('micro'), cdur, 0, num(x.value, parseFloat(x.value) || 0),
-        { dec: num(x.dec, (String(x.value).split('.')[1] || '').length) });
+      if (roll) {
+        /* 자리마다 띠를 내린다 — 높은 자리가 먼저 멈추고 낮은 자리가 더 오래 돈다(rows 가 많아 같은 시간에 더 빠르게) */
+        ods[i].cols.forEach(function (c) {
+          tw.to(s + ' .gg-od[data-j="' + c.j + '"] .gg-odIn', t + ctx.d('micro') + c.j * ctx.st('tight') * .5,
+            { y: -c.rows + 'em', duration: cdur * (1 + c.j * .08), ease: 'power4.out' });
+        });
+      } else {
+        tw.count(s + ' .gg-val', t + ctx.d('micro'), cdur, 0, num(x.value, parseFloat(x.value) || 0),
+          { dec: num(x.dec, (String(x.value).split('.')[1] || '').length) });
+      }
       tw.from(s + ' .gg-statLb', t + cdur * .55, { y: ctx.px(14), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei });
       t += ctx.st('loose') * 1.6;
     });
@@ -1848,21 +2149,22 @@ PATTERNS.matchCut = {
     var roll = sc.textFx === 'roll';
     function block(cls, o) {
       return '<div class="gg-mc ' + cls + ' gg-c" style="left:' + x + 'px;top:' + Math.round(ay + asz * .72) + 'px;width:' + w + 'px">' +
-        (o.title ? '<div class="gg-mcT" style="font-size:' + Math.round(ctx.fs.title * .8) + 'px">' + esc(o.title) + '</div>' : '') +
-        (o.sub ? '<div class="gg-mcS" style="font-size:' + Math.round(ctx.fs.sub * .9) + 'px">' + esc(o.sub) + '</div>' : '') + '</div>';
+        (o.title ? '<div class="gg-mcT" style="font-size:' + Math.round(ctx.fs.title * .8) + 'px">' + emText(o.title) + '</div>' : '') +
+        (o.sub ? '<div class="gg-mcS" style="font-size:' + Math.round(ctx.fs.sub * .9) + 'px">' + emText(o.sub) + '</div>' : '') + '</div>';
     }
     if (roll) {
-      /* 롤 — 두 문장을 세로로 붙여 놓고 마스크 안에서 밀어 올린다. 교체가 물리적으로 읽힌다. */
+      /* 롤 — 두 문장을 세로로 붙여 놓고 마스크 안에서 밀어 올린다. 교체가 물리적으로 읽힌다.
+         칸이 flex 라 글자를 span 으로 한 번 감싼다 — 안 감싸면 `*낱말*` 앞뒤 공백이 flex 항목 사이에서 사라진다. */
       var ts = Math.round(ctx.fs.title * .8), ss = Math.round(ctx.fs.sub * .9);
       H.push('<div class="gg-mc gg-mcRoll gg-c" style="left:' + x + 'px;top:' + Math.round(ay + asz * .72) +
         'px;width:' + w + 'px">' +
         '<div class="gg-roll" style="height:' + Math.round(ts * 1.52) + 'px"><div class="gg-rollIn">' +
-        '<div class="gg-mcT" style="font-size:' + ts + 'px">' + esc(F.title || '') + '</div>' +
-        '<div class="gg-mcT" style="font-size:' + ts + 'px">' + esc(O.title || '') + '</div></div></div>' +
+        '<div class="gg-mcT" style="font-size:' + ts + 'px"><span>' + emText(F.title || '') + '</span></div>' +
+        '<div class="gg-mcT" style="font-size:' + ts + 'px"><span>' + emText(O.title || '') + '</span></div></div></div>' +
         ((F.sub || O.sub) ? '<div class="gg-roll gg-rollSub" style="height:' + Math.round(ss * 2.4) + 'px">' +
           '<div class="gg-rollIn">' +
-          '<div class="gg-mcS" style="font-size:' + ss + 'px">' + esc(F.sub || '') + '</div>' +
-          '<div class="gg-mcS" style="font-size:' + ss + 'px">' + esc(O.sub || '') + '</div></div></div>' : '') +
+          '<div class="gg-mcS" style="font-size:' + ss + 'px"><span>' + emText(F.sub || '') + '</span></div>' +
+          '<div class="gg-mcS" style="font-size:' + ss + 'px"><span>' + emText(O.sub || '') + '</span></div></div></div>' : '') +
         '</div>');
     } else {
       H.push(block('gg-mcFrom', F));
@@ -2149,15 +2451,26 @@ PATTERNS.quote = {
     var tw = new TW(), q = ctx.q, H = [], t = 0;
     var w = Math.min(ctx.W - ctx.safe * 2, ctx.wide ? 1340 : 900), x = (ctx.W - w) / 2;
     var qs = Math.round(ctx.fs.sub * (ctx.wide ? 1.42 : 1.28));
+    var qt = sc.text || sc.title, qL = splitLines(qt);
+    var qfx = TEXT_FX[sc.textFx] && sc.textFx !== 'roll' ? sc.textFx : '';
+    if (qfx === 'typewriter') {
+      /* 타자기는 줄을 접지 못한다 — 넘치는 줄은 글자를 줄여 한 줄을 지킨다(.62 까지) */
+      var need = 0;
+      qL.forEach(function (l) { need = Math.max(need, estEm(plain(l)) * qs); });
+      if (need > w) qs = Math.max(Math.round(qs * .62), Math.floor(qs * w / need));
+    }
     H.push('<div class="gg-quote gg-c" style="left:' + x + 'px;top:' + Math.round(ctx.cy - (ctx.wide ? 190 : 240)) + 'px;width:' + w + 'px">' +
       '<div class="gg-qm" style="font-size:' + Math.round(qs * 2.6) + 'px">“</div>' +
-      '<blockquote class="gg-qt" style="font-size:' + qs + 'px">' + maskLines(sc.text || sc.title) + '</blockquote>' +
+      '<blockquote class="gg-qt' + glowCls(ctx) + '" style="font-size:' + qs + 'px">' + maskLines(qt, '', '', qfx) + '</blockquote>' +
       (sc.by ? '<div class="gg-qby" style="font-size:' + Math.round(ctx.fs.body * .96) + 'px">' + esc(sc.by) +
         (sc.role ? '<span class="gg-qrole"> · ' + esc(sc.role) + '</span>' : '') + '</div>' : '') + '</div>');
     tw.from(q('.gg-qm'), t, { y: ctx.px(20), opacity: 0, scale: .8, duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
     t += ctx.d('fast') * .5;
-    tw.from(q('.gg-qt .gg-mk'), t, { yPercent: 110, duration: ctx.d('normal') * 1.1, ease: ctx.ei }, ctx.st('loose'));
-    t += ctx.d('normal') * 1.1 + ctx.st('loose') * Math.max(0, splitLines(sc.text || sc.title).length - 1);
+    var tr = revealText(tw, ctx, q('.gg-qt .gg-mk'), qt, qfx, t, { dur: ctx.d('normal') * 1.1, yp: 110, st: ctx.st('loose') });
+    emPop(tw, ctx, q('.gg-qt'), qt, t);
+    /* 인용은 문장이 다 자리 잡은 뒤에 출처가 붙는다 — 기본 리빌은 전체 길이를 기다린다 */
+    t = Math.max(tr, t + ctx.d('normal') * 1.1 + ctx.st('loose') * Math.max(0, qL.length - 1));
+    textLive(tw, ctx, q('.gg-qt'), qt, t + ctx.d('fast'), { glow: true });
     if (sc.by) { tw.from(q('.gg-qby'), t, { x: ctx.px(-18), opacity: 0, duration: ctx.d('fast'), ease: ctx.ei }); t += ctx.d('fast'); }
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, sc.text || sc.title || '', { scale: 1.15 }) };
   }
@@ -3129,6 +3442,8 @@ function compile(spec, opts) {
   /* 씬별 스킨 오버라이드 — 키 하나가 스코프 블록 하나다. 같은 스킨을 쓰는 씬들은
      키를 공유해 블록이 한 번만 실린다. 인라인 정의는 씬 번호로 키를 만든다. */
   var sceneSkins = {};
+  /* 글자 퇴장은 씬 길이가 확정된 뒤 얹는다 — 씬별 ctx 와 퇴장 정보를 여기 들고 간다 */
+  var exits = [];
 
   scenes.forEach(function (sc, i) {
     sc = sc || {};
@@ -3195,15 +3510,21 @@ function compile(spec, opts) {
       camName = has(sc, 'cam') ? String(sc.cam) : (CAM_DEFAULT[sc.pattern] || 'pushIn');
       if (!CAMS[camName]) camName = 'none';
     }
+    /* 글자 퇴장 — hold 뒤에 exitDur 의 70% 를 씬에 더한다(나머지 30% 는 다음 씬의 트랜지션과 겹친다).
+       자막에 맞춘 씬은 길이가 대사로 정해지므로 늘리지 않고 끝에서 exitDur 만큼 앞에 얹는다. */
+    var exFx = EXIT_FX[sc.exitFx] ? sc.exitFx : '';
+    var exChars = plain(sc.question || sc.title || sc.text || lineItems(sc.lines).map(function (l) { return l.text; }).join('')).replace(/\s/g, '').length;
+    var exDur = exFx ? exitDur(ctx, exFx, exChars) : 0;
+    exits.push(exFx ? { ctx: ctx, fx: exFx, dur: exDur, chars: exChars } : null);
     out.push({
       id: sc.id || slug(sc.title || sc.pattern, i),
       sid: ctx.sid, pattern: sc.pattern, purpose: sc.purpose || '', skin: skKey,
       notes: sc.notes || sc.purpose || '',
       html: built.html, fixed: built.fixed || '', decor: decorSVG, tw: built.tw.list,
-      dur: r2(built.dur), contentEnd: r2(Math.min(ce, built.dur)), cam: camName,
+      dur: r2(built.dur + exDur * .7), contentEnd: r2(Math.min(ce, built.dur)), cam: camName,
       trans: tr, tdur: tdur, overlap: overlap,
       /* 줄이 객체({text,...})일 수 있다 — lineText 를 거치지 않으면 [object Object] 가 된다 */
-      at: 0, title: sc.title || sc.text || lineText(arr(sc.lines)[0]) || ''
+      at: 0, title: plain(sc.title || sc.text || lineText(arr(sc.lines)[0]) || '')
     });
   });
 
@@ -3229,6 +3550,12 @@ function compile(spec, opts) {
     var mv = camOf(s.cam, ASPECTS[aspect].w, ASPECTS[aspect].h, camMul);
     if (!mv) return;
     s.tw = s.tw.concat([{ k: 'cam', amb: 1, at: 0, dur: s.dur, v0: mv.v0, v: mv.v, ease: 'none' }]);
+  });
+  /* 글자 퇴장 — 확정된 씬 길이의 끝에서 exitDur 만큼 앞. 마스터에 실리므로(amb) 압축(ts)·contentEnd 와 무관하다 */
+  out.forEach(function (s, i) {
+    var ex = exits[i];
+    if (!ex) return;
+    s.tw = s.tw.concat(exitText(ex.ctx, ex.fx, r2(Math.max(0, s.dur - ex.dur)), ex.chars, s.html));
   });
 
   return {
@@ -3377,10 +3704,44 @@ function validate(spec, opts) {
       var kW = kAsp.w - kAsp.safe * 2;
       lineItems(sc.lines).forEach(function (l, li) {
         var base = Math.round(kType.title * num(l.scale, l.emphasis ? 1.34 : 1));
-        if (estEm(l.text) * base * .62 > kW) {
+        if (estEm(plain(l.text)) * base * .62 > kW) {
           warnings.push(tag + (li + 1) + '번째 줄이 한 줄에 안 들어간다 — "' +
             String(l.text).slice(0, 18) + '…". 접혀서 나오므로 짧게 끊거나 줄을 나눈다.');
         }
+      });
+    }
+    /* textFx — 오타면 조용히 기본 리빌로 흐른다. roll 은 matchCut 의 구조(두 문장을 세로로 붙임)가
+       있어야 하고, scramble 은 글자를 통째로 갈아 끼우므로 인라인 강조(`*낱말*`)가 사라진다. */
+    var fxNames = [sc.textFx].concat(lineItems(sc.lines).map(function (l) { return l.fx; })).filter(Boolean);
+    fxNames.forEach(function (f) {
+      if (!TEXT_FX[f]) errors.push(tag + 'textFx "' + f + '" 는 없다 (' + Object.keys(TEXT_FX).join(' ') + ').');
+    });
+    if (sc.textFx === 'roll' && sc.pattern !== 'matchCut')
+      warnings.push(tag + 'textFx "roll" 은 matchCut 전용이다 — 다른 패턴에서는 기본 리빌로 나온다.');
+    if (sc.numFx && !NUM_FX[sc.numFx])
+      errors.push(tag + 'numFx "' + sc.numFx + '" 는 없다 (' + Object.keys(NUM_FX).join(' ') + ').');
+    if (sc.numFx && sc.pattern !== 'dataCounter')
+      warnings.push(tag + 'numFx 는 dataCounter 만 받는다 — 다른 패턴에서는 무시된다.');
+    /* exitFx — 글자만 먼저 나간다. 백스페이스는 타자기 상자(.gg-tw)가 있어야 지울 것이 있다 */
+    if (sc.exitFx && !EXIT_FX[sc.exitFx])
+      errors.push(tag + 'exitFx "' + sc.exitFx + '" 는 없다 (' + Object.keys(EXIT_FX).join(' ') + ').');
+    if (sc.exitFx === 'typewriter' && sc.textFx !== 'typewriter')
+      errors.push(tag + 'exitFx "typewriter"(백스페이스)는 textFx "typewriter" 로 찍은 글자만 지울 수 있다.');
+    if (sc.exitFx && !(sc.title || sc.question || sc.text || arr(sc.lines).length))
+      warnings.push(tag + 'exitFx 가 있는데 나갈 글자(title·text·lines)가 없다.');
+    var emFields = ['title', 'sub', 'text', 'question'].filter(function (k) { return hasEm(sc[k]); })
+      .concat(lineItems(sc.lines).some(function (l) { return hasEm(l.text); }) ? ['lines'] : []);
+    if (emFields.length && fxNames.indexOf('scramble') >= 0)
+      warnings.push(tag + emFields.join('·') + ' 의 `*낱말*` 강조는 scramble 과 함께 쓰면 사라진다 — 글자가 통째로 교체되기 때문이다. 다른 textFx 를 쓴다.');
+    /* 타자기는 줄을 접지 못한다 — 폭을 늘려 찍기 때문이다. 글자를 .62 까지 줄여도 안 들어가면 넘친다 */
+    if (sc.textFx === 'typewriter' && sc.pattern !== 'kineticType') {
+      var tAsp = ASPECTS[spec.aspect] || ASPECTS['16:9'], tType = TYPE[spec.aspect] || TYPE['16:9'];
+      var tW = tAsp.w - tAsp.safe * 2;
+      var tSz = sc.pattern === 'quote' ? tType.sub * 1.42 : tType.title;
+      splitLines(sc.question || sc.title || sc.text || '').forEach(function (l, li) {
+        if (estEm(plain(l)) * tSz * .62 > tW)
+          warnings.push(tag + 'typewriter 는 줄을 접지 못한다 — ' + (li + 1) + '번째 줄 "' + plain(l).slice(0, 18) +
+            '…" 이 한 줄에 안 들어간다. `\\n` 으로 줄을 나눈다.');
       });
     }
     if (sc.title && splitLines(sc.title).length >= 4) {
@@ -3396,7 +3757,7 @@ function validate(spec, opts) {
     /* 글자 밀도 — 애니메이션 씬에 문단은 들어가지 않는다 */
     var longs = [];
     ['title', 'sub', 'text'].forEach(function (k) {
-      var s = String(sc[k] == null ? '' : sc[k]);
+      var s = plain(sc[k]);
       if (s.replace(/\s/g, '').length > (k === 'text' ? 110 : 46)) longs.push(k);
     });
     if (longs.length) warnings.push(tag + longs.join('·') + ' 가 길다. 읽는 데 걸리는 시간이 hold 를 넘으면 사라진 뒤에 이해된다 — 줄이거나 씬을 나눈다.');
@@ -3676,7 +4037,7 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-drDrift{animation:ggDrift 20s ease-in-out infinite}',
 '.gg-drTwinkle{animation:ggTwinkle 5s ease-in-out infinite}',
 '@media (prefers-reduced-motion:reduce){' +
-  '.gg-drFloat,.gg-drSlide,.gg-drSpin,.gg-drPulse,.gg-drDrift,.gg-drTwinkle{animation:none}}',
+  '.gg-drFloat,.gg-drSlide,.gg-drSpin,.gg-drPulse,.gg-drDrift,.gg-drTwinkle,.gg-tw,.gg-em,.gg-breath,.gg-glowT{animation:none}}',
 /* 공통 텍스트 */
 '.gg-head{position:absolute}',
 '.gg-c{text-align:center}',
@@ -3685,6 +4046,27 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-sub{margin-top:var(--sub-mt);color:var(--ink2);line-height:var(--sub-lh);font-weight:400}',
 '.gg-mask{display:block;overflow:hidden;padding-bottom:.06em}',
 '.gg-mk{display:block;will-change:transform}',
+/* blur 는 마스크 밖으로 번져야 한다. 인라인 마크(`*낱말*`+mark)는 런타임이 등장 뒤 overflow 를 연다 */
+'.gg-mask.gg-open{overflow:visible}',
+/* 아웃라인 — --sw 가 테두리 두께. 0 에서 시작해 트윈이 .05em 에서 0 으로 되돌린다 */
+'.gg-ol{--sw:0em;-webkit-text-stroke:var(--sw) var(--acc);paint-order:stroke fill}',
+/* 인라인 강조 — 낱말 하나만 accent. inline-block 이라 팝(transform)과 마크 앵커(position)가 걸린다 */
+'.gg-em{color:var(--acc);font-style:normal;display:inline-block;position:relative}',
+/* hold 동안 살아 있는 글자 — 루프는 멈춰 있다가 타임라인이 등장 뒤에 풀어 준다(textLive).
+   강조 낱말·emphasis 줄은 밝기가 숨쉬고(transform 은 GSAP 몫이라 filter), 글로우 테마는 text-shadow 가 숨쉰다.
+   animation 단축 속성이 play-state 를 되돌리므로 paused 는 반드시 그 뒤에 온다. */
+'.gg-em,.gg-breath{animation:ggBreath 3.4s ease-in-out infinite;animation-play-state:paused}',
+'@keyframes ggBreath{50%{filter:brightness(1.18)}}',
+'.gg-glowT{animation:ggGlowT 3.8s ease-in-out infinite;animation-play-state:paused}',
+/* 둘 다 붙은 emphasis 줄 — 단축 속성이 서로를 덮으니 한 규칙에 둘을 적는다 */
+'.gg-breath.gg-glowT{animation:ggBreath 3.4s ease-in-out infinite,ggGlowT 3.8s ease-in-out infinite;animation-play-state:paused}',
+'@keyframes ggGlowT{0%,100%{text-shadow:0 0 .08em transparent}50%{text-shadow:0 0 .34em var(--acc)}}',
+/* typewriter·wipe 의 인라인 상자 — 폭이 글자만큼이라 가운데 정렬에서도 글자의 왼쪽 끝에서 시작한다 */
+'.gg-in{display:inline-block;vertical-align:top}',
+/* content-box — 전역 border-box 아래서는 커서(테두리)가 폭 안에 들어가 마지막 글자를 가린다 */
+'.gg-tw{display:inline-block;box-sizing:content-box;overflow:hidden;white-space:nowrap;vertical-align:top;' +
+  'border-right:0 solid var(--acc);animation:ggCursor 1s steps(1) infinite}',
+'@keyframes ggCursor{50%{border-color:transparent}}',
 '.gg-rule{position:absolute;height:3px;background:var(--acc);transform-origin:center;border-radius:2px;' + glow + '}',
 /* ---- 강조 마크 ---- */
 /* 마크를 다는 줄만 inline-block 이 된다 — 그래야 폭이 글자에 맞고 동그라미가 문장 전체를 감싸지 않는다 */
@@ -3870,6 +4252,12 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-num{font-weight:800;line-height:1;letter-spacing:-.035em;color:var(--ink);display:flex;align-items:baseline;gap:.04em}',
 '.gg-pre,.gg-unit{color:var(--acc);font-weight:700}',
 '.gg-val{font-variant-numeric:tabular-nums}',
+/* 자릿수 롤 — 자리마다 1em 창 안에서 0~9 띠가 내려간다. 쉼표·소수점(.gg-odS)은 고정 */
+'.gg-valRoll{display:inline-flex;align-items:flex-start;height:1em;line-height:1;overflow:hidden}',
+'.gg-od{display:inline-block;height:1em;overflow:hidden}',
+'.gg-odIn{display:block;will-change:transform}',
+'.gg-odIn i{display:block;height:1em;line-height:1;font-style:normal}',
+'.gg-odS{display:inline-block;height:1em;line-height:1}',
 '.gg-statLb{color:var(--ink2);font-weight:600;line-height:1.36}',
 '.gg-statNote{font-size:22px;color:var(--dim)}',
 /* 타임라인 */
@@ -4395,6 +4783,12 @@ return {
   },
   get themes() { var o = {}; Object.keys(THEMES).forEach(function (k) { o[k] = THEMES[k].label; }); return o; },
   get transitions() { var o = {}; Object.keys(TRANSITIONS).forEach(function (k) { o[k] = TRANSITIONS[k].label; }); return o; },
+  /** 글자 등장 방식 — `gm info textfx` 와 앱 폼이 읽는다 */
+  get textFx() { var o = {}; Object.keys(TEXT_FX).forEach(function (k) { o[k] = TEXT_FX[k].label; }); return o; },
+  /** 숫자 표기 방식 — dataCounter 의 numFx */
+  get numFx() { var o = {}; Object.keys(NUM_FX).forEach(function (k) { o[k] = NUM_FX[k].label; }); return o; },
+  /** 글자 퇴장 방식 — 씬의 exitFx */
+  get exitFx() { var o = {}; Object.keys(EXIT_FX).forEach(function (k) { o[k] = EXIT_FX[k].label; }); return o; },
   /** 씬 카메라 7종 — 앱의 씬 폼이 목록을 하드코딩하지 않게 여기서 읽는다 */
   get cams() { var o = {}; Object.keys(CAMS).forEach(function (k) { o[k] = CAMS[k].label; }); return o; },
   get energies() { var o = {}; Object.keys(ENERGY).forEach(function (k) { o[k] = ENERGY[k].label; }); return o; },

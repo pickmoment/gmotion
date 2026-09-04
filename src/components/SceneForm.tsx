@@ -178,8 +178,11 @@ export function SceneForm({
               onChange={(e) => patch("textFx", e.target.value || undefined)}
             >
               <option value="">텍스트FX: 기본</option>
-              <option value="scramble">scramble (섞이다 정렬)</option>
-              <option value="roll">roll (굴러 교체)</option>
+              {Object.entries(GG.textFx).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
