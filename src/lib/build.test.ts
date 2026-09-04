@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { checkOutput } from "./build";
 
 const FAKE_OK_HTML = `<html lang="ko"><head></head><body>
-  <style>@media (prefers-reduced-motion: reduce) {}</style>
+  <style>[data-rm] .gg-drFloat{animation:none}</style>
   <div aria-label="스테이지"></div>
   <div class="gg-scene" data-pattern="kineticType"></div>
   <div class="gg-scene" data-pattern="quote"></div>

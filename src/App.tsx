@@ -23,6 +23,7 @@ import { EMPTY_SPEC, insertScene, moveScene, removeScene, replaceScene } from ".
 import {
   dirOf,
   loadSpecMedia,
+  measureAudioSec,
   relativeTo,
   retargetMedia,
   setMediaRefs,
@@ -81,6 +82,21 @@ export default function App() {
   const [audioPath, setAudioPath] = useState<string | null>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [captions, setCaptions] = useState(false);
+  /* 음성의 실제 길이. 타임라인 길이와 어긋나면 렌더가 한쪽을 잘라내므로 미리 잰다 */
+  const [audioSec, setAudioSec] = useState<number | null>(null);
+  useEffect(() => {
+    if (!audioSrc) {
+      setAudioSec(null);
+      return;
+    }
+    let live = true;
+    void measureAudioSec(audioSrc).then((s) => {
+      if (live) setAudioSec(s);
+    });
+    return () => {
+      live = false;
+    };
+  }, [audioSrc]);
 
   const [check, setCheck] = useState<{ lines: CheckLine[]; info: string; fail: number } | null>(
     null,
@@ -497,10 +513,15 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) return;
       const k = e.key.toLowerCase();
+      /* JSON 탭의 CodeMirror 는 자기 history 로 undo 하고 onChange 로 스토어에 새 상태를 밀어 넣는다 —
+         여기서도 store.undo 를 하면 한 번의 ⌘Z 에 둘이 동시에 되돌아간다. 에디터 안에서는 CM 에 맡긴다 */
+      const inEditor = e.target instanceof Element && !!e.target.closest(".cm-editor");
       if (k === "z") {
+        if (inEditor) return;
         e.preventDefault();
         e.shiftKey ? store.redo() : store.undo();
       } else if (k === "y") {
+        if (inEditor) return;
         e.preventDefault();
         store.redo();
       } else if (k === "s") {
@@ -648,7 +669,15 @@ export default function App() {
             onSceneChange={setSelected}
             onReview={() => setModal("review")}
           />
-          <ValidatePanel result={result} spec={spec} cues={cues} />
+          <ValidatePanel
+            result={result}
+            spec={spec}
+            cues={cues}
+            onSelectScene={(i) => {
+              setSelected(i);
+              setTab("form");
+            }}
+          />
         </section>
       </main>
 
@@ -681,6 +710,7 @@ export default function App() {
           totalSec={result.stats?.totalSec ?? 0}
           fps={RENDER_FPS}
           hasAudio={!!audioPath}
+          audioSec={audioSec}
           value={renderRes}
           onChange={(r) => setResShort(r.short)}
           onStart={() => void startRenderMp4(renderRes)}

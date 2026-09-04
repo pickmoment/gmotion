@@ -2,6 +2,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { confirm, open, save } from "@tauri-apps/plugin-dialog";
+import { error as logError } from "@tauri-apps/plugin-log";
 
 export interface SkillStatus {
   target: string;
@@ -27,7 +28,9 @@ export const api = {
   revealFile: (path: string) => invoke<void>("reveal_file", { path }),
   homeDir: () => invoke<string | null>("home_dir"),
   tempPath: (name: string) => invoke<string>("temp_path", { name }),
-  removeFile: (path: string) => invoke<void>("remove_file", { path }),
+  /* 지우기는 청소 작업이라 부르는 쪽이 결과를 기다리지 않는다 — 거절(앱 폴더 밖)만 로그에 남긴다 */
+  removeFile: (path: string) =>
+    invoke<void>("remove_file", { path }).catch((e) => logError(`[remove_file] ${String(e)}`)),
   /** Chrome·ffmpeg 을 찾았는지 미리 확인한다 — 없으면 렌더를 시작조차 하지 않는다 */
   renderTools: () => invoke<string[]>("render_tools"),
   renderMp4: (opts: RenderOpts) => invoke<string>("render_mp4", { opts }),
@@ -56,6 +59,8 @@ export interface AgentRunOpts {
   args: string[];
   cwd: string | null;
   timeout_sec: number;
+  /** 본문을 자식 stdin 으로 부을 파일. null 이면 stdin 을 닫은 채 돈다 */
+  stdin_file: string | null;
 }
 
 export interface AgentRunOut {

@@ -7,11 +7,11 @@
  *                                   [--subs voice.srt] [--audio voice.mp3] [--captions]
  *                                   (design 의 image 가 로컬 경로면 스펙 파일 기준으로 data URI 인라인)
  *   node gm.js timing   <spec.json> [-o out.csv] [--fps 30] [--subs voice.srt]
- *   node gm.js info     [patterns|themes|skins|fonts|trans|cam|energy|aspects|tokens|decor|mark|frame|art|chart]
+ *   node gm.js info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|aspects|tokens|decor|mark|frame|art|chart]
  *   node gm.js pattern  <이름>            패턴 하나의 필드와 용도
- *   node gm.js icons    [검색어]          픽토그램 191종 찾기 (한글 이름 지원)
+ *   node gm.js icons    [검색어]          픽토그램 238종 찾기 (한글 이름 지원)
  *   node gm.js check    <out.html>        산출물 기계 검수 (자기 선언 금지)
- *   node gm.js test     [--update]         엔진 회귀 검사 (스킬을 고친 뒤 돌린다)
+ *   node gm.js test     [--update] [-v]    엔진 회귀 검사 (스킬을 고친 뒤 돌린다)
  *
  *   --subs <f>   자막(SRT·VTT)으로 씬 타이밍을 실측으로 맞춘다 (씬에 say 가 있어야 한다)
  *   --audio <f>  음성을 산출물에 심는다. 재생하면 목소리가 시계를 잡는다
@@ -34,17 +34,24 @@ var fs = require('fs'), path = require('path');
 var G = require(path.join(__dirname, 'gsapgraph.js'));
 
 var argv = process.argv.slice(2), cmd = argv.shift(), flags = {}, files = [];
+/* 위 사용법에 있는 것만 받는다 — 오타(--presnt)를 조용히 삼키면 뜻과 다른 파일이 나가도 아무도 모른다 */
+var FLAGS = ['out', 'fps', 'subs', 'audio', 'clean', 'cdn', 'no-fonts', 'present', 'captions', 'no-captions',
+             'no-inline-audio', 'update', 'verbose', 'help'];
 for (var i = 0; i < argv.length; i++) {
   var a = argv[i];
   if (a === '-o' || a === '--out') flags.out = argv[++i];
   else if (a === '--fps') flags.fps = parseFloat(argv[++i]);
   else if (a === '--subs') flags.subs = argv[++i];
   else if (a === '--audio') flags.audio = argv[++i];
-  else if (a.slice(0, 2) === '--') flags[a.slice(2).replace(/-([a-z])/g, function (m, c) { return c.toUpperCase(); })] = true;
+  else if (a.slice(0, 2) === '--') {
+    if (FLAGS.indexOf(a.slice(2)) < 0) { console.error('그런 플래그는 없다: ' + a); usage(1); }
+    flags[a.slice(2).replace(/-([a-z])/g, function (m, c) { return c.toUpperCase(); })] = true;
+  }
   else files.push(a);
 }
+/** 사용법(파일 머리의 주석). 잘못 부른 경우(code≠0)는 stderr 로 — stdout 을 파이프로 받는 쪽에 섞이지 않는다 */
 function usage(code) {
-  process.stdout.write(fs.readFileSync(__filename, 'utf8').split('*/')[0].split('/*!')[1] + '\n');
+  (code ? process.stderr : process.stdout).write(fs.readFileSync(__filename, 'utf8').split('*/')[0].split('/*!')[1] + '\n');
   process.exit(code || 0);
 }
 function readSpec(f) {
@@ -222,6 +229,13 @@ if (cmd === 'pattern') {
 if (cmd === 'info') {
   var topic = files[0];
   if (topic === 'vectors') topic = 'decor';
+  /* 헤더 사용법과 같은 목록 — 모르는 토픽이 빈 출력으로 성공(exit 0)하면 스크립트가 빈 값을 믿는다 */
+  var TOPICS = ['patterns', 'themes', 'skins', 'fonts', 'trans', 'textfx', 'exitfx', 'numfx', 'cam', 'energy', 'aspects',
+                'tokens', 'decor', 'mark', 'frame', 'art', 'chart'];
+  if (topic && TOPICS.indexOf(topic) < 0) {
+    console.error('그런 info 토픽은 없다: ' + topic + ' (있는 것: ' + TOPICS.join(' ') + ')');
+    process.exit(1);
+  }
   function dump(name, obj) {
     console.log('## ' + name);
     Object.keys(obj).forEach(function (k) { console.log('  ' + k.padEnd(17) + obj[k]); });
@@ -270,7 +284,7 @@ if (cmd === 'info') {
   if (!topic || topic === 'fonts') dump('폰트 (루트 font 로 고른다. 생략하면 테마 기본)', G.fonts);
   if (!topic || topic === 'trans') dump('트랜지션', G.transitions);
   if (!topic || topic === 'textfx') dump('글자 등장 (씬의 textFx. kineticType 은 줄마다 fx 로도. `*낱말*` 은 인라인 강조 — 색이 들고 mark 가 그 낱말에 붙는다)', G.textFx);
-  if (!topic || topic === 'textfx') dump('글자 퇴장 (씬의 exitFx. 글자만 먼저 나가고 배경·그림은 트랜지션과 함께 간다)', G.exitFx);
+  if (!topic || topic === 'exitfx') dump('글자 퇴장 (씬의 exitFx. 글자만 먼저 나가고 배경·그림은 트랜지션과 함께 간다)', G.exitFx);
   if (!topic || topic === 'numfx') dump('숫자 표기 (dataCounter 의 numFx)', G.numFx);
   if (!topic || topic === 'cam') dump('씬 카메라 (씬의 cam. 생략하면 패턴에 맞는 기본값. 루트 camera:false 로 전체 정지)', G.cams);
   if (!topic || topic === 'energy') dump('에너지', G.energies);
@@ -317,7 +331,7 @@ if (cmd === 'check') {
     if (m) fail++;
   }
   must('lang="ko"', /<html lang="ko">/, '한국어 문서 선언');
-  must('감소 모션 대응', /prefers-reduced-motion/, '모션 민감 사용자에게 정적 대체가 필요하다');
+  must('감소 모션 대응', /\[data-rm\] [^{]*\{animation:none\}/, '모션 민감 사용자에게 정적 대체가 필요하다 — 상시 CSS 루프는 [data-rm] 으로 멈춘다');
   must('스크린리더 라벨', /aria-label=/, '스테이지와 조작부에 라벨');
   must('씬 라벨', /data-pattern="/, '씬마다 패턴 표시 — 검수 추적용');
   must('검수 API', /window\.GGM/, '씬별 시킹 캡처에 필요하다');

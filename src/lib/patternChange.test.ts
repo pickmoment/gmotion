@@ -135,9 +135,28 @@ describe("changePattern", () => {
     expect(changePattern(m, "heroReveal").scene.title).toBe("말 한 줄");
   });
 
-  it("서브는 캡션 자리로도 간다", () => {
+  it("서브는 헤더의 서브 자리로 간다 — 캡션이 있는 차트·디바이스도 헤더가 sub 를 그린다", () => {
     const s = { pattern: "heroReveal", title: "제목", sub: "부제" } as Scene;
-    expect(changePattern(s, "chart").scene.caption).toBe("부제");
+    const chart = changePattern(s, "chart").scene;
+    expect(chart.sub).toBe("부제");
+    expect(chart.caption).toBeUndefined();
+    expect(changePattern(s, "deviceShow").scene.sub).toBe("부제");
+  });
+
+  it("퀴즈의 정답(answer)은 중심 항목이 아니다 — 도착점·중심으로 옮겨지지 않는다", () => {
+    const quiz = {
+      pattern: "quizReveal",
+      question: "질문",
+      options: ["A", "B"],
+      answer: { label: "B 인 이유", note: "설명" },
+    } as Scene;
+    const orbit = changePattern(quiz, "orbit").scene;
+    expect(orbit.center).toEqual({ label: "중심" });
+    expect(orbit.orbits).toEqual(["A", "B"]);
+
+    const conv = { pattern: "convergence", sources: ["가"], target: { label: "한 곳" } } as Scene;
+    /* 중심은 정답 자리가 아니라 선택지 끝으로 간다 */
+    expect(changePattern(conv, "quizReveal").scene.options).toEqual(["가", "한 곳"]);
   });
 
   it("공통 필드는 남고, matchCut 전용 roll 은 따라가지 않는다", () => {

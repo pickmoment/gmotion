@@ -133,10 +133,43 @@ fn temp_path(name: String) -> Result<String, String> {
     Ok(std::env::temp_dir().join(name).to_string_lossy().into())
 }
 
-/// 임시 파일 치우기. 없으면 조용히 넘어간다.
+/**
+ * 지울 수 있는 자리인가. 파일 자체는 이미 없을 수 있으니 **부모 디렉토리**를 실제 경로로
+ * 펴서 본다 — `..` 로 빠져나가거나 심볼릭 링크를 타고 밖을 가리키는 경로가 여기서 걸린다.
+ */
+fn within(path: &std::path::Path, allowed: &[std::path::PathBuf]) -> bool {
+    let Some(dir) = path.parent().and_then(|d| d.canonicalize().ok()) else {
+        return false;
+    };
+    allowed
+        .iter()
+        .filter_map(|d| d.canonicalize().ok())
+        .any(|d| dir.starts_with(d))
+}
+
+/**
+ * 앱이 만든 파일 치우기 — 자동저장 스냅샷과 렌더 임시 HTML 뿐이다. 없으면 조용히 넘어간다.
+ *
+ * 지우기는 되돌릴 수 없는 유일한 파일 조작이라 **앱 전용 디렉토리와 임시 디렉토리 안으로
+ * 가둔다.** 프런트엔드가 지울 이유가 있는 파일은 전부 그 둘 안에 있고, 밖을 지워 달라는
+ * 요청은 어디서 왔든 잘못이다(사용자 문서는 다이얼로그로 고른 뒤 덮어쓸 뿐 지우지 않는다).
+ */
 #[tauri::command]
-fn remove_file(path: String) {
-    let _ = std::fs::remove_file(path);
+fn remove_file(app: tauri::AppHandle, path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    let allowed: Vec<std::path::PathBuf> = [
+        app.path().app_data_dir().ok(),
+        app.path().app_log_dir().ok(),
+        Some(std::env::temp_dir()),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    if !within(p, &allowed) {
+        return Err(format!("앱 폴더 밖은 지우지 않는다: {path}"));
+    }
+    let _ = std::fs::remove_file(p);
+    Ok(())
 }
 
 #[tauri::command]
@@ -255,10 +288,11 @@ async fn agent_run(
     }
     let running = state.running.clone();
     let cancel = state.cancel.clone();
-    cancel.store(false, Ordering::Relaxed);
+    /* swap 이 먼저다 — 반대로 하면 이미 도는 에이전트에 보낸 취소 신호를 두 번째 호출이 지운다 */
     if running.swap(true, Ordering::SeqCst) {
         return Err("이미 실행 중이다".into());
     }
+    cancel.store(false, Ordering::Relaxed);
     tauri::async_runtime::spawn_blocking(move || {
         let _guard = RunGuard(running);
         let emit: agent::OnLine = Arc::new(move |l: agent::Line| {
@@ -367,5 +401,29 @@ mod tests {
         assert!(uri.starts_with("data:audio/mpeg;base64,"));
         assert_eq!(uri.len() - "data:audio/mpeg;base64,".len(), (data.len() + 2) / 3 * 4);
         let _ = std::fs::remove_file(&path);
+    }
+
+    /// 지우기는 앱 폴더 안에만 닿는다 — `..` 로 밖을 가리키면 거절한다.
+    #[test]
+    fn remove_scope_holds() {
+        let base = std::env::temp_dir().join("gmotion-remove-scope");
+        let inside = base.join("data");
+        std::fs::create_dir_all(inside.join("sub")).unwrap();
+        let allowed = vec![inside.clone()];
+
+        assert!(super::within(&inside.join("autosave.json"), &allowed), "허용 폴더 안은 지운다");
+        assert!(
+            super::within(&inside.join("sub/../autosave.json"), &allowed),
+            "폴더 안에서 도는 .. 는 여전히 안이다"
+        );
+
+        let outside = base.join("남의문서.json");
+        assert!(!super::within(&outside, &allowed), "허용 폴더 밖은 거절한다");
+        assert!(
+            !super::within(&inside.join("../남의문서.json"), &allowed),
+            ".. 로 빠져나간 경로도 거절한다"
+        );
+        assert!(!super::within(std::path::Path::new("/"), &allowed), "부모가 없으면 거절한다");
+        let _ = std::fs::remove_dir_all(&base);
     }
 }

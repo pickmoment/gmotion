@@ -76,7 +76,7 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 
 보통은 `direction.md` 로 구성을 짜고 `spec.md` 로 스펙을 쓰면 끝난다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 191종 + 벡터 세트 102종이다:
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 238종 + 벡터 세트 102종이다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 (한글 이름 지원)
@@ -280,7 +280,7 @@ assets/
   gsapgraph.js     엔진 — 스펙을 트윈 IR 로 컴파일, 단일 HTML 출력
   runtime.js       산출물에 실리는 런타임 — IR 을 타임라인으로 조립, 플레이어, 검수 API
   gsap.bundle.js   GSAP 3.15 (core + CustomEase·CustomWiggle·DrawSVG·MorphSVG·SplitText·MotionPath·ScrambleText)
-  icons.js         픽토그램 191종 (mojs · scriptviz · mindmap 과 같은 세트)
+  icons.js         픽토그램 238종 (mojs · scriptviz · mindmap 의 191종을 그대로 품는 상위 집합)
   vectors.js       벡터 세트 102종 — 배경 20 · 강조 15 · 프레임 19 · 일러스트 48. 전부 코드로 그린다
   charts.js        차트 17종 — 형태·색·마크 스펙. 애니메이션은 지시만 하고 방법은 엔진이 정한다
   skins.js         디자인 프리미티브(인터페이스) 48종 + 스킨(구현부) 6종 — 표면·선·타이포의 재질

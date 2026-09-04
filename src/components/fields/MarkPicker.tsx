@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { VECTORS } from "../../engine/boot";
 import { MARK_CATEGORIES, renderMarkSvg } from "../../lib/design";
+import { sanitizeSvg } from "../../lib/svg";
 import { useDesignStore } from "../../lib/designStore";
 
 export function MarkPicker({
@@ -91,7 +92,9 @@ export function MarkPicker({
   }, [allMarks, cat, q]);
 
   const selectedDef = allMarks.find((m) => m.key === currentKey);
-  const currentSvg = currentKey ? renderMarkSvg(currentKey, theme, currentText || "강조") : null;
+  const currentSvg = currentKey
+    ? sanitizeSvg(renderMarkSvg(currentKey, theme, currentText || "강조"))
+    : null;
 
   const handleSelect = (key: string, hasText: boolean) => {
     if (hasText) {
@@ -179,7 +182,7 @@ export function MarkPicker({
 
           <div className="mark-thumb-grid">
             {filteredMarks.map((m) => {
-              const svg = renderMarkSvg(m.key, theme, "강조");
+              const svg = sanitizeSvg(renderMarkSvg(m.key, theme, "강조"));
               const isSelected = m.key === currentKey;
               return (
                 <button

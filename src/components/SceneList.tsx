@@ -3,6 +3,7 @@ import { useState } from "react";
 import { PATTERNS, blankScene } from "../engine/schema";
 import type { Scene, ValidateResult } from "../engine/types";
 import { sceneLabel } from "../lib/spec";
+import { issuesByScene } from "../lib/issues";
 
 export function SceneList({
   scenes,
@@ -26,6 +27,7 @@ export function SceneList({
   const [adding, setAdding] = useState(false);
   const [drag, setDrag] = useState<number | null>(null);
   const timing = result.scenes ?? [];
+  const issues = issuesByScene(result);
 
   return (
     <div className="pane scene-list">
@@ -58,6 +60,16 @@ export function SceneList({
               <div className="row">
                 <span className="n">{i + 1}</span>
                 <span className="pat">{s.pattern}</span>
+                {issues[i]?.errors ? (
+                  <span className="pill bad" title="오류 — 검증 패널에서 내용을 본다">
+                    ✗ {issues[i].errors}
+                  </span>
+                ) : null}
+                {issues[i]?.warnings ? (
+                  <span className="pill warn" title="경고 — 검증 패널에서 내용을 본다">
+                    ! {issues[i].warnings}
+                  </span>
+                ) : null}
                 {t && <span className="dur">{t.dur}s</span>}
               </div>
               <div className="label">{sceneLabel(s)}</div>

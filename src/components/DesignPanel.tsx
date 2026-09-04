@@ -21,6 +21,7 @@ import {
   resolveThemeColors,
 } from "../lib/design";
 import { MAX_IMAGE_LEN, useDesignStore } from "../lib/designStore";
+import { sanitizeSvg } from "../lib/svg";
 import { IconGlyph } from "./fields/IconPicker";
 import { SkinsTab } from "./SkinsTab";
 import { listSkins } from "../lib/design";
@@ -1024,7 +1025,7 @@ function DecorsTab({
 
       <div className="studio-cards-grid vectors-grid">
         {filtered.map((d) => {
-          const svg = renderDecorSvg(d.key, currentTheme, 1, 260, 140);
+          const svg = sanitizeSvg(renderDecorSvg(d.key, currentTheme, 1, 260, 140));
           return (
             <div key={d.key} className="vector-studio-card">
               <div
@@ -1243,7 +1244,7 @@ function MarksTab({
 
       <div className="studio-cards-grid vectors-grid">
         {filtered.map((m) => {
-          const svg = renderMarkSvg(m.key, currentTheme, m.text ? "NEW" : "강조");
+          const svg = sanitizeSvg(renderMarkSvg(m.key, currentTheme, m.text ? "NEW" : "강조"));
           return (
             <div key={m.key} className="vector-studio-card">
               <div
@@ -1411,7 +1412,7 @@ function ArtsTab({
 
       <div className="studio-cards-grid vectors-grid">
         {filtered.map((a) => {
-          const svg = renderArtSvg(a.key, currentTheme);
+          const svg = sanitizeSvg(renderArtSvg(a.key, currentTheme));
           return (
             <div key={a.key} className="vector-studio-card">
               <div
@@ -1609,7 +1610,7 @@ function FramesTab({
             <div key={f.key} className="vector-studio-card">
               <div
                 className="vector-preview-box frame-preview"
-                dangerouslySetInnerHTML={{ __html: res.svg }}
+                dangerouslySetInnerHTML={{ __html: sanitizeSvg(res.svg) }}
               />
               <div className="vector-card-info">
                 <div className="vector-card-title">
@@ -2412,9 +2413,11 @@ function DecorEditorModal({
               <div
                 className="canvas-inner"
                 dangerouslySetInnerHTML={{
-                  __html: previewFilled.includes("<svg")
-                    ? previewFilled
-                    : `<svg viewBox="0 0 320 180" width="100%" height="100%" aria-hidden="true">${previewFilled}</svg>`,
+                  __html: sanitizeSvg(
+                    previewFilled.includes("<svg")
+                      ? previewFilled
+                      : `<svg viewBox="0 0 320 180" width="100%" height="100%" aria-hidden="true">${previewFilled}</svg>`,
+                  ),
                 }}
               />
             )}
@@ -2763,7 +2766,7 @@ function MarkEditorModal({
                 중요한 핵심 내용
                 <div
                   className="mark-overlay-layer"
-                  dangerouslySetInnerHTML={{ __html: previewFilled }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeSvg(previewFilled) }}
                 />
               </span>
             </div>
@@ -3071,9 +3074,11 @@ function ArtEditorModal({
               <div
                 className="art-stage-inner"
                 dangerouslySetInnerHTML={{
-                  __html: previewFilled.includes("<svg")
-                    ? previewFilled
-                    : `<svg viewBox="0 0 200 200" width="120" height="120" aria-hidden="true">${previewFilled}</svg>`,
+                  __html: sanitizeSvg(
+                    previewFilled.includes("<svg")
+                      ? previewFilled
+                      : `<svg viewBox="0 0 200 200" width="120" height="120" aria-hidden="true">${previewFilled}</svg>`,
+                  ),
                 }}
               />
             )}
@@ -3371,7 +3376,9 @@ function FrameEditorModal({
             <div
               className="frame-stage-inner"
               dangerouslySetInnerHTML={{
-                __html: `<svg viewBox="0 0 260 160" width="100%" height="100%" aria-hidden="true">${previewFilled}</svg>`,
+                __html: sanitizeSvg(
+                  `<svg viewBox="0 0 260 160" width="100%" height="100%" aria-hidden="true">${previewFilled}</svg>`,
+                ),
               }}
             />
           </div>

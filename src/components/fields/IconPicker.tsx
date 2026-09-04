@@ -1,4 +1,4 @@
-/** 픽토그램 191종 + 커스텀 아이콘 고르기. 한글 별칭으로도 찾는다. */
+/** 픽토그램 238종 + 커스텀 아이콘 고르기. 한글 별칭으로도 찾는다. */
 import { useMemo, useState } from "react";
 import { ICONS } from "../../engine/boot";
 import { ICON_CATEGORIES } from "../../lib/design";

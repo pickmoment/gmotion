@@ -128,7 +128,11 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
         .args(["-color_range", "tv", "-colorspace", "bt709",
                "-color_primaries", "bt709", "-color_trc", "bt709"]);
     if audio.is_some() {
-        cmd.args(["-c:a", "aac", "-b:a", "192k", "-shortest"]);
+        /* `-shortest` 는 둘 중 짧은 쪽에서 끊는다 — 음성이 짧으면 뒤 씬이 통째로 잘리고
+           길면 목소리가 문장 중간에 끊긴다. 영상 길이는 화면이 정하므로 화면 길이를 못 박고
+           (`-t`), 모자란 음성은 무음으로 채운다(`apad`). 남는 음성은 `-t` 가 잘라낸다. */
+        cmd.args(["-c:a", "aac", "-b:a", "192k", "-af", "apad"])
+            .args(["-t", &format!("{:.3}", target_frames as f64 / fps as f64)]);
     }
     cmd.args(["-movflags", "+faststart"])
         .arg(&o.out_path)
@@ -259,15 +263,28 @@ pub fn render(emit: OnProgress, o: RenderOpts, cancel: Arc<AtomicBool>) -> Resul
     });
 
     let out = ff.wait_with_output().map_err(|e| format!("ffmpeg 종료 실패: {e}"))?;
+    /* 실패는 두 갈래다 — 우리 쪽(취소·시한·프레임 쓰기 실패)과 ffmpeg 쪽(비정상 종료).
+       쓰기 실패는 대개 ffmpeg 이 먼저 죽은 결과라 "broken pipe" 만으로는 원인을 모른다 —
+       어느 갈래든 ffmpeg stderr 꼬리를 문구에 붙이고, 만들다 만 파일은 지운다. */
+    let ff_msg = String::from_utf8_lossy(&out.stderr);
+    let ff_lines: Vec<&str> = ff_msg.lines().filter(|l| !l.trim().is_empty()).collect();
+    let ff_tail = ff_lines[ff_lines.len().saturating_sub(3)..].join(" · ");
+    let err = match err {
+        Some(e) if !out.status.success() && !ff_tail.is_empty() => Some(format!("{e} — ffmpeg: {ff_tail}")),
+        Some(e) => Some(e),
+        None if !out.status.success() => Some(format!(
+            "ffmpeg 실패: {}",
+            if ff_tail.is_empty() { "알 수 없는 오류" } else { &ff_tail }
+        )),
+        None => None,
+    };
     if let Some(e) = err {
+        if !ff_lines.is_empty() {
+            log::error!("ffmpeg 실패 전문:\n{ff_msg}");
+        }
         log::error!("render 실패: {e}");
         let _ = std::fs::remove_file(&o.out_path);
         return Err(e);
-    }
-    if !out.status.success() {
-        let msg = String::from_utf8_lossy(&out.stderr);
-        log::error!("ffmpeg 실패 전문:\n{msg}");
-        return Err(format!("ffmpeg 실패: {}", msg.lines().last().unwrap_or("알 수 없는 오류")));
     }
     if written == 0 {
         log::error!("render 실패: 프레임을 한 장도 받지 못했다");

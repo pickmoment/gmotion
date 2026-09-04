@@ -1,13 +1,10 @@
-/** 씬 하나의 폼. 패턴별 필드 + 씬 비주얼 디자인 바 + 타이밍/연출 필드. */
+/** 씬 하나의 폼. 패턴별 필드 + 씬 비주얼 디자인 바 + 공통 필드(연출 · 타이밍·대사·노트). */
 import { useState } from "react";
-import { GG } from "../engine/boot";
-import { PATTERNS } from "../engine/schema";
+import { COMMON_FIELDS, PATTERNS } from "../engine/schema";
 import type { Scene } from "../engine/types";
 import { changePattern, type PatternChange } from "../lib/patternChange";
-import { ArtPicker } from "./fields/ArtPicker";
-import { DecorEditor } from "./fields/DecorEditor";
+import { setField } from "../lib/spec";
 import { FieldRenderer } from "./fields/FieldRenderer";
-import { MarkPicker } from "./fields/MarkPicker";
 import { SkinPicker } from "./fields/SkinPicker";
 
 export function SceneForm({
@@ -40,15 +37,10 @@ export function SceneForm({
     );
   }
 
-  const patch = (k: keyof Scene, v: unknown) => {
-    const next = { ...scene };
-    if (v === undefined || v === "") {
-      delete next[k];
-    } else {
-      (next as Record<string, unknown>)[k] = v;
-    }
-    onChange(next);
-  };
+  /* 공통 필드는 스키마 한 곳에서 오고, 여기서는 group 별로 자리만 정한다 */
+  const obj = scene as Record<string, unknown>;
+  const onPatch = (next: Record<string, unknown>) => onChange(next as Scene);
+  const designField = COMMON_FIELDS.find((f) => f.key === openDesignSlot);
 
   return (
     <div className="pane-body scene-form-pane">
@@ -137,92 +129,18 @@ export function SceneForm({
               {typeof scene.skin === "string" ? scene.skin : scene.skin ? "커스텀" : "루트 따름"}
             </strong>
           </button>
-
-          {/* 트랜지션 (Transition) 선택기 */}
-          <div className="visual-slot-select" title="이전 씬에서 넘어오는 화면 전환 효과">
-            <span className="slot-icon">🎬</span>
-            <select
-              value={scene.transition ?? ""}
-              onChange={(e) => patch("transition", e.target.value || undefined)}
-            >
-              <option value="">전환: 기본 (fade/cut)</option>
-              {Object.entries(GG.transitions).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 카메라 (Cam) 선택기 — 씬 전체 길이 동안 아주 느리게 움직인다 */}
-          <div
-            className="visual-slot-select"
-            title="씬 카메라 무브. 비워두면 패턴에 맞는 카메라를 자동으로 고릅니다"
-          >
-            <span className="slot-icon">🎥</span>
-            <select value={scene.cam ?? ""} onChange={(e) => patch("cam", e.target.value)}>
-              <option value="">카메라: 자동 (패턴 기본)</option>
-              {Object.entries(GG.cams).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* 텍스트 효과 (Text FX) 선택기 */}
-          <div className="visual-slot-select" title="글자 등장 모션 효과">
-            <span className="slot-icon">⚡</span>
-            <select
-              value={scene.textFx ?? ""}
-              onChange={(e) => patch("textFx", e.target.value || undefined)}
-            >
-              <option value="">텍스트FX: 기본</option>
-              {Object.entries(GG.textFx).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
 
-        {/* ── 퀵 슬롯 인라인 에디터 팝오버들 ── */}
-        {openDesignSlot === "decor" && (
+        {/* ── 칩 팝오버: 배경·마크·일러스트는 공통 필드를 그대로 그린다(스킨은 객체라 별도 픽커) ── */}
+        {designField && (
           <div className="visual-slot-popover">
             <div className="slot-popover-head">
-              <strong>배경 레이어 (decor) 설정</strong>
+              <span className="dim">{designField.key}</span>
               <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
                 ×
               </button>
             </div>
-            <DecorEditor
-              label=""
-              value={scene.decor}
-              onChange={(v) => patch("decor", v)}
-              decorLevel={scene.decorLevel}
-              onChangeLevel={(lvl) => patch("decorLevel", lvl)}
-              theme={theme}
-              hint="비워두면 문서 테마의 기본 배경이 적용됩니다."
-            />
-          </div>
-        )}
-
-        {openDesignSlot === "mark" && (
-          <div className="visual-slot-popover">
-            <div className="slot-popover-head">
-              <strong>제목 강조 마크 (mark) 설정</strong>
-              <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
-                ×
-              </button>
-            </div>
-            <MarkPicker
-              label=""
-              value={scene.mark}
-              onChange={(v) => patch("mark", v)}
-              theme={theme}
-              hint="한 씬에 하나. 단어나 숫자에 밑줄, 원, 배지, 스탬프를 입힙니다."
-            />
+            <FieldRenderer field={designField} obj={obj} onPatch={onPatch} theme={theme} />
           </div>
         )}
 
@@ -238,33 +156,25 @@ export function SceneForm({
               label=""
               value={scene.skin}
               theme={theme}
-              onChange={(v) => patch("skin", v)}
+              onChange={(v) => onPatch(setField(obj, "skin", v))}
               onOpenDesignPanel={onOpenDesign}
               hint="비워두면 루트 skin 을 따릅니다. 자막 뱃지는 씬 밖 레이어라 바뀌지 않습니다."
             />
           </div>
         )}
-
-        {openDesignSlot === "art" && (
-          <div className="visual-slot-popover">
-            <div className="slot-popover-head">
-              <strong>씬 대표 일러스트 (art) 설정</strong>
-              <button type="button" className="ghost" onClick={() => setOpenDesignSlot(null)}>
-                ×
-              </button>
-            </div>
-            <ArtPicker
-              label=""
-              value={scene.art}
-              onChange={(v) => patch("art", v)}
-              theme={theme}
-              hint="씬 상단/중앙에 배치되는 200×200 테마 색상 연동 추상 도형 일러스트입니다."
-            />
-          </div>
-        )}
       </div>
 
-      {/* ── 4. 패턴 주요 필드 (Pattern Specific Content) ── */}
+      {/* ── 4. 연출 (transition · cam · textFx · exitFx) ── */}
+      <div className="scene-content-section">
+        <h4 className="section-subtitle">🎬 연출</h4>
+        <div className="grid">
+          {COMMON_FIELDS.filter((f) => f.group === "fx").map((f) => (
+            <FieldRenderer key={f.key} field={f} obj={obj} onPatch={onPatch} theme={theme} />
+          ))}
+        </div>
+      </div>
+
+      {/* ── 5. 패턴 주요 필드 ── */}
       <div className="scene-content-section">
         <h4 className="section-subtitle">📝 패턴 내용 편집</h4>
         <div className="grid">
@@ -272,14 +182,16 @@ export function SceneForm({
             <FieldRenderer
               key={f.key}
               field={f}
-              obj={scene as Record<string, unknown>}
-              onPatch={(next) => onChange(next as Scene)}
+              obj={obj}
+              onPatch={onPatch}
+              theme={theme}
+              max={schema.max}
             />
           ))}
         </div>
       </div>
 
-      {/* ── 5. 타이밍 & 연출 세부 필드 (Timing, Audio, Notes) ── */}
+      {/* ── 6. 타이밍·대사·노트 (say · hold · purpose · notes · id) ── */}
       <div className="scene-details-accordion">
         <button type="button" className="section-toggle" onClick={() => setShowDetails((s) => !s)}>
           {showDetails ? "▾" : "▸"} 씬 타이밍·대사·발표자 노트
@@ -290,59 +202,9 @@ export function SceneForm({
 
         {showDetails && (
           <div className="scene-details-body grid">
-            <div className="field">
-              <label>대사 (say)</label>
-              <input
-                value={scene.say ?? ""}
-                placeholder="내레이션 또는 자막과 일치할 대사 텍스트"
-                onChange={(e) => patch("say", e.target.value)}
-              />
-              <p className="hint">
-                자막 싱크 시 이 대사를 기준으로 씬 등장 시각과 길이를 맞춥니다.
-              </p>
-            </div>
-
-            <div className="field">
-              <label>머무는 시간 (초, hold)</label>
-              <input
-                type="number"
-                step={0.1}
-                value={scene.hold === undefined ? "" : String(scene.hold)}
-                placeholder="생략 시 글자 수로 자동 계산"
-                onChange={(e) =>
-                  patch("hold", e.target.value === "" ? undefined : Number(e.target.value))
-                }
-              />
-              <p className="hint">내용이 다 나온 뒤 머무는 시간입니다.</p>
-            </div>
-
-            <div className="field">
-              <label>씬 용도 (purpose)</label>
-              <input
-                value={scene.purpose ?? ""}
-                placeholder="이 씬의 핵심 전달 목적을 한 줄로"
-                onChange={(e) => patch("purpose", e.target.value)}
-              />
-            </div>
-
-            <div className="field">
-              <label>발표자 노트 (notes)</label>
-              <textarea
-                rows={2}
-                value={scene.notes ?? ""}
-                placeholder="발표 모드(P)에서 발표자 화면에 띄울 메모"
-                onChange={(e) => patch("notes", e.target.value)}
-              />
-            </div>
-
-            <div className="field">
-              <label>씬 식별자 (id)</label>
-              <input
-                value={scene.id ?? ""}
-                placeholder="s1, problem, solution 등 (생략 시 자동)"
-                onChange={(e) => patch("id", e.target.value)}
-              />
-            </div>
+            {COMMON_FIELDS.filter((f) => f.group === "meta").map((f) => (
+              <FieldRenderer key={f.key} field={f} obj={obj} onPatch={onPatch} theme={theme} />
+            ))}
           </div>
         )}
       </div>

@@ -221,7 +221,8 @@ export function SpecGenPanel({ cues, base, onClose, onApply }: Props) {
                 <option value={30}>30분</option>
                 <option value={60}>60분</option>
               </select>
-              최악의 경우 최대 {timeoutMin * (1 + retries)}분까지 기다릴 수 있다
+              {/* 씬 표 단계도 CLI 호출 한 번이다 — 시한은 호출마다 따로 걸린다 */}
+              최악의 경우 최대 {timeoutMin * ((storyboard ? 2 : 1) + retries)}분까지 기다릴 수 있다
             </label>
           </section>
 

@@ -23,6 +23,7 @@ export function RenderSetupPanel({
   totalSec,
   fps,
   hasAudio,
+  audioSec,
   value,
   onChange,
   onStart,
@@ -32,6 +33,8 @@ export function RenderSetupPanel({
   totalSec: number;
   fps: number;
   hasAudio: boolean;
+  /** 음성의 실제 길이(초). 모르면 null */
+  audioSec: number | null;
   value: Resolution;
   onChange: (r: Resolution) => void;
   onStart: () => void;
@@ -43,6 +46,9 @@ export function RenderSetupPanel({
   const nativeShort = Math.min(stage.w, stage.h);
   const est = estimateSize({ w: value.w, h: value.h, fps, sec: totalSec, audio: hasAudio });
   const frames = Math.ceil(totalSec * fps);
+  /* 음성과 화면의 길이 차이. 0.5초부터 눈·귀에 걸린다 */
+  const gap = hasAudio && audioSec != null ? audioSec - totalSec : 0;
+  const mismatch = Math.abs(gap) >= 0.5;
 
   return (
     <div className="modal" role="dialog" aria-label="MP4 렌더 설정">
@@ -106,9 +112,25 @@ export function RenderSetupPanel({
           </li>
           <li>
             <span>음성</span>
-            <strong>{hasAudio ? "AAC 192kbps 로 함께 담는다" : "없음"}</strong>
+            <strong>
+              {hasAudio
+                ? `AAC 192kbps 로 함께 담는다${audioSec != null ? ` · ${audioSec.toFixed(1)}초` : ""}`
+                : "없음"}
+            </strong>
           </li>
         </ul>
+
+        {mismatch && (
+          <p className="hint warn-text">
+            음성이 화면보다{" "}
+            <strong>
+              {Math.abs(gap).toFixed(1)}초 {gap > 0 ? "길다" : "짧다"}
+            </strong>{" "}
+            (음성 {audioSec?.toFixed(1)}초 · 화면 {totalSec.toFixed(1)}초). 영상 길이는 화면이
+            정하므로 {gap > 0 ? "남는 음성은 잘려 나간다" : "모자란 뒤끝은 무음으로 채운다"} — 자막
+            파일로 씬 타이밍을 맞추면(자막·음성 메뉴) 이 차이가 사라진다.
+          </p>
+        )}
 
         <p className="hint">
           화질은 crf 19 로 고정된다 — 크기는 <strong>움직임 양과 배경 질감</strong>이 정하므로

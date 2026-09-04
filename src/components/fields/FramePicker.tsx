@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { VECTORS } from "../../engine/boot";
 import { FRAME_CATEGORIES, renderFrameSvg } from "../../lib/design";
+import { sanitizeSvg } from "../../lib/svg";
 import { useDesignStore } from "../../lib/designStore";
 
 export function FramePicker({
@@ -96,7 +97,7 @@ export function FramePicker({
           {currentSvg ? (
             <div
               className="frame-chip-thumb"
-              dangerouslySetInnerHTML={{ __html: currentSvg.svg }}
+              dangerouslySetInnerHTML={{ __html: sanitizeSvg(currentSvg.svg) }}
             />
           ) : (
             <span className="dim">＋</span>
@@ -159,7 +160,10 @@ export function FramePicker({
                   }}
                   title={f.label}
                 >
-                  <div className="frame-grid-svg" dangerouslySetInnerHTML={{ __html: res.svg }} />
+                  <div
+                    className="frame-grid-svg"
+                    dangerouslySetInnerHTML={{ __html: sanitizeSvg(res.svg) }}
+                  />
                   <div className="frame-grid-label">
                     <span>{f.key}</span>
                     {f.custom && <span className="badge-custom-sm">C</span>}

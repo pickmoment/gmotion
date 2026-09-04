@@ -1243,3 +1243,137 @@ HEAD 보다 이전, 나머지는 HEAD 와 동일) — vendor 로 덮어 동기�
 **검증.** `gm test` 207건 통과 · 앱 테스트 84건 통과 · `npx tsc --noEmit` 오류 0.
 감소 모션 강제 산출물에서 `GGM.reducedMotion=true`, 안전 영역과 완성 씬이 함께 표시됨을
 실제 브라우저 캡처로 확인했다. 접근성 대본은 6개 씬이 각각 제목 있는 region으로 노출된다.
+
+## 32. 어긋난 것 다섯 — 감소 모션 CSS 게이트 · loop+음성 · matchCut 퇴장 · 2분 경고 · CLI 플래그 (2026-09-05)
+
+**왜.** 각각은 작지만 전부 "약속은 있는데 실제 동작이 다른" 자리다. 문서와 산출물이
+어긋나면 읽는 쪽이 어느 쪽을 믿어야 할지 모른다.
+
+### `assets/runtime.js` · `assets/gsapgraph.js` — 감소 모션의 CSS 게이트
+- **증상.** RM 판정(루트 `reducedMotion`·`?motion=on|off`·OS 설정)은 runtime 이 GSAP 에만
+  적용했다. 배경 float/spin/pulse·마퀴 트랙·타자기 커서·숨쉬기·글로우·일러스트 루프는
+  CSS `@keyframes` 라 `@media (prefers-reduced-motion:reduce)` 만 보았다 — `reducedMotion:true`
+  나 `?motion=off` 로 열어도 그대로 돌고, 반대로 `?motion=on` 은 OS 가 reduce 면 못 이겼다.
+- **고침.** runtime 이 RM 이면 `<html data-rm>` 을 세우고, CSS 의 미디어 쿼리 블록 4개를
+  지워 `[data-rm] …{animation:none}` 한 블록으로 통일했다(`.gg-scenes-wrap` 의 transition
+  포함). 판정은 runtime 한 곳, CSS 는 그 결과만 본다. 블록은 `.gg-breath.gg-glowT` 뒤에 두어
+  같은 특이도에서 이긴다(예전 미디어 쿼리는 이 조합에 져서 겹친 강조 줄은 계속 숨쉬었다).
+  runtime 은 body 끝에서 동기로 돌므로 첫 페인트 전에 속성이 서고, 미디어 쿼리 대신
+  속성을 쓰니 `?motion=on` 이 OS 설정을 이긴다.
+- `gm check` 의 "감소 모션 대응" 은 `[data-rm] …{animation:none}` 을 본다.
+
+### `assets/runtime.js` — loop 모드 + 음성
+- **증상.** 음성이 있으면 `master.pause()` 뒤 tick 이 음성 시각으로 master 를 세우므로
+  `master.repeat(-1)` 이 돌 일이 없다. `mode:"loop"` 인데 음성이 끝나면 끝 프레임에 선다.
+- **고침.** `ended` 에서 mode 가 loop 면 0.4초(theming.md 의 약속, repeatDelay 와 같다) 뒤
+  `doRestart()` — 음성도 0 으로 되감아 함께 다시 돈다. 그 사이 사용자가 시각을 옮겼으면
+  (`AUD.ended` 가 풀림) 손대지 않는다. `theming.md` 의 loop 행에 음성도 함께 반복된다고 적었다.
+
+### `assets/gsapgraph.js` — matchCut 도 글자 퇴장을 받는다
+- **증상.** direction.md·spec.md 는 exitFx 가 "어느 패턴에서나" 라고 했지만 `EXIT_TEXT` 에
+  matchCut 의 제목이 없었고, 나갈 글자 수(`exChars`)와 "나갈 글자가 없다" 경고도
+  `question|title|text|lines` 만 봐서 matchCut+exitFx 는 경고가 뜨고 아무것도 안 나갔다.
+- **고침.** `block()` 의 제목을 헤더처럼 `.gg-mask > .gg-mk` 에 넣고(up/down 이 잘려 나가야
+  사라지는 것으로 읽힌다) `EXIT_TEXT` 에 `.gg-mcTo .gg-mk` · 롤은 아래 칸 `.gg-mcRoll
+  .gg-mcT:last-child`(`.gg-roll` 이 이미 마스크다), `EXIT_SIDE` 에 `.gg-mcS` 를 넣었다.
+  `exChars` 와 경고 조건에 `to.title` 을 더하고 경고의 괄호 목록을 실제 조건과 맞췄다.
+  `exChars` 가 kicker·sub 를 안 세는 것은 의도다(곁글자는 글자 수와 무관한 고정 페이드) —
+  그 자리에 주석으로 남겼다. 마스크의 `padding-bottom:.06em` 만큼 matchCut 부제가 2~3px
+  내려간다.
+
+### `assets/gsapgraph.js` — 2분 경고와 유튜브 방향
+- **증상.** `total > 150` 이면 무조건 "나누라" 고 했는데 direction.md §1 은 유튜브 한 편을
+  장(chapterCard)으로 이어 붙인 긴 물건으로 안내한다. 둘이 충돌했다.
+- **고침.** 스펙에 `chapterCard`/`endCard` 씬이 있거나 `media.subs` 가 있으면(길이는
+  목소리가 정한다) 경고하지 않는다. 그 외에는 문구에 "유튜브 한 편이면 장(chapterCard)으로
+  나눴는지 확인한다" 를 넣어 그 기능을 가리킨다.
+
+### `assets/gm.js` — 플래그와 info 토픽
+- **증상.** 모르는 `--xxx` 를 조용히 삼켰다(`--presnt` 로 빌드하면 발표용이 아닌 파일이
+  exit 0 으로 나간다). `gm info exitfx` 는 `textfx` 조건 오타 탓에 빈 출력 exit 0. 헤더의
+  info 토픽 목록과 api.md 는 실제 토픽(textfx·numfx·exitfx·skins·fonts·chart)을 빠뜨렸다.
+- **고침.** 헤더 사용법의 플래그만 받는 허용 목록(`FLAGS`) — 밖이면 stderr 에 "그런
+  플래그는 없다: --xxx" + 사용법, exit 1. `usage(code≠0)` 는 stderr 로 낸다. `info` 는 토픽
+  목록(`TOPICS`)에 없으면 exit 1, `exitfx` 는 `G.exitFx` 를 찍는다. 헤더·api.md 목록을
+  실제와 맞췄다.
+
+### `assets/selftest.js`
+- 산출물 위생: CSS(스크립트를 뺀 부분)에 `prefers-reduced-motion` 이 없고 `[data-rm] …
+  {animation:none}` 이 있는지, runtime 이 `data-rm` 을 세우는지. matchCut+exitFx 가
+  "나갈 글자" 경고 없이 `.gg-mcTo .gg-mk` yPercent -115 · `.gg-mcS` 페이드 · 롤은 아래 칸을
+  내는지. 2분 경고가 chapterCard 없으면 chapterCard 를 가리키며 뜨고 있으면 안 뜨는지.
+  247건 → 254건. **기준값은 그대로다** — 예제에 matchCut+exitFx 가 없고 타이밍을 안 건드렸다.
+
+**검증.** `gm test` 254건 통과. `gm build starter-story -o /tmp/rm.html` 산출물의 CSS 에
+`[data-rm] …{animation:none}` 두 블록, `prefers-reduced-motion` 은 runtime 의 matchMedia 에만.
+헤드리스 브라우저 실측 — `?motion=off` 에서 `<html data-rm>` 이 서고 `.gg-drFloat` 의
+`animationName` 이 `none`, `?motion=on` 에서는 속성이 없고 `ggFloat` 가 돈다.
+`gm build … --presnt` exit 1 · `gm info exitfx` 9종 출력 exit 0 · `gm info nope` exit 1 ·
+matchCut+exitFx:"up" 임시 스펙 validate 에 "나갈 글자" 경고 없음.
+
+## 33. 런타임 재생 제어 API — 배속·프레임 스텝·씬 이동 (2026-09-05)
+
+### `assets/runtime.js`
+- **동기.** 에디터의 미리보기 전송부가 스크러버·배속·프레임 스텝을 갖게 되는데, 그 로직이
+  런타임 밖(앱)에만 있으면 씬 이동 규칙(`sceneIndexAt`)과 배속 규칙(음성 `playbackRate`
+  동기)이 두 벌이 된다. 런타임이 이미 갖고 있던 것을 API 로 내고 앱이 그것을 쓴다.
+- **고침.** `sceneIndexAt`·`jumpScene`·`stepFrames`·`setRate`·`cycleRate` 를 모듈 함수로
+  올리고 플레이어 버튼·키·GGM 이 한 값을 공유한다(`RATE`, `rateBtn`). 노출:
+  `GGM.step(n, fps)` · `GGM.next()`/`prev()`(도착 씬 인덱스 반환) · `GGM.playing()` ·
+  `GGM.rate(x)`(인자 없으면 현재 값). 키 `,` `.` 한 프레임 뒤/앞, `[` `]` 배속. 발표 모드의
+  next/prev 는 규칙이 달라 `GGM.present` 에 그대로 둔다. 헤더 주석에 `shot` 필드도 적었다.
+- **문서.** api.md·MANUAL.md 의 GGM 목록과 조작키 표, theming.md 조작키 줄.
+
+**검증.** 헤드리스 크로미움 실측 — `GGM.rate(2)` 뒤 플레이어 버튼이 `2×`, `GGM.step(3)` 이
+시각을 0.1초 옮기고 정지 상태를 유지, `GGM.next()` 가 다음 씬 `at`(2.57초)에 세우고 인덱스 1 을
+돌려준다. 키 `]` 로 배속이 2× 로 오르고 `.` 로 한 프레임(0.033초) 나아간다.
+
+## 34. 에디터 다리 — 미리보기 iframe 을 격리한다 (2026-09-05)
+
+### `assets/runtime.js`
+- **동기.** 에디터는 산출물을 `sandbox="allow-scripts allow-same-origin"` 으로 띄우고
+  `contentWindow.GGM` 을 직접 불렀다. 스펙의 `svg`·mark·art 는 에이전트 CLI 출력이나 남이 준
+  파일에서 오므로 신뢰할 수 없고, 동일 출처면 그 안의 `<svg onload=…>` 가 앱 문서에서 돌아
+  `parent.__TAURI_INTERNALS__.invoke('write_text'|'remove_file', …)` 까지 닿는다.
+- **고침.** `bridge()` — 부모가 있을 때만 붙는 postMessage 채널.
+  부모→산출물 `{gg:'cmd', op:'seek|goto|play|pause|replay|step|rate|captions', …}`,
+  산출물→부모 `{gg:'ready', total, scenes}` 와 `{gg:'state', t, playing, captionsOn}`(값이
+  0.03초 넘게 움직였을 때만). 명령은 `e.source === window.parent` 인 것만 받는다.
+  에디터는 `allow-same-origin` 을 떼고 이 채널만 쓴다.
+
+**검증.** 앱 실측 — 미리보기 iframe 의 `sandbox` 가 `allow-scripts` 뿐이고
+`iframe.contentWindow.GGM` 접근은 `SecurityError`. 그런데도 스크러버가 32.56초를 읽고,
+seek(26초)·프레임 스텝·재생 중 씬 따라가기(씬 7)·씬 클릭(4.1초)·배속 2×·CC 가 모두 동작한다.
+씬 검수 대비표 7칸도 각자 자기 씬의 완성 프레임을 세운다(`goto` 를 다리로 받는다).
+
+## 35. 픽토그램 191 → 238종 · 이름표 586 → 870개 (2026-09-05)
+
+### `assets/icons.js`
+- **동기.** 191종은 사람·돈·IT 는 두껍지만 **법·행정 · 에너지·기후 · 보건 · 산업·물류 ·
+  통신** 이 비어 있었고, 화면 조작의 기본 동사(삭제·복사·저장·인쇄·목록·표)조차 없어
+  다른 그림으로 에둘러 쓰게 했다. 이름표도 "있는데 못 찾는" 낱말이 많았다.
+- **고침.** `ICONS3` 47종을 더한다 — 화면·문서 조작 20(trash·copy·download·upload·save·
+  print·attach·qr·slider·toggle·volume·mute·keyboard·zoom·external·menu·list·table·
+  checklist·note) · 법·행정 6(gavel·vote·government·certificate·signature·fingerprint) ·
+  에너지·환경 6(battery·solar·wind·recycle·carbon·wheat) · 보건 3(stethoscope·syringe·
+  firstaid) · 산업·물류 4(warehouse·conveyor·luggage·handshake) · 통신 4(satellite·
+  antenna·navigation·telescope) · 감정·소통 4(angry·surprise·megaphone·brain).
+  `ALIAS3` 284개를 더하되 **덮어쓴다** — 새 그림이 생겨 더 맞는 이름이 있다(`업로드` 는
+  이제 화살표 `up` 이 아니라 `upload` 다). 새 그림의 이름표와 함께, 이미 있던 그림이 못 받던
+  낱말(기사·구독·조회수·강의·과제·창업·채용·로드맵·에이전트·랜섬웨어·통관·프랜차이즈…)도 붙였다.
+- **집합 관계.** 기존 191종의 **이름과 그림을 하나도 바꾸지 않았다** — mojs · scriptviz ·
+  mindmap 이 부르는 이름은 그대로 같은 그림을 가리킨다. 이 저장소 쪽이 상위 집합이다.
+
+### `assets/selftest.js`
+- 그림은 눈으로 봐야 알지만 기계가 잡을 수 있는 것이 있다 — path 를 **실제로 걸어**
+  끝점의 최소·최대를 재고 24x24 상자를 벗어나면 실패한다. 숫자를 세는 방식은 안 된다:
+  상대 좌표는 음수가 정상이고 호의 플래그(`a10 10 0 100-20`)는 좌표가 아니다.
+  더해서 `M` 으로 시작하지 않는 path · 가리키는 그림이 없는 이름표 · 그림 이름을 가리는
+  이름표를 검사한다. 254 → 258건.
+
+**검증.** 47종을 대비표로 렌더해 눈으로 확인하고 약한 8종(upload·gavel·fingerprint·wind·
+carbon·conveyor·satellite·megaphone·handshake)을 다시 그렸다. 새 아이콘 16종을 쓴 스펙을
+빌드해 cardsCascade·processFlow·orbit 에서 실제로 그려지는 것을 캡처로 확인했다.
+검사가 실제로 실패하는지도 확인했다 — 40x40 짜리 임시 글리프를 넣으면
+`24x24 상자를 벗어난 픽토그램 __probe(3~43)` 로 실패하고, 되돌리면 258건 통과한다.
+`gm icons 악수` → `handshake(악수·협약·제휴·파트너십)`.

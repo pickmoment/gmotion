@@ -76,6 +76,19 @@ function unit() {
     stats: [{ value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }, { value: 5 }] }] });
   truthy('항목 상한 초과를 경고한다', over.warnings.some(function (w) { return w.indexOf('항목이') >= 0; }));
 
+  /* 2분 경고 — 유튜브 한 편(chapterCard/endCard 가 있는 스펙)은 장으로 이어 붙인 긴 물건이라 따지지 않는다 */
+  function longSpec(extra) {
+    var scenes = [];
+    for (var k = 0; k < 14; k++) scenes.push({ pattern: 'quote', text: '긴 이야기 ' + k, hold: 12 });
+    return { message: 'x', scenes: scenes.concat(extra || []) };
+  }
+  var tooLong = G.validate(longSpec());
+  truthy('2분을 넘으면 경고하고 chapterCard 를 가리킨다', tooLong.warnings.some(function (w) { return w.indexOf('2분') >= 0 && w.indexOf('chapterCard') >= 0; }),
+    tooLong.warnings.join(' | '));
+  var chaptered = G.validate(longSpec([{ pattern: 'chapterCard', title: '1장', n: 1, of: 3 }]));
+  truthy('chapterCard 가 있으면 2분 경고가 없다', !chaptered.warnings.some(function (w) { return w.indexOf('2분') >= 0; }),
+    chaptered.warnings.join(' | '));
+
   var unsafeFlash = G.validate({ message: 'x', energy: 'E3', scenes: [
     { pattern: 'kineticType', lines: ['1','2','3','4','5','6','7','8'], hold: 0, transition: 'fade' },
     { pattern: 'kineticType', lines: ['1','2','3','4','5','6','7','8'], hold: 0, transition: 'fade' }
@@ -266,6 +279,20 @@ function unit() {
   ] });
   truthy('없는 exitFx 는 오류', exBad.errors.some(function (e) { return e.indexOf('exitFx "zap"') >= 0; }));
   truthy('백스페이스는 타자기 등장이 있어야 한다', exBad.errors.some(function (e) { return e.indexOf('백스페이스') >= 0; }));
+  /* matchCut 도 글자 퇴장을 받는다 — to.title 이 나갈 글자다("어느 패턴에서나") */
+  var exMc = G.validate({ message: 'x', scenes: [{ pattern: 'matchCut', anchor: { text: 'A' }, to: { title: '바뀐 제목' }, exitFx: 'up' }] });
+  truthy('matchCut + exitFx 는 "나갈 글자가 없다" 가 아니다', !exMc.warnings.some(function (w) { return w.indexOf('나갈 글자') >= 0; }),
+    exMc.warnings.join(' | '));
+  var exMcIR = G.compile({ message: 'x', scenes: [
+    { pattern: 'matchCut', anchor: { text: 'A' }, from: { title: '전', sub: 's' }, to: { title: '후', sub: 't' }, exitFx: 'up' },
+    { pattern: 'matchCut', anchor: { text: 'A' }, from: { title: '전' }, to: { title: '후' }, textFx: 'roll', exitFx: 'fade' }
+  ] });
+  truthy('matchCut 의 to 제목이 마스크 안에서 위로 나간다', exMcIR.scenes[0].tw.some(function (o) {
+    return o.amb && o.k === 'to' && o.t.indexOf('.gg-mcTo .gg-mk') >= 0 && o.v.yPercent === -115; }));
+  truthy('matchCut 의 sub 는 곁글자로 페이드한다', exMcIR.scenes[0].tw.some(function (o) {
+    return o.amb && o.k === 'to' && o.t.indexOf('.gg-mcTo .gg-mcS') >= 0 && o.v.opacity === 0; }));
+  truthy('롤 matchCut 은 아래 칸만 나간다', exMcIR.scenes[1].tw.some(function (o) {
+    return o.amb && o.k === 'to' && o.t.indexOf('.gg-mcRoll .gg-mcT:last-child') >= 0 && o.v.opacity === 0; }));
   /* 자릿수 롤 — 자리마다 띠, 쉼표·소수점은 고정, 낮은 자리가 더 많이 돈다 */
   var od = G.compile({ message: 'x', scenes: [{ pattern: 'dataCounter', numFx: 'roll',
     stats: [{ value: 18400, prefix: '₩' }, { value: 3.2, dec: 1 }] }] }).scenes[0];
@@ -364,6 +391,69 @@ function hygiene() {
     G.validate({ message: 'm', scenes: [{ pattern: 'networkBuild',
       nodes: [{ label: '허브', hub: true }, { label: '가' }], links: ['허브>없는노드'] }] })
       .warnings.join(' ').indexOf('없는노드') >= 0);
+
+  /* 픽토그램은 24x24 stroke 세트다 — 손으로 그린 path 가 상자를 벗어나면 카드 안에서
+     잘리고, 명령이 깨지면 아예 안 보인다. 그림 자체는 눈으로 봐야 알지만 "상자 밖" 과
+     "M 으로 시작하지 않음" 은 기계가 잡는다. 숫자를 세는 것으로는 안 된다 — 상대 좌표는
+     음수가 정상이고 호(a)의 반지름·플래그는 좌표가 아니다. 그래서 실제로 걸어 끝점을 본다. */
+  var ICO = require(path.join(__dirname, 'icons.js'));
+  var ARITY = { M: 2, L: 2, T: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, A: 7, Z: 0 };
+  /**
+   * path 를 걸으며 지나간 **끝점**의 최소·최대. 제어점은 상자를 살짝 넘어도 되니 뺀다.
+   * 호(A)의 플래그는 `a10 10 0 100-20` 처럼 붙여 쓰므로 숫자로 읽으면 안 된다 —
+   * 한 글자씩 떼어 읽는다(SVG 규칙). 그래서 정규식 토큰이 아니라 커서로 훑는다.
+   */
+  function extent(d) {
+    var i = 0, x = 0, y = 0, sx = 0, sy = 0, cmd = '', lo = Infinity, hi = -Infinity;
+    function ws() { while (i < d.length && /[\s,]/.test(d[i])) i++; }
+    function num() {
+      ws();
+      var m = /^-?\d*\.?\d+(?:e-?\d+)?/.exec(d.slice(i));
+      if (!m) return NaN;
+      i += m[0].length;
+      return parseFloat(m[0]);
+    }
+    function flag() { ws(); return d[i++] === '1' ? 1 : 0; }
+    function see(v) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    ws();
+    while (i < d.length) {
+      ws();
+      if (i >= d.length) break;
+      if (/[A-Za-z]/.test(d[i])) cmd = d[i++];
+      var up = cmd.toUpperCase(), rel = cmd !== up;
+      if (ARITY[up] == null) return null;         /* 모르는 명령 — 형식 오류로 본다 */
+      if (up === 'Z') { x = sx; y = sy; see(x); see(y); continue; }
+      var ex, ey;
+      if (up === 'H') { ex = num(); x = rel ? x + ex : ex; }
+      else if (up === 'V') { ey = num(); y = rel ? y + ey : ey; }
+      else {
+        if (up === 'A') { num(); num(); num(); flag(); flag(); }
+        else for (var j = 0; j < ARITY[up] - 2; j++) num();
+        ex = num(); ey = num();
+        if (isNaN(ex) || isNaN(ey)) return null;
+        x = rel ? x + ex : ex; y = rel ? y + ey : ey;
+        if (up === 'M') { sx = x; sy = y; cmd = rel ? 'l' : 'L'; }
+      }
+      see(x); see(y);
+    }
+    return [lo, hi];
+  }
+  var boxBad = [], formBad = [], aliasBad = [];
+  Object.keys(ICO.ICONS).forEach(function (k) {
+    var d = ICO.ICONS[k];
+    var ex = /^M[-\d.\s]/.test(d) ? extent(d) : null;
+    if (!ex || !isFinite(ex[0])) { formBad.push(k); return; }
+    if (ex[0] < -0.5 || ex[1] > 24.5) boxBad.push(k + '(' + ex[0] + '~' + ex[1] + ')');
+  });
+  Object.keys(ICO.ALIAS).forEach(function (a) {
+    if (!ICO.ICONS[ICO.ALIAS[a]]) aliasBad.push(a);
+  });
+  is('path 형식이 깨진 픽토그램', formBad.join(' ') || '없음', '없음');
+  is('24x24 상자를 벗어난 픽토그램', boxBad.join(' ') || '없음', '없음');
+  is('가리키는 그림이 없는 이름표', aliasBad.join(' ') || '없음', '없음');
+  is('이름표가 그림 이름을 가리는 곳', Object.keys(ICO.ALIAS).filter(function (a) {
+    return ICO.ICONS[a] && ICO.ALIAS[a] !== a;
+  }).join(' ') || '없음', '없음');
 
   /* 문서에 적은 개수가 실제와 맞는지 — 종류를 늘리면서 문서를 안 고치는 사고를 막는다.
      "테마 6종" 이라 적힌 표에 12행이 있고 실제로는 15종인 상태가 실제로 있었다.
@@ -869,7 +959,11 @@ function output() {
   truthy('lang="ko"', /<html lang="ko">/.test(html));
   truthy('GSAP 인라인', html.indexOf('gsap.registerPlugin') > 0);
   truthy('검수 API', /window\.GGM/.test(html));
-  truthy('감소 모션 대응', /prefers-reduced-motion/.test(html));
+  /* 감소 모션 — CSS 상시 루프의 게이트는 [data-rm] 하나다. 미디어 쿼리가 CSS 에 남으면 ?motion=on 이 OS 설정을 못 이긴다 */
+  var noScript = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  truthy('감소 모션 게이트는 [data-rm] 이고 CSS 에 미디어 쿼리가 없다',
+    /\[data-rm\] [^{]*\{animation:none\}/.test(noScript) && noScript.indexOf('prefers-reduced-motion') < 0);
+  truthy('runtime 이 RM 이면 <html data-rm> 을 세운다', /setAttribute\('data-rm'/.test(html));
   truthy('외부 스크립트 없음', !/<script[^>]+src="(?!https:\/\/cdn\.jsdelivr)/.test(html));
   truthy('발표자 노트가 일반 빌드에 없다', html.indexOf('"notes"') < 0);
 

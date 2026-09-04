@@ -34,7 +34,8 @@ export type ItemFieldKey =
   | "rank";
 
 export type Field =
-  | { k: "text"; key: string; label: string; hint?: string; req?: boolean }
+  /** numeric: "3" 처럼 숫자로 읽히면 number 로 저장한다 — chapterCard.no 는 숫자일 때만 01 패딩·current 기본값이 된다 */
+  | { k: "text"; key: string; label: string; hint?: string; req?: boolean; numeric?: boolean }
   | { k: "multiline"; key: string; label: string; hint?: string; req?: boolean; rows?: number }
   | { k: "number"; key: string; label: string; hint?: string; step?: number; ph?: string }
   | { k: "bool"; key: string; label: string; hint?: string; def?: boolean }
@@ -53,6 +54,8 @@ export type Field =
       label: string;
       hint?: string;
       req?: boolean;
+      /** 이 배열만의 상한. 없으면 패턴의 max(밀도 상한)를, null 이면 상한 없음 */
+      max?: number | null;
       primary: ItemFieldKey;
       fields: ItemFieldKey[];
     }
@@ -98,7 +101,13 @@ const opt = {
 function items(
   key: string,
   label: string,
-  o: { req?: boolean; hint?: string; primary?: ItemFieldKey; extra?: ItemFieldKey[] } = {},
+  o: {
+    req?: boolean;
+    hint?: string;
+    max?: number | null;
+    primary?: ItemFieldKey;
+    extra?: ItemFieldKey[];
+  } = {},
 ): Field {
   return {
     k: "items",
@@ -106,6 +115,7 @@ function items(
     label,
     req: o.req,
     hint: o.hint,
+    max: o.max,
     primary: o.primary ?? "label",
     fields: ["icon", ...(o.extra ?? []), ...DECOR_FIELDS],
   };
@@ -129,21 +139,32 @@ function side(key: string, label: string, hint: string): Field {
   };
 }
 
-/** target · source · center 처럼 항목 하나짜리 객체 */
-function single(key: string, label: string, hint: string, req = true): Field {
+/** target · source · center 처럼 항목 하나짜리 객체. 엔진은 문자열도 같은 뜻으로 받는다 */
+function single(
+  key: string,
+  label: string,
+  hint: string,
+  o: { req?: boolean; icon?: boolean } = {},
+): Field {
   return {
     k: "group",
     key,
     label,
     hint,
-    req,
+    req: o.req ?? true,
     fields: [
       { k: "text", key: "label", label: "라벨", req: true },
-      { k: "icon", key: "icon", label: "아이콘" },
+      ...(o.icon === false ? [] : [{ k: "icon", key: "icon", label: "아이콘" } as Field]),
       { k: "text", key: "note", label: "노트" },
     ],
   };
 }
+
+/** 헤더 블록(kicker · sub) — 엔진의 head() 가 title 과 함께 읽는다. title 옆에 spread 한다 */
+const HEAD_FIELDS: Field[] = [
+  { k: "text", key: "kicker", label: "키커", hint: "제목 위 작은 한 줄" },
+  { k: "text", key: "sub", label: "서브", hint: "제목 아래 한 줄" },
+];
 
 export const PATTERNS: Record<string, PatternSchema> = {
   heroReveal: {
@@ -159,8 +180,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
         hint: "줄바꿈하면 줄 단위 마스크 리빌이 걸린다",
         rows: 3,
       },
-      { k: "text", key: "kicker", label: "키커" },
-      { k: "text", key: "sub", label: "서브" },
+      ...HEAD_FIELDS,
       { k: "icon", key: "icon", label: "아이콘", hint: "있으면 선으로 그려지며 등장(DrawSVG)" },
       { k: "bool", key: "rule", label: "룰라인", def: true },
     ],
@@ -189,6 +209,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 9,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("items", "카드", { req: true }),
       { k: "number", key: "cols", label: "열 수", ph: "생략하면 개수와 화면비로 정한다" },
       { k: "select", key: "dir", label: "등장 방향", opts: opt.cardDir },
@@ -200,6 +221,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 8,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("nodes", "노드", { req: true, extra: ["hub"], hint: "hub 를 켠 노드가 중앙에 온다" }),
       {
         k: "strings",
@@ -217,6 +239,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("steps", "단계", { req: true }),
       { k: "bool", key: "vertical", label: "세로 배치", hint: "생략하면 화면비가 정한다" },
     ],
@@ -227,6 +250,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: null,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       side("before", "BEFORE", "그대로 남는 쪽"),
       side("after", "AFTER", "링이 감기며 강조되는 쪽"),
     ],
@@ -237,6 +261,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("layers", "층", { req: true }),
       { k: "bool", key: "reverse", label: "아래부터 펼침" },
     ],
@@ -247,6 +272,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 8,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("items", "항목", { req: true }),
       { k: "number", key: "focus", label: "확대할 항목 번호", hint: "0부터. 필수", ph: "0" },
       {
@@ -267,8 +293,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 4,
     fields: [
       { k: "text", key: "title", label: "제목" },
-      { k: "text", key: "kicker", label: "키커" },
-      { k: "text", key: "sub", label: "서브" },
+      ...HEAD_FIELDS,
       {
         k: "select",
         key: "numFx",
@@ -292,6 +317,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       {
         k: "items",
         key: "events",
@@ -309,6 +335,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: null,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       side("left", "왼쪽", ""),
       side("right", "오른쪽", ""),
     ],
@@ -319,6 +346,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 7,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("sources", "원천", { req: true, hint: "3~7개" }),
       single("target", "도착점", "하나로 남는 것"),
     ],
@@ -329,6 +357,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 7,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       single("source", "출발점", ""),
       items("targets", "도착점", { req: true }),
     ],
@@ -339,6 +368,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 10,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       single("center", "중심", ""),
       items("orbits", "위성", { req: true, extra: ["ring"], hint: "ring 으로 2중 궤도를 만든다" }),
       { k: "number", key: "spin", label: "한 바퀴(초)", ph: "26" },
@@ -384,6 +414,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 5,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("stops", "정류장", { req: true }),
       { k: "number", key: "zoom", label: "확대 배율", step: 0.1, ph: "1.9" },
     ],
@@ -394,6 +425,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: null,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("items", "항목", { req: true }),
       { k: "number", key: "rows", label: "줄 수", ph: "1", hint: "줄마다 방향이 반대다" },
       { k: "number", key: "speed", label: "한 바퀴(초)", ph: "24" },
@@ -406,6 +438,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     fields: [
       { k: "select", key: "chart", label: "차트", req: true, opts: opt.chart },
       { k: "text", key: "title", label: "제목", hint: "차트 제목은 결론이다" },
+      ...HEAD_FIELDS,
       { k: "chartdata", key: "data", label: "데이터" },
       { k: "text", key: "caption", label: "캡션" },
     ],
@@ -416,6 +449,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: null,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       { k: "select", key: "frame", label: "프레임", opts: opt.frame },
       {
         k: "group",
@@ -430,7 +464,8 @@ export const PATTERNS: Record<string, PatternSchema> = {
             label: "줄",
             ph: "terminal 은 $ 로 시작하면 명령으로 본다",
           },
-          items("items", "항목", {}),
+          /* 프레임 안 상한은 엔진의 MAXSCREEN(7) — 패턴 max 와 별개다 */
+          items("items", "항목", { max: 7 }),
           { k: "select", key: "art", label: "일러스트", opts: opt.art },
         ],
       },
@@ -454,6 +489,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("stages", "단", { req: true, extra: ["value", "unit"] }),
       { k: "text", key: "unit", label: "공통 단위", hint: "단별 unit 이 이긴다" },
       { k: "bool", key: "rates", label: "통과율 표시", def: true, hint: "단 사이 ↓ %" },
@@ -465,8 +501,9 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("steps", "단계", { req: true }),
-      single("center", "중심", "고리 한가운데. 생략 가능", false),
+      single("center", "중심", "고리 한가운데. 생략 가능", { req: false }),
     ],
   },
   anatomy: {
@@ -475,6 +512,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       {
         k: "select",
         key: "art",
@@ -492,11 +530,13 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       {
         k: "items",
         key: "cols",
         label: "열(후보)",
         req: true,
+        max: 4,
         primary: "label",
         fields: ["icon", "highlight"],
         hint: "4개까지. highlight 를 켠 열이 주인공",
@@ -522,9 +562,10 @@ export const PATTERNS: Record<string, PatternSchema> = {
         k: "text",
         key: "no",
         label: "장 번호",
+        numeric: true,
         hint: "숫자면 01 로 채운다, PART 3 처럼 글자도 된다",
       },
-      { k: "text", key: "sub", label: "서브" },
+      ...HEAD_FIELDS,
       {
         k: "strings",
         key: "chapters",
@@ -542,6 +583,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 6,
     fields: [
       { k: "text", key: "title", label: "제목" },
+      ...HEAD_FIELDS,
       items("items", "항목", {
         req: true,
         extra: ["value", "unit", "rank"],
@@ -558,6 +600,7 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 4,
     fields: [
       { k: "multiline", key: "question", label: "질문", req: true, rows: 2 },
+      ...HEAD_FIELDS,
       {
         k: "items",
         key: "options",
@@ -566,12 +609,13 @@ export const PATTERNS: Record<string, PatternSchema> = {
         fields: ["icon", "correct", "note", "say"],
         hint: "4개까지. 정답 하나에 correct 를 켠다",
       },
-      {
-        k: "text",
-        key: "answer",
-        label: "정답",
-        hint: '정답 한 줄. 체크 표시와 함께 열린다 — 선택지 글자를 그대로 쓰지 말고 "왜 그런가"를 적는다',
-      },
+      /* 엔진은 문자열과 {label,note} 를 다 받는다 — 아이콘은 그리지 않으므로 뺀다 */
+      single(
+        "answer",
+        "정답",
+        '체크 표시와 함께 열린다 — 라벨에는 선택지 글자를 그대로 쓰지 말고 "왜 그런가"를, 노트에는 덧붙일 설명을 적는다',
+        { req: false, icon: false },
+      ),
       {
         k: "number",
         key: "beat",
@@ -580,7 +624,6 @@ export const PATTERNS: Record<string, PatternSchema> = {
         hint: "선택지 뒤 생각할 틈(초). 기본 1.2",
       },
       { k: "bool", key: "reveal", label: "정답 공개", def: true },
-      { k: "text", key: "sub", label: "서브" },
     ],
   },
   endCard: {
@@ -589,11 +632,13 @@ export const PATTERNS: Record<string, PatternSchema> = {
     max: 2,
     fields: [
       { k: "text", key: "title", label: "제목", req: true },
-      { k: "text", key: "sub", label: "서브" },
+      ...HEAD_FIELDS,
       {
         k: "items",
         key: "cta",
         label: "행동 요청",
+        /* 밀도 상한(next 2개)은 cta 에 걸리지 않는다 — 기본값부터 셋이다 */
+        max: null,
         primary: "label",
         fields: ["icon"],
         hint: "비우면 구독·좋아요·알림",
@@ -604,52 +649,66 @@ export const PATTERNS: Record<string, PatternSchema> = {
   },
 };
 
-/** 모든 패턴이 받는 공통 필드 — 폼 하단 "씬 공통" 에 그린다. */
-export const COMMON_FIELDS: Field[] = [
-  { k: "text", key: "id", label: "씬 id", hint: "생략하면 title 에서 만든다" },
+/**
+ * 공통 필드가 씬 폼의 어느 자리에 그려지는지.
+ * design — 비주얼 바의 칩(팝오버 안) · fx — 연출 줄 · meta — 접히는 타이밍·대사·노트
+ */
+export type CommonGroup = "design" | "fx" | "meta";
+export type CommonField = Field & { group: CommonGroup };
+
+/**
+ * 모든 패턴이 받는 공통 필드 — SceneForm 이 group 별로 FieldRenderer 로 그리고,
+ * patternChange 가 "패턴을 바꿔도 남는 키" 로 쓴다. 두 곳의 유일한 소스다.
+ */
+export const COMMON_FIELDS: CommonField[] = [
+  /* decorLevel 은 decor 편집기가 세기 알약으로 함께 그린다 — 따로 필드를 두지 않는다 */
   {
-    k: "text",
-    key: "purpose",
-    label: "용도(purpose)",
-    hint: "쓰다 막히면 그 씬은 필요 없는 씬이다",
+    k: "strings",
+    key: "decor",
+    label: "배경 레이어",
+    ph: "blob / grid …  한 줄에 하나(겹친다)",
+    hint: "비워두면 문서 테마의 기본 배경이 적용된다",
+    group: "design",
   },
   {
-    k: "multiline",
-    key: "notes",
-    label: "발표자 노트",
-    rows: 3,
-    hint: "--present 산출물에만 실린다",
+    k: "select",
+    key: "mark",
+    label: "제목 강조 마크",
+    opts: () => GG.marks,
+    hint: "한 씬에 하나. 단어나 숫자에 밑줄·원·배지·스탬프를 입힌다",
+    group: "design",
   },
   {
-    k: "multiline",
-    key: "say",
-    label: "대사(say)",
-    rows: 3,
-    hint: "--subs 로 빌드할 때 자막에서 이 글자를 찾아 씬 시작·길이를 실측으로 정한다",
+    k: "select",
+    key: "art",
+    label: "일러스트",
+    opts: () => GG.arts,
+    hint: "씬 상단·중앙에 놓이는 테마 색 연동 추상 도형 일러스트",
+    group: "design",
   },
   {
-    k: "number",
-    key: "hold",
-    label: "머무는 시간(초)",
-    hint: "생략하면 글자 수로 추정. 자막에 맞추면 무시된다",
-    step: 0.1,
+    k: "select",
+    key: "transition",
+    label: "트랜지션",
+    opts: () => GG.transitions,
+    hint: "이전 씬에서 넘어오는 화면 전환. 비우면 fade(첫 씬은 cut)",
+    group: "fx",
   },
-  { k: "select", key: "transition", label: "트랜지션", opts: () => GG.transitions },
   {
     k: "select",
     key: "cam",
     label: "카메라(cam)",
     opts: () => GG.cams,
-    hint: "비워두면 패턴에 맞는 카메라를 자동으로 고릅니다. 씬 전체 길이 동안 아주 느리게 움직여 정지 프레임을 없앱니다",
+    hint: "비워두면 패턴에 맞는 카메라를 자동으로 고른다. 씬 전체 길이 동안 아주 느리게 움직여 정지 프레임을 없앤다",
+    group: "fx",
   },
-  { k: "select", key: "mark", label: "제목 강조 마크", opts: () => GG.marks, hint: "한 씬에 하나" },
-  { k: "select", key: "art", label: "일러스트", opts: () => GG.arts },
   {
     k: "select",
     key: "textFx",
     label: "글자 효과",
     opts: () => GG.textFx,
     hint: "제목·kineticType·quote 의 등장 방식. 제목 안의 *낱말* 은 그 낱말만 강조한다",
+    group: "fx",
   },
   {
     k: "select",
@@ -657,19 +716,46 @@ export const COMMON_FIELDS: Field[] = [
     label: "글자 퇴장",
     opts: () => GG.exitFx,
     hint: "트랜지션 전에 글자만 먼저 나간다. typewriter(백스페이스)는 글자 효과도 typewriter 여야 한다",
+    group: "fx",
   },
   {
-    k: "strings",
-    key: "decor",
-    label: "배경 레이어",
-    ph: "blob / grid …  한 줄에 하나(겹친다)",
-    hint: "생략하면 루트 → 테마 기본",
+    k: "multiline",
+    key: "say",
+    label: "대사(say)",
+    rows: 3,
+    hint: "내레이션·자막과 일치할 대사. --subs 로 빌드할 때 자막에서 이 글자를 찾아 씬 시작·길이를 실측으로 정한다",
+    group: "meta",
   },
   {
-    k: "select",
-    key: "decorLevel",
-    label: "배경 세기",
-    opts: () => ({ "0": "0 — 약", "1": "1 — 기본", "2": "2 — 강" }),
+    k: "number",
+    key: "hold",
+    label: "머무는 시간(초, hold)",
+    step: 0.1,
+    ph: "생략하면 글자 수로 추정",
+    hint: "내용이 다 나온 뒤 머무는 시간. 자막에 맞추면 무시된다",
+    group: "meta",
+  },
+  {
+    k: "text",
+    key: "purpose",
+    label: "용도(purpose)",
+    hint: "이 씬의 핵심 전달 목적 한 줄. 쓰다 막히면 그 씬은 필요 없는 씬이다",
+    group: "meta",
+  },
+  {
+    k: "multiline",
+    key: "notes",
+    label: "발표자 노트(notes)",
+    rows: 3,
+    hint: "--present 산출물의 발표자 화면에만 실린다",
+    group: "meta",
+  },
+  {
+    k: "text",
+    key: "id",
+    label: "씬 id",
+    hint: "s1 · problem 처럼. 생략하면 title 에서 만든다",
+    group: "meta",
   },
 ];
 

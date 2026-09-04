@@ -1,4 +1,5 @@
-/*! icons — 픽토그램 191종. mojs · scriptviz · mindmap 스킬과 같은 24x24 stroke 세트다.
+/*! icons — 픽토그램 238종. 24x24 stroke 세트다 — mojs · scriptviz · mindmap 의
+ *  191종을 이름 그대로 품는 상위 집합이라 어느 스킬에서 부르든 같은 그림이다.
  *  산출물에는 스펙이 실제로 쓴 아이콘만 인라인된다. 한글 이름으로도 부른다.
  */
 'use strict';
@@ -356,6 +357,73 @@ var ALIAS = {
 
 for (var _ik in ICONS2) if (Object.prototype.hasOwnProperty.call(ICONS2, _ik)) ICONS[_ik] = ICONS2[_ik];
 
+/* 3차 확장 (2026-09) — 여기까지가 이 저장소의 세트다. mojs · scriptviz · mindmap 의
+   191종을 그대로 포함하는 **상위 집합**이라 이름은 어디서든 같은 그림을 가리킨다.
+   갈래: 화면·문서 조작 · 법·행정 · 에너지·환경 · 보건 · 산업·물류 · 통신 · 감정 · 사무 */
+var ICONS3 = {
+  /* 화면·문서 조작 — 어느 주제에서나 쓰는 기본 동사 */
+  trash: 'M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M18.5 6l-1 14a2 2 0 01-2 2h-7a2 2 0 01-2-2L5.5 6M10 11v6M14 11v6',
+  copy: 'M9 8h11a2 2 0 012 2v11a2 2 0 01-2 2H9a2 2 0 01-2-2V10a2 2 0 012-2zM5 16H4a2 2 0 01-2-2V3a2 2 0 012-2h10a2 2 0 012 2v1',
+  download: 'M12 3v12M7 10l5 5 5-5M4 19h16',
+  upload: 'M12 15V3M7 8l5-5 5 5M4 19h16',
+  save: 'M5 3h11l5 5v11a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zM7 3v6h8V3M8 13h8v8H8z',
+  print: 'M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-4a2 2 0 012-2h16a2 2 0 012 2v4a2 2 0 01-2 2h-2M6 14h12v7H6z',
+  attach: 'M21.4 11.1l-9.2 9.2a6 6 0 01-8.5-8.5l9.2-9.2a4 4 0 015.7 5.7l-9.2 9.2a2 2 0 01-2.9-2.9l8.5-8.5',
+  qr: 'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM18 18h3v3h-3zM18 14h.01M14 18h.01M21 21h.01',
+  slider: 'M4 21v-6M4 11V3M12 21v-9M12 8V3M20 21v-4M20 13V3M1 13h6M9 6h6M17 15h6',
+  toggle: 'M8 5h8a7 7 0 010 14H8A7 7 0 018 5zM16 15a3 3 0 100-6 3 3 0 000 6z',
+  volume: 'M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14',
+  mute: 'M11 5L6 9H2v6h4l5 4zM23 9l-6 6M17 9l6 6',
+  keyboard: 'M4 5h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V7a2 2 0 012-2zM6 9h.01M10 9h.01M14 9h.01M18 9h.01M6 13h.01M18 13h.01M9 13h6M8 17h8',
+  zoom: 'M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3M8 11h6M11 8v6',
+  external: 'M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3',
+  menu: 'M3 6h18M3 12h18M3 18h18',
+  list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  table: 'M3 4h18v16H3zM3 10h18M3 15h18M9 4v16M15 4v16',
+  checklist: 'M9 6h12M9 12h12M9 18h12M2.5 5.5L4 7l2.5-2.5M2.5 11.5L4 13l2.5-2.5M2.5 17.5L4 19l2.5-2.5',
+  note: 'M4 4h16v10l-6 6H4zM20 14h-6v6M8 9h8M8 13h4',
+
+  /* 법·행정 */
+  gavel: 'M13.6 2.4l8 8-2.8 2.8-8-8zM12.2 7.4l-8 8a1.6 1.6 0 002.2 2.2l8-8M2.5 21.5h11',
+  vote: 'M3.5 10h17l1 11h-19zM8 10V4.5h8V10M9.5 14.5l2 2 4-4',
+  government: 'M2 21h20M4.5 21V10M8.5 21V10M12 21V10M15.5 21V10M19.5 21V10M2 10h20L12 3z',
+  certificate: 'M5 3h14v11H5zM8 7h8M8 10h5M9 14v7l3-2 3 2v-7',
+  signature: 'M3 16c3 0 3-8 6-8s3 8 6 8 3-3.5 6-3.5M3 21h18',
+  fingerprint: 'M12 20.5V11M9.2 21.5a12 12 0 001-5.2V11a1.8 1.8 0 013.6 0v5M15.6 20.5a14 14 0 00.9-5.2v-4a4.5 4.5 0 00-9 0v1.2M5 17.5a14 14 0 00.9-5.4 6.1 6.1 0 0112.2 0v1.3M2.8 12.6A9.2 9.2 0 0112 4a9.2 9.2 0 018.6 5.9',
+
+  /* 에너지·환경 */
+  battery: 'M3 7h14a2 2 0 012 2v6a2 2 0 01-2 2H3a2 2 0 01-2-2V9a2 2 0 012-2zM21.5 10.5v3M5 10.5v3M8.5 10.5v3M12 10.5v3',
+  solar: 'M4 15h16l-2-7H6zM9.5 8l-1 7M14.5 8l1 7M3 11.5h18M12 15v3M8.5 21h7M12 4.5V2.5M6.5 5.5 5 4M17.5 5.5 19 4',
+  wind: 'M12 22v-8.4M9 22h6M13.6 12a1.6 1.6 0 10-3.2 0 1.6 1.6 0 003.2 0M12 8.8V2.4M13.4 12.9l5.5 3.2M10.6 12.9l-5.5 3.2',
+  recycle: 'M7.5 19.5H5a2 2 0 01-1.7-3l1.7-2.9M9.2 5.6l1.6-2.7a2 2 0 013.4 0l1.6 2.7M17 19.5h2a2 2 0 001.7-3l-1.6-2.8M13.5 22 16 19.5 13.5 17M6.6 10.4 5 13.5l-3.2-.9M18.8 13.5l-1.6-3.1 3.1-.9',
+  carbon: 'M17.5 19a4.5 4.5 0 00.5-9 6.5 6.5 0 00-12.6 1.6A4 4 0 006 19zM10.4 11.9a1.9 1.9 0 100 3.6M14.9 11.4a2 2 0 110 4.1 2 2 0 010-4.1M18 15.6h1.8M18.9 14.7v1.8',
+  wheat: 'M12 22V8.5M12 8.5c0-2-1.4-3.4-3.4-3.4C8.6 7.1 10 8.5 12 8.5zM12 8.5c0-2 1.4-3.4 3.4-3.4C15.4 7.1 14 8.5 12 8.5zM12 13.5c0-2-1.4-3.4-3.4-3.4C8.6 12.1 10 13.5 12 13.5zM12 13.5c0-2 1.4-3.4 3.4-3.4C15.4 12.1 14 13.5 12 13.5zM12 18.5c0-2-1.4-3.4-3.4-3.4C8.6 17.1 10 18.5 12 18.5zM12 18.5c0-2 1.4-3.4 3.4-3.4C15.4 17.1 14 18.5 12 18.5zM12 5.5V2.5',
+
+  /* 보건 */
+  stethoscope: 'M5 3v5.5a4 4 0 008 0V3M3.5 3h3M11.5 3h3M9 13v1.5a5 5 0 0010 0v-1M19 12.5a2 2 0 100-4 2 2 0 000 4',
+  syringe: 'M18 2.5l3.5 3.5M17 7.5 12.5 3M12.8 6.7 4 15.5l-1.5 4.5L7 18.5l8.8-8.8zM9.5 12l3 3M12.5 9l3 3',
+  firstaid: 'M4 6h16a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2zM9 6V4.5a1.5 1.5 0 011.5-1.5h3A1.5 1.5 0 0115 4.5V6M12 10v6M9 13h6',
+
+  /* 산업·물류 */
+  warehouse: 'M2 21V9l10-6 10 6v12M2 21h20M7 21v-7h10v7M7 17.5h10',
+  conveyor: 'M4 18.2a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4M12 18.2a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4M20 18.2a2.2 2.2 0 100-4.4 2.2 2.2 0 000 4.4M4 13.8h16M4 18.2h16M6.5 11.5h5.5V6H6.5zM14 11.5h4V7.5h-4z',
+  luggage: 'M6 8h12a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2zM9 8V4.5h6V8M8 20v2M16 20v2M12 12v5',
+  handshake: 'M11 17l2 2a1.4 1.4 0 002-2M14 14l2.5 2.5a1.4 1.4 0 002.1-1.9l-3.9-3.9a3 3 0 00-4.2 0l-.9.9a1.4 1.4 0 01-2-2l2.8-2.8a5.8 5.8 0 017.1-.9l.5.3a2 2 0 001.4.2L21 4M21 3l1 11h-2M3 3L2 14l6.5 6.5a1.4 1.4 0 002-2M3 4h8',
+
+  /* 통신 */
+  satellite: 'M9.5 6.5h5v5h-5zM9.5 9H4.5V6.5h5M14.5 9h5v2.5h-5M12 11.5V15M10 15h4M16.4 4.6a5.5 5.5 0 013.6 3.6M15.6 1.8a8.6 8.6 0 016.6 6.6',
+  antenna: 'M12 12a2 2 0 100-4 2 2 0 000 4M12 12v10M8.5 22h7M7.8 5.8a6 6 0 000 8.4M16.2 5.8a6 6 0 010 8.4M5 3a9.5 9.5 0 000 14M19 3a9.5 9.5 0 010 14',
+  navigation: 'M3 11l19-8-8 19-2.6-8.4z',
+  telescope: 'M14 3.5l6.5 2.7-2.1 5.2-6.5-2.7zM12 8.5 5.5 6 3.5 11l6.5 2.6M9 13.5l-3 8M12 14.5l1.5 7M6.5 17.5h5',
+
+  /* 감정 */
+  angry: 'M12 22a10 10 0 100-20 10 10 0 000 20zM16 16.5s-1.5-2-4-2-4 2-4 2M7.5 7.5l2.8 1.7M16.5 7.5l-2.8 1.7M9.5 12h.01M14.5 12h.01',
+  surprise: 'M12 22a10 10 0 100-20 10 10 0 000 20zM12 18.2a2.4 2.4 0 100-4.8 2.4 2.4 0 000 4.8M9 9.5h.01M15 9.5h.01',
+  megaphone: 'M4 9.5 16 4v14L4 12.5zM4 9.5H3a1 1 0 00-1 1v1.5a1 1 0 001 1h1M18.5 8.5a4 4 0 010 5.6M8 13.7v5.1a1.2 1.2 0 001.2 1.2h1.6a1.2 1.2 0 001.2-1.2v-3.2',
+  brain: 'M12 4.2a3 3 0 00-5.6-1.5A2.9 2.9 0 003.6 7.2 3 3 0 004.4 12a3 3 0 001.7 5.3 3 3 0 005.9.7V4.2zM12 4.2a3 3 0 015.6-1.5 2.9 2.9 0 012.8 4.5 3 3 0 01.8 4.8 3 3 0 01-1.7 5.3 3 3 0 01-5.9.7M12 4.2v13.8M12 22v-4M8.5 8h1.5M14 8h1.5'
+};
+for (var _ik3 in ICONS3) if (Object.prototype.hasOwnProperty.call(ICONS3, _ik3)) ICONS[_ik3] = ICONS3[_ik3];
+
 
 /* 자주 찾는 한국어 이름을 더 붙인다 — 그림(ICONS)은 scriptviz · mindmap 과 같고,
    이름표만 넉넉하게 단다. 이름으로 못 찾으면 있어도 없는 것이다. */
@@ -390,6 +458,109 @@ var ALIAS2 = {
 };
 for (var _ak in ALIAS2) if (Object.prototype.hasOwnProperty.call(ALIAS2, _ak)) {
   if (ICONS[ALIAS2[_ak]] && !ALIAS[_ak]) ALIAS[_ak] = ALIAS2[_ak];
+}
+
+/* 3차 이름표 (2026-09). 앞 두 층과 달리 **덮어쓴다** — 그림이 새로 생겨 더 맞는 이름이
+   생긴 경우가 있다(예: 업로드는 화살표가 아니라 upload 다). 두 갈래를 함께 채운다:
+   ① 새 그림의 이름표 ② 이미 있는 그림이 못 받던 낱말(뉴스·교육·정책·기후·창업·AI). */
+var ALIAS3 = {
+  /* 화면·문서 조작 */
+  휴지통: 'trash', 삭제: 'trash', 폐기: 'trash', 버리기: 'trash', 쓰레기: 'trash', 폐기물: 'trash',
+  복사: 'copy', 사본: 'copy', 붙여넣기: 'copy',
+  다운로드: 'download', 내려받기: 'download', 가져오기: 'download',
+  업로드: 'upload', 올리기: 'upload', 게시: 'upload', 내보내기: 'upload',
+  저장: 'save', 디스크: 'save', 인쇄: 'print', 출력: 'print', 프린트: 'print',
+  첨부: 'attach', 첨부파일: 'attach', 클립: 'attach',
+  QR: 'qr', 큐알: 'qr', QR코드: 'qr', 코드스캔: 'qr',
+  조절: 'slider', 튜닝: 'slider', 설정값: 'slider', 가중치: 'slider', 파인튜닝: 'slider', 학습률: 'slider',
+  스위치: 'toggle', 온오프: 'toggle', 켜기끄기: 'toggle',
+  소리: 'volume', 음량: 'volume', 볼륨: 'volume', 오디오: 'volume', 음소거: 'mute', 무음: 'mute',
+  키보드: 'keyboard', 입력: 'keyboard', 타이핑: 'keyboard',
+  확대: 'zoom', 돋보기: 'zoom', 자세히: 'zoom',
+  새창: 'external', 외부링크: 'external', 바로가기: 'external',
+  메뉴: 'menu', 햄버거: 'menu', 목록: 'list', 리스트: 'list', 항목: 'list',
+  표: 'table', 테이블: 'table', 스프레드시트: 'table', 행렬: 'table',
+  체크리스트: 'checklist', 점검표: 'checklist', 할일: 'checklist', 투두: 'checklist',
+  설문: 'checklist', 요구사항: 'checklist', 시험: 'checklist',
+  메모: 'note', 노트: 'note', 쪽지: 'note', 포스트잇: 'note',
+
+  /* 법·행정 */
+  판결: 'gavel', 법: 'gavel', 소송: 'gavel', 재판: 'gavel', 법원: 'gavel', 판사: 'gavel',
+  투표: 'vote', 선거: 'vote', 표결: 'vote', 개표: 'vote',
+  정부: 'government', 관공서: 'government', 국회: 'government', 청사: 'government',
+  공공기관: 'government', 행정: 'government',
+  인증서: 'certificate', 자격증: 'certificate', 수료증: 'certificate', 증명서: 'certificate', 특허: 'certificate',
+  서명: 'signature', 사인: 'signature', 결재: 'signature', 계약체결: 'signature',
+  지문: 'fingerprint', 생체인증: 'fingerprint', 본인인증: 'fingerprint', 이중인증: 'fingerprint',
+  법안: 'doc', 공약: 'flag', 여론: 'crowd', 인구: 'crowd',
+
+  /* 에너지·환경 */
+  배터리: 'battery', 충전: 'battery', 전력: 'battery', 잔량: 'battery', 충전소: 'battery',
+  태양광: 'solar', 태양광발전: 'solar', 신재생: 'solar', 패널: 'solar',
+  풍력: 'wind', 풍력발전: 'wind', 터빈: 'wind', 바람: 'wind',
+  재활용: 'recycle', 자원순환: 'recycle', 순환경제: 'recycle', 재사용: 'recycle',
+  탄소: 'carbon', 탄소배출: 'carbon', 온실가스: 'carbon', 배출량: 'carbon', 기후: 'carbon', 기후변화: 'carbon',
+  곡물: 'wheat', 농업: 'wheat', 농산물: 'wheat', 수확: 'wheat', 식량: 'wheat',
+  온난화: 'sun', 폭염: 'sun', 발전소: 'factory', 전기차: 'car', 산림: 'tree', 오염: 'warn',
+
+  /* 보건 */
+  청진기: 'stethoscope', 진찰: 'stethoscope', 검진: 'stethoscope', 의료: 'stethoscope',
+  주사: 'syringe', 백신: 'syringe', 접종: 'syringe', 주사기: 'syringe',
+  구급: 'firstaid', 응급: 'firstaid', 응급처치: 'firstaid', 구급상자: 'firstaid',
+  감염: 'virus', 방역: 'shield',
+
+  /* 산업·물류 */
+  물류창고: 'warehouse', 창고동: 'warehouse', 풀필먼트: 'warehouse', 재고관리: 'warehouse',
+  생산라인: 'conveyor', 컨베이어: 'conveyor', 제조라인: 'conveyor', 공정: 'conveyor', 자동화공정: 'conveyor',
+  여행가방: 'luggage', 캐리어: 'luggage', 출장: 'luggage',
+  악수: 'handshake', 협약: 'handshake', 제휴: 'handshake', 파트너십: 'handshake',
+  합의: 'handshake', 계약성사: 'handshake', 화해: 'handshake',
+  통관: 'container', 항만: 'ship', 공항: 'plane', 배송추적: 'truck',
+
+  /* 통신 */
+  위성: 'satellite', 인공위성: 'satellite', 위성통신: 'satellite',
+  기지국: 'antenna', 전파: 'antenna', 안테나: 'antenna', 통신망: 'antenna',
+  내비게이션: 'navigation', 길안내: 'navigation', 방향안내: 'navigation',
+  망원경: 'telescope', 관측: 'telescope', 전망: 'telescope', 미래전망: 'telescope',
+
+  /* 감정·소통 */
+  화남: 'angry', 분노: 'angry', 불만: 'angry', 항의: 'angry',
+  놀람: 'surprise', 충격: 'surprise', 의외: 'surprise',
+  만족: 'smile', 실망: 'frown', 열광: 'fire',
+  확성기: 'megaphone', 마케팅: 'megaphone', 캠페인: 'megaphone', 광고: 'megaphone',
+  뇌: 'brain', 사고: 'brain', 인지: 'brain', 지능: 'brain', 두뇌: 'brain', 추론: 'brain',
+
+  /* 뉴스·미디어·유튜브 */
+  기사: 'newspaper', 언론: 'newspaper', 특종: 'newspaper', 보도: 'newspaper',
+  유튜브: 'video', 영상편집: 'video', 썸네일: 'picture', 자막: 'speech',
+  구독: 'bell', 구독자: 'users', 조회수: 'eye', 시청: 'eye',
+
+  /* 교육 */
+  강의: 'presentation', 수업: 'graduation', 커리큘럼: 'list', 과제: 'clipboard', 성적: 'chart',
+
+  /* 창업·조직 */
+  창업: 'rocket', 스타트업: 'rocket', 투자유치: 'coins', 밸류에이션: 'scale',
+  상장: 'stock', 지분: 'pie', 인재: 'users', 채용: 'userplus', 온보딩: 'userplus',
+  조직문화: 'users', 리더십: 'crown', 성장전략: 'target', 로드맵: 'route',
+  마일스톤: 'flag', 회고: 'refresh', 보고: 'presentation', 서류: 'doc', 양식: 'clipboard',
+
+  /* AI·데이터·보안 */
+  에이전트: 'robot', 자동응답: 'robot', 임베딩: 'neural', 벡터DB: 'database',
+  프로토타입: 'wireframe', 시안: 'wireframe', 피드백: 'speech', 기능: 'puzzle',
+  침해: 'firewall', 유출: 'warn', 랜섬웨어: 'lock', 백신프로그램: 'shield',
+
+  /* 소비·유통·문화 */
+  프랜차이즈: 'store', 편의점: 'store', 온라인쇼핑: 'cart', 구매: 'cart', 반품: 'exchange',
+  경기: 'ball', 리그: 'trophy', 관중: 'crowd', 공연: 'mic', 콘서트: 'music', 티켓팅: 'ticket',
+
+  /* 영문 */
+  'delete': 'trash', trash: 'trash', copy: 'copy', download: 'download', upload: 'upload',
+  save: 'save', print: 'print', list: 'list', table: 'table', vote: 'vote', law: 'gavel',
+  brain: 'brain', energy: 'battery', solar: 'solar', wind: 'wind', recycle: 'recycle',
+  carbon: 'carbon', deal: 'handshake', partner: 'handshake'
+};
+for (var _ak3 in ALIAS3) if (Object.prototype.hasOwnProperty.call(ALIAS3, _ak3)) {
+  if (ICONS[ALIAS3[_ak3]]) ALIAS[_ak3] = ALIAS3[_ak3];
 }
 
 /** 아이콘 이름(별칭 포함) -> 표준 이름. 없으면 null */

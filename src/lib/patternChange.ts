@@ -10,8 +10,8 @@
 import { COMMON_FIELDS, PATTERNS, blankScene, type Field } from "../engine/schema";
 import type { Item, Scene, SceneItem } from "../engine/types";
 
-/** 패턴과 무관하게 남는 씬 필드 */
-const COMMON_KEYS: string[] = [...COMMON_FIELDS.map((f) => f.key), "skin"];
+/** 패턴과 무관하게 남는 씬 필드 — skin 은 칩으로, decorLevel 은 decor 편집기 안에서 그려 COMMON_FIELDS 에 없다 */
+const COMMON_KEYS: string[] = [...COMMON_FIELDS.map((f) => f.key), "skin", "decorLevel"];
 
 /** 항목의 글자를 담고 있을 수 있는 키 — 패턴마다 이름만 다르다 */
 const TEXT_KEYS = ["label", "text", "when"];
@@ -68,9 +68,6 @@ const LIST_OVERRIDE: Record<string, ListSlot> = {
   },
 };
 
-/** 프레임 안 화면은 7줄이 상한이다 (엔진의 MAXSCREEN) */
-const MAX_OVERRIDE: Record<string, number> = { deviceShow: 7 };
-
 type GroupField = Extract<Field, { k: "group" }>;
 type ItemsField = Extract<Field, { k: "items" }>;
 
@@ -90,9 +87,14 @@ function slotsOf(pattern: string): Slots {
   const sides = groups
     .filter((g) => hasKey(g.fields, "label") && hasKey(g.fields, "items"))
     .map((g) => g.key);
+  /* 중심(hub)은 라벨에 아이콘을 단 것 — 라벨·노트만 있는 quizReveal.answer 는 중심이 아니다 */
   const hubs = groups
     .filter(
-      (g) => hasKey(g.fields, "label") && !hasKey(g.fields, "items") && !hasKey(g.fields, "title"),
+      (g) =>
+        hasKey(g.fields, "label") &&
+        hasKey(g.fields, "icon") &&
+        !hasKey(g.fields, "items") &&
+        !hasKey(g.fields, "title"),
     )
     .map((g) => g.key);
 
@@ -116,7 +118,7 @@ function slotsOf(pattern: string): Slots {
         path,
         primary: field.primary,
         allow: [...field.fields, "say"],
-        max: MAX_OVERRIDE[pattern] ?? PATTERNS[pattern]?.max ?? null,
+        max: field.max === undefined ? (PATTERNS[pattern]?.max ?? null) : field.max,
       };
   }
 
@@ -136,7 +138,7 @@ function slotsOf(pattern: string): Slots {
     heading:
       textKey("title") ?? textKey("text") ?? textKey("question") ?? groupKey("title") ?? undefined,
     kicker: textKey("kicker") ?? undefined,
-    sub: textKey("sub") ?? textKey("caption") ?? groupKey("sub") ?? undefined,
+    sub: textKey("sub") ?? groupKey("sub") ?? undefined,
     icon: fields.some((f) => f.k === "icon" && f.key === "icon") ? "icon" : undefined,
     list,
     sides,

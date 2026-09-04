@@ -6,23 +6,26 @@
 <title>3분기 지표 리포트</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+*{margin:0;padding:0;box-sizing:border-box;word-break:keep-all;overflow-wrap:break-word}
 [hidden]{display:none!important}
-:root{--bg:#f7f5f0;--bg2:#ecebe4;--ink:#1b1a17;--ink2:#5c5a52;--dim:#746f64;--acc:#2563eb;--acc2:#7c3aed;--good:#11813b;--warn:#aa5d05;--bad:#da2323;--line:rgba(27,26,23,.14);--panel:rgba(255,255,255,.72);--pline:rgba(27,26,23,.1);--font:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;--mono:'Nanum Gothic Coding',ui-monospace,SFMono-Regular,Menlo,monospace;--tight:-.02em;--kick:.24em}
+:root{--bg:#f7f5f0;--bg2:#ecebe4;--ink:#1b1a17;--ink2:#5c5a52;--dim:#6e695f;--acc:#2563eb;--acc2:#7c3aed;--good:#11813b;--warn:#aa5d05;--bad:#da2323;--line:rgba(27,26,23,.14);--panel:rgba(255,255,255,.72);--pline:rgba(27,26,23,.1);--font:'Pretendard Variable',Pretendard,'Noto Sans KR',system-ui,sans-serif;--mono:'Nanum Gothic Coding',ui-monospace,SFMono-Regular,Menlo,monospace;--tight:-.02em;--kick:.24em;--surf-fill:var(--panel);--surf-line:var(--pline);--surf-lw:1.5px;--surf-lw2:2px;--surf-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 16px 36px -18px rgba(15,20,32,.18);--r-lg:24px;--r-md:20px;--r-ms:18px;--r-sm:16px;--r-xs:12px;--bd-1:blur(6px);--bd-2:blur(7px);--bd-3:blur(9px);--bd-4:blur(10px);--hub-ring:0 0 0 6px #2563eb18,0 14px 34px -10px #2563eb30;--target-ring:0 0 0 8px #2563eb14,0 14px 34px -10px #2563eb2b;--ln-cap:round;--link-w:2.2;--link-op:.5;--arrow-w:2.6;--arrow-op:.72;--flow-w:2.2;--flow-op:.45;--route-w:2.4;--route-op:.4;--route-dash:8 12;--ring-w:2;--ring-dash:6 10;--dot-w:3.4;--dot-fill:var(--bg);--flowdot-size:18px;--flowdot-shadow:0 0 16px var(--acc);--kick-size:26px;--kick-mb:22px;--kick-caps:uppercase;--kick-w:600;--title-w:800;--title-lh:1.08;--sub-mt:26px;--sub-lh:1.5;--glow:none;--cc-fill:rgba(10,14,24,.84);--cc-line:rgba(255,255,255,.16);--cc-lw:1.5px;--cc-r:15px;--cc-bd:blur(10px);--cc-shadow:0 8px 24px rgba(0,0,0,.45);--cc-ink:#fff}
 
 html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);overflow:hidden}
 body{display:block}
 .gg-fit{position:fixed;inset:0;overflow:hidden}
 .gg-scale{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;transform:translate(-50%,-50%)}
-.gg-stage{position:relative;width:100%;height:100%;overflow:hidden;transform-origin:center center;background:radial-gradient(120% 90% at 50% 0%,#ecebe4 0%,#f7f5f0 62%);isolation:isolate}
+.gg-stage{position:relative;width:100%;height:100%;overflow:hidden;transform-origin:center center;background:radial-gradient(85% 60% at 72% -12%,#2563eb0a 0%,transparent 60%),radial-gradient(120% 90% at 50% 0%,#ecebe4 0%,#f7f5f0 62%);isolation:isolate;perspective:1600px}
+.gg-scenes-wrap{position:absolute;inset:0;transform-origin:center center;transition:transform .28s cubic-bezier(.16,1,.3,1);will-change:transform}
+.gg-stage[data-cc="true"] .gg-scenes-wrap{transform:translateY(-35px)}
+.gg-stage[data-cc="false"] .gg-scenes-wrap{transform:translateY(0)}
 .gg-grain{position:absolute;inset:0;pointer-events:none;opacity:0.05;z-index:60;mix-blend-mode:overlay}
 .gg-vig{position:absolute;inset:0;pointer-events:none;z-index:59;background:radial-gradient(110% 80% at 50% 45%,transparent 55%,rgba(0,0,0,0) 100%)}
 .gg-flash{position:absolute;inset:0;pointer-events:none;z-index:58;background:var(--ink);opacity:0;mix-blend-mode:soft-light}
-.gg-scene{position:absolute;inset:0;visibility:hidden}
+.gg-scene{position:absolute;inset:0;visibility:hidden;transform-style:preserve-3d;backface-visibility:hidden}
 .gg-world{position:absolute;inset:0;transform-origin:center center;will-change:transform}
 .gg-fixed{position:absolute;inset:0;z-index:40;pointer-events:none}
 .gg-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;color:var(--acc)}
-.gg-decorL{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.gg-decorL{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;transform-origin:center center;will-change:transform}
 .gg-decor{position:absolute;inset:0;width:100%;height:100%}
 @keyframes ggFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(2.2%,-2.6%) scale(1.05)}66%{transform:translate(-1.8%,2%) scale(.97)}}
 @keyframes ggSlide{0%{transform:translateX(-6%)}50%{transform:translateX(6%)}100%{transform:translateX(-6%)}}
@@ -36,15 +39,25 @@ body{display:block}
 .gg-drPulse{animation:ggPulse 7s ease-in-out infinite;transform-origin:center}
 .gg-drDrift{animation:ggDrift 20s ease-in-out infinite}
 .gg-drTwinkle{animation:ggTwinkle 5s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.gg-drFloat,.gg-drSlide,.gg-drSpin,.gg-drPulse,.gg-drDrift,.gg-drTwinkle{animation:none}}
 .gg-head{position:absolute}
 .gg-c{text-align:center}
-.gg-kicker{font-size:26px;letter-spacing:var(--kick);text-transform:uppercase;color:var(--acc);font-weight:600;margin-bottom:22px}
-.gg-title{font-weight:800;line-height:1.08;letter-spacing:var(--tight);color:var(--ink)}
-.gg-sub{margin-top:26px;color:var(--ink2);line-height:1.5;font-weight:400}
+.gg-kicker{font-size:var(--kick-size);letter-spacing:var(--kick);text-transform:var(--kick-caps);color:var(--acc);font-weight:var(--kick-w);margin-bottom:var(--kick-mb)}
+.gg-title{font-weight:var(--title-w);line-height:var(--title-lh);letter-spacing:var(--tight);color:var(--ink)}
+.gg-sub{margin-top:var(--sub-mt);color:var(--ink2);line-height:var(--sub-lh);font-weight:400}
 .gg-mask{display:block;overflow:hidden;padding-bottom:.06em}
 .gg-mk{display:block;will-change:transform}
-.gg-rule{position:absolute;height:3px;background:var(--acc);transform-origin:center;border-radius:2px;}
+.gg-mask.gg-open{overflow:visible}
+.gg-ol{--sw:0em;-webkit-text-stroke:var(--sw) var(--acc);paint-order:stroke fill}
+.gg-em{color:var(--acc);font-style:normal;display:inline-block;position:relative}
+.gg-em,.gg-breath{animation:ggBreath 3.4s ease-in-out infinite;animation-play-state:paused}
+@keyframes ggBreath{50%{filter:brightness(1.18)}}
+.gg-glowT{animation:ggGlowT 3.8s ease-in-out infinite;animation-play-state:paused}
+.gg-breath.gg-glowT{animation:ggBreath 3.4s ease-in-out infinite,ggGlowT 3.8s ease-in-out infinite;animation-play-state:paused}
+@keyframes ggGlowT{0%,100%{text-shadow:0 0 .08em transparent}50%{text-shadow:0 0 .34em var(--acc)}}
+.gg-in{display:inline-block;vertical-align:top}
+.gg-tw{display:inline-block;box-sizing:content-box;overflow:hidden;white-space:nowrap;vertical-align:top;border-right:0 solid var(--acc);animation:ggCursor 1s steps(1) infinite}
+@keyframes ggCursor{50%{border-color:transparent}}
+.gg-rule{position:absolute;height:3px;background:var(--acc);transform-origin:center;border-radius:2px;filter:var(--glow);}
 .gg-line{position:relative;display:inline-block}
 .gg-mark{position:absolute;pointer-events:none;overflow:visible}
 .gg-mk-under{left:-1.5%;bottom:-.26em;width:103%;height:.3em}
@@ -55,10 +68,14 @@ body{display:block}
 .gg-mk-corner{right:-52px;top:-30px;width:60px;height:40px}
 .gg-mk-badge{right:-14px;top:-16px;height:34px;width:auto}
 .gg-mk-ribbon{left:0;top:0;width:134px;height:134px;border-top-left-radius:22px;overflow:hidden}
+.gg-mk-tape{right:-24px;top:-18px;width:72px;height:24px;transform:rotate(5deg)}
+.gg-mk-stamp{right:-38px;top:-26px;width:104px;height:48px}
+.gg-mk-clayPin{right:-16px;top:-16px;width:38px;height:38px}
 .gg-mkStar{transform-origin:center;animation:ggTwinkle 3.4s ease-in-out infinite}
 .gg-artBox{position:relative}
 .gg-artBox svg{width:100%;height:100%;display:block}
 .gg-heroArt{position:absolute}
+.gg-vArt{flex:0 0 auto;color:var(--acc)}
 .gg-artP{transform-box:fill-box}
 @keyframes ggArtSpin{to{transform:rotate(360deg)}}
 @keyframes ggArtSpinR{to{transform:rotate(-360deg)}}
@@ -66,16 +83,17 @@ body{display:block}
 .gg-artSpin{animation:ggArtSpin 24s linear infinite}
 .gg-artSpinR{animation:ggArtSpinR 18s linear infinite}
 .gg-artFlow{animation:ggArtFlow 3.4s ease-in-out infinite}
-.gg-cardArt{position:absolute;right:-6px;bottom:-6px;width:44%;opacity:.16;pointer-events:none}
+.gg-artLoop{animation-play-state:paused;transform-box:view-box}
+.gg-cardArt{position:absolute;right:-10px;bottom:-10px;width:52%;opacity:.28;pointer-events:none}
 .gg-cardArt svg{width:100%;height:auto;display:block}
-@media (prefers-reduced-motion:reduce){.gg-artSpin,.gg-artSpinR,.gg-artFlow,.gg-mkStar{animation:none}}
 .gg-mqRow{position:absolute;left:0;width:100%;overflow:hidden;display:flex;align-items:center;mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent)}
 @keyframes ggMq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .gg-mqTrack{display:flex;align-items:center;flex:0 0 auto;animation:ggMq linear infinite;will-change:transform}
 .gg-mqI{display:inline-flex;align-items:center;gap:16px;padding:0 42px;white-space:nowrap;flex:0 0 auto}
 .gg-mqI b{font-weight:700;color:var(--ink)}
 .gg-mqI em{font-style:normal;font-size:.72em;color:var(--dim)}
-@media (prefers-reduced-motion:reduce){.gg-mqTrack{animation:none}}
+[data-rm] .gg-scenes-wrap{transition:none}
+[data-rm] .gg-drFloat,[data-rm] .gg-drSlide,[data-rm] .gg-drSpin,[data-rm] .gg-drPulse,[data-rm] .gg-drDrift,[data-rm] .gg-drTwinkle,[data-rm] .gg-tw,[data-rm] .gg-em,[data-rm] .gg-breath,[data-rm] .gg-glowT,[data-rm] .gg-mkStar,[data-rm] .gg-artSpin,[data-rm] .gg-artSpinR,[data-rm] .gg-artFlow,[data-rm] .gg-mqTrack{animation:none}
 .gg-chart{position:absolute}
 .gg-cSvg{width:100%;height:100%;display:block;font-family:var(--font);overflow:visible}
 .gg-cTick{letter-spacing:-.01em}
@@ -92,27 +110,42 @@ body{display:block}
 .gg-scLines{display:flex;flex-direction:column;gap:11px;color:var(--ink2);line-height:1.45}
 .gg-scL{display:flex;gap:9px}
 .gg-scP{color:var(--acc);font-weight:700}
-.gg-devTerm .gg-screen{font-family:var(--mono);justify-content:flex-start}
-.gg-devTerm .gg-scL:not(.gg-scCmd){opacity:.72;padding-left:1.4em}
-.gg-devTerm .gg-scLines{color:rgba(235,240,255,.82)}
+.gg-dev-terminal .gg-screen{font-family:var(--mono);justify-content:flex-start}
+.gg-dev-terminal .gg-scL:not(.gg-scCmd){opacity:.72;padding-left:1.4em}
+.gg-dev-terminal .gg-scLines{color:rgba(235,240,255,.82)}
+.gg-scSlot{position:absolute;display:flex;align-items:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:700;color:var(--ink);letter-spacing:var(--tight)}
+.gg-dev-search .gg-scSlot{font-weight:600}
+.gg-dev-search .gg-screen{justify-content:flex-start}
+.gg-dev-editor .gg-scSlot{font-family:var(--mono);font-weight:600;color:var(--ink2);letter-spacing:0}
+.gg-dev-editor .gg-screen{font-family:var(--mono);justify-content:flex-start}
+.gg-dev-newspaper .gg-scSlot{justify-content:center;font-weight:900;letter-spacing:.06em}
+.gg-dev-newspaper .gg-screen,.gg-dev-book .gg-screen,.gg-dev-notification .gg-screen{justify-content:flex-start}
+.gg-dev-dialog .gg-scL{justify-content:center}
+.gg-dev-receipt .gg-scSlot{justify-content:center;font-weight:800;letter-spacing:.18em}
+.gg-dev-receipt .gg-screen{gap:10px}
+.gg-dev-receipt .gg-scItems{gap:0}
+.gg-dev-receipt .gg-scI{background:none;border:0;border-bottom:1px dashed var(--surf-line);border-radius:0;padding:11px 2px}
+.gg-dev-dialog .gg-scSlot{justify-content:center;font-weight:800}
+.gg-dev-dialog .gg-screen{text-align:center}
+.gg-dev-notification .gg-scI{padding:15px 16px;border-radius:var(--r-sm)}
 .gg-scItems{display:flex;flex-direction:column;gap:12px}
-.gg-scI{display:flex;align-items:center;gap:13px;padding:12px 15px;border-radius:12px;background:var(--panel);border:1px solid var(--pline);font-size:.94em}
+.gg-scI{display:flex;align-items:center;gap:13px;padding:12px 15px;border-radius:var(--r-xs);background:var(--surf-fill);border:1px solid var(--surf-line);font-size:.94em}
 .gg-scI span{flex:1;font-weight:600;color:var(--ink)}
 .gg-scI b{color:var(--acc);font-weight:800}
 .gg-scArt{display:grid;place-items:center;flex:1;min-height:0}
 .gg-caption{position:absolute;color:var(--dim);line-height:1.45}
-.gg-cc{position:absolute;left:6%;right:6%;bottom:0;padding-bottom:.18em;text-align:center;z-index:60;pointer-events:none;font-size:36px;font-weight:600;line-height:1.3;letter-spacing:-.01em}
-.gg-cc span{display:inline;color:#fff;background:rgba(0,0,0,.42);border-radius:.28em .28em 0 0;padding:.12em .42em .16em;box-decoration-break:clone;-webkit-box-decoration-break:clone;text-shadow:0 2px 10px rgba(0,0,0,.9),0 0 2px rgba(0,0,0,.9)}
+.gg-captions{position:absolute;left:4%;right:4%;bottom:39px;display:flex;justify-content:center;align-items:flex-end;z-index:200;pointer-events:none}
+.gg-captions span{display:inline-block;max-width:88%;color:var(--cc-ink);background:var(--cc-fill);border:var(--cc-lw) solid var(--cc-line);border-radius:var(--cc-r);padding:.28em .75em .32em;font-size:35px;font-weight:600;line-height:1.42;letter-spacing:-.01em;text-align:center;word-break:keep-all;overflow-wrap:break-word;backdrop-filter:var(--cc-bd);-webkit-backdrop-filter:var(--cc-bd);box-shadow:var(--cc-shadow);text-shadow:0 1px 3px rgba(0,0,0,.8)}
 .gg-ccBtn{font-size:11px;font-weight:700;letter-spacing:.02em;width:34px}
 .gg-ccBtn[aria-pressed="false"]{opacity:.4;text-decoration:line-through}
-.gg-ic{color:var(--acc);}
+.gg-ic{color:var(--acc);filter:var(--glow);}
 .gg-heroIc{position:absolute}
-.gg-card{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:22px;padding:32px 28px;display:flex;flex-direction:column;gap:15px;justify-content:center;backdrop-filter:blur(7px)}
-.gg-cardIc{margin-bottom:2px}
-.gg-cardVal{font-size:46px;font-weight:800;color:var(--acc);letter-spacing:-.02em}
-.gg-cardLb{font-weight:700;line-height:1.32;color:var(--ink)}
-.gg-cardNote{font-size:23px;color:var(--dim);line-height:1.45}
-.gg-focus{border-color:var(--pline)}
+.gg-card{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-lg);padding:36px 30px;display:flex;flex-direction:column;gap:16px;justify-content:center;backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow)}
+.gg-cardIc{margin-bottom:4px}
+.gg-cardVal{font-size:48px;font-weight:800;color:var(--acc);letter-spacing:-.02em}
+.gg-cardLb{font-size:34px;font-weight:700;line-height:1.32;color:var(--ink);letter-spacing:var(--tight)}
+.gg-cardNote{font-size:24px;color:var(--dim);line-height:1.45}
+.gg-focus{border-color:var(--surf-line)}
 .gg-t-good{border-color:#11813b55}.gg-t-good .gg-ic{color:#11813b}
 .gg-t-bad{border-color:#da232355}.gg-t-bad .gg-ic{color:#da2323}
 .gg-t-warn{border-color:#aa5d0555}.gg-t-warn .gg-ic{color:#aa5d05}
@@ -120,20 +153,21 @@ body{display:block}
 .gg-t-good .gg-sideVal,.gg-t-good .gg-cardVal{color:#11813b}
 .gg-t-bad .gg-sideVal,.gg-t-bad .gg-cardVal{color:#da2323}
 .gg-t-warn .gg-sideVal,.gg-t-warn .gg-cardVal{color:#aa5d05}
-.gg-link{fill:none;stroke:var(--acc);stroke-width:2.2;opacity:.5;stroke-linecap:round}
-.gg-node{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:18px;padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;backdrop-filter:blur(6px)}
-.gg-hub{border-color:var(--acc);background:var(--panel);box-shadow:0 0 0 6px #2563eb18}
+.gg-link{fill:none;stroke:var(--acc);stroke-width:var(--link-w);opacity:var(--link-op);stroke-linecap:var(--ln-cap)}
+.gg-node{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-ms);padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:9px;text-align:center;backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}
+.gg-hub{border-color:var(--acc);background:var(--surf-fill);box-shadow:var(--hub-ring)}
 .gg-nodeLb{font-weight:700;line-height:1.3}
 .gg-nodeNote{font-size:21px;color:var(--dim)}
-.gg-arrow{fill:none;stroke:var(--acc);stroke-width:2.6;opacity:.72;color:var(--acc)}
-.gg-step{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:20px;padding:28px 26px;display:flex;flex-direction:column;gap:13px;align-items:flex-start;justify-content:center;backdrop-filter:blur(6px)}
+.gg-arrow{fill:none;stroke:var(--acc);stroke-width:var(--arrow-w);opacity:var(--arrow-op)}
+.gg-step{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);padding:28px 26px;display:flex;flex-direction:column;gap:13px;align-items:flex-start;justify-content:center;backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}
 .gg-stepNo{font-size:22px;font-weight:800;color:var(--acc);letter-spacing:.16em}
 .gg-stepLb{font-weight:700;line-height:1.32}
 .gg-stepNote{font-size:22px;color:var(--dim);line-height:1.45}
-.gg-panel,.gg-side{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:24px;padding:38px 34px;display:flex;flex-direction:column;gap:18px;justify-content:center;backdrop-filter:blur(7px)}
+.gg-panel,.gg-side{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-lg);padding:38px 34px;display:flex;flex-direction:column;gap:18px;justify-content:center;backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow)}
 .gg-panelTag{font-size:23px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:700}
 .gg-panelVal{font-weight:800;color:var(--acc);letter-spacing:-.02em}
 .gg-af .gg-panelVal{color:var(--good)}
+.gg-afHi{position:absolute;left:-9px;top:-9px;right:-9px;bottom:-9px;border:var(--surf-lw2) solid #11813b;border-radius:var(--r-lg);box-shadow:var(--target-ring);pointer-events:none}
 .gg-panelList,.gg-sideList,.gg-detailL{list-style:none;display:flex;flex-direction:column;gap:13px}
 .gg-panelList li,.gg-sideList li,.gg-detailL li{position:relative;padding-left:30px;color:var(--ink2);line-height:1.44}
 .gg-panelList li:before,.gg-sideList li:before,.gg-detailL li:before{content:"";position:absolute;left:6px;top:.52em;width:9px;height:9px;border-radius:50%;background:var(--acc);opacity:.8}
@@ -141,38 +175,43 @@ body{display:block}
 .gg-split{fill:none;stroke:var(--line);stroke-width:2.4;stroke-dasharray:10 12}
 .gg-sideLb{font-weight:800;letter-spacing:var(--tight)}
 .gg-sideVal{font-weight:800;color:var(--acc);letter-spacing:-.02em}
-.gg-layer{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:16px;display:flex;align-items:center;gap:20px;padding:0 30px;backdrop-filter:blur(6px)}
+.gg-layer{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);display:flex;align-items:center;gap:20px;padding:0 30px;backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}
 .gg-layerLb{font-weight:700;flex:0 0 auto}
 .gg-layerNote{font-size:22px;color:var(--dim);margin-left:auto}
-.gg-detail{position:absolute;background:var(--panel);border:1.5px solid var(--acc);border-radius:20px;padding:30px 34px;display:flex;flex-direction:column;gap:16px;backdrop-filter:blur(10px);z-index:30}
+.gg-detail{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--acc);border-radius:var(--r-md);padding:30px 34px;display:flex;flex-direction:column;gap:16px;backdrop-filter:var(--bd-4);box-shadow:var(--surf-shadow);z-index:30}
 .gg-detailT{font-weight:800;color:var(--acc)}
 .gg-stat{position:absolute;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}
 .gg-statIc{margin-bottom:4px}
 .gg-num{font-weight:800;line-height:1;letter-spacing:-.035em;color:var(--ink);display:flex;align-items:baseline;gap:.04em}
 .gg-pre,.gg-unit{color:var(--acc);font-weight:700}
 .gg-val{font-variant-numeric:tabular-nums}
+.gg-valRoll{display:inline-flex;align-items:flex-start;height:1em;line-height:1;overflow:hidden}
+.gg-od{display:inline-block;height:1em;overflow:hidden}
+.gg-odIn{display:block;will-change:transform}
+.gg-odIn i{display:block;height:1em;line-height:1;font-style:normal}
+.gg-odS{display:inline-block;height:1em;line-height:1}
 .gg-statLb{color:var(--ink2);font-weight:600;line-height:1.36}
 .gg-statNote{font-size:22px;color:var(--dim)}
 .gg-axis{fill:none;stroke:var(--line);stroke-width:2.6;stroke-linecap:round}
-.gg-dot{fill:var(--bg);stroke:var(--acc);stroke-width:3.4}
+.gg-dot{fill:var(--dot-fill);stroke:var(--acc);stroke-width:var(--dot-w)}
 .gg-ev{position:absolute;display:flex;flex-direction:column;gap:7px}
 .gg-evWhen{font-size:23px;font-weight:800;color:var(--acc);letter-spacing:.1em}
 .gg-evLb{font-weight:700;line-height:1.3}
 .gg-evNote{font-size:21px;color:var(--dim);line-height:1.4}
-.gg-chip{position:absolute;background:var(--panel);border:1.5px solid var(--pline);border-radius:16px;padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;backdrop-filter:blur(6px)}
+.gg-chip{position:absolute;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}
 .gg-chipLb{font-weight:700;line-height:1.28}
-.gg-flow{fill:none;stroke:var(--acc);stroke-width:2.2;opacity:.45;stroke-linecap:round;stroke-dasharray:0}
-.gg-flowDot{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--acc);box-shadow:0 0 16px var(--acc);z-index:15;pointer-events:none}
-.gg-target,.gg-center{position:absolute;background:var(--panel);border:2px solid var(--acc);border-radius:24px;padding:26px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;backdrop-filter:blur(9px);z-index:20;box-shadow:0 0 0 8px #2563eb14}
+.gg-flow{fill:none;stroke:var(--acc);stroke-width:var(--flow-w);opacity:var(--flow-op);stroke-linecap:var(--ln-cap);stroke-dasharray:0}
+.gg-flowDot{position:absolute;width:var(--flowdot-size);height:var(--flowdot-size);border-radius:50%;background:var(--acc);box-shadow:var(--flowdot-shadow);z-index:15;pointer-events:none}
+.gg-target,.gg-center{position:absolute;background:var(--surf-fill);border:var(--surf-lw2) solid var(--acc);border-radius:var(--r-lg);padding:26px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;backdrop-filter:var(--bd-3);z-index:20;box-shadow:var(--target-ring)}
 .gg-targetLb,.gg-centerLb{font-weight:800;letter-spacing:var(--tight)}
 .gg-targetNote{font-size:22px;color:var(--dim)}
-.gg-ring{fill:none;stroke:var(--line);stroke-width:2;stroke-dasharray:6 10}
-.gg-orbit{position:absolute;will-change:transform}
-.gg-sat{position:absolute}
-.gg-satIn{background:color-mix(in srgb,#f7f5f0 84%,#1b1a17);border:1.5px solid var(--pline);border-radius:16px;padding:15px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.gg-ring{fill:none;stroke:var(--line);stroke-width:var(--ring-w);stroke-dasharray:var(--ring-dash)}
+.gg-orbit{position:absolute}
+.gg-sat{position:absolute;will-change:transform}
+.gg-satIn{background:color-mix(in srgb,#f7f5f0 84%,#1b1a17);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);padding:15px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
 .gg-satLb{font-weight:700;line-height:1.24}
 .gg-anchor{position:absolute;display:grid;place-items:center;z-index:20}
-.gg-anchorT{font-weight:900;color:var(--acc);letter-spacing:-.04em;line-height:1;}
+.gg-anchorT{font-weight:900;color:var(--acc);letter-spacing:-.04em;line-height:1;filter:var(--glow);}
 .gg-mc{position:absolute}
 .gg-mcT{font-weight:800;letter-spacing:var(--tight);line-height:1.14}
 .gg-roll{overflow:hidden;position:relative}
@@ -180,8 +219,8 @@ body{display:block}
 .gg-mcRoll .gg-rollIn>*{flex:0 0 50%;display:flex;align-items:center;justify-content:center;margin:0;line-height:1.24;padding:0}
 .gg-rollSub{margin-top:18px}
 .gg-mcS{margin-top:18px;color:var(--ink2);line-height:1.48}
-.gg-route{fill:none;stroke:var(--acc);stroke-width:2.4;opacity:.4;stroke-dasharray:8 12;stroke-linecap:round}
-.gg-stop{position:absolute;background:color-mix(in srgb,#f7f5f0 86%,#1b1a17);border:1.5px solid var(--pline);border-radius:20px;padding:22px 20px;display:flex;flex-direction:column;gap:11px}
+.gg-route{fill:none;stroke:var(--acc);stroke-width:var(--route-w);opacity:var(--route-op);stroke-dasharray:var(--route-dash);stroke-linecap:var(--ln-cap)}
+.gg-stop{position:absolute;background:color-mix(in srgb,#f7f5f0 86%,#1b1a17);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);padding:22px 20px;display:flex;flex-direction:column;gap:11px}
 .gg-stopNo{font-size:21px;font-weight:800;color:var(--acc);letter-spacing:.16em}
 .gg-stopLb{font-weight:700;line-height:1.3}
 .gg-stopNote{font-size:21px;color:var(--dim);line-height:1.42}
@@ -192,6 +231,58 @@ body{display:block}
 .gg-qrole{color:var(--dim);font-weight:400}
 .gg-kstack,.gg-kcut{position:absolute;transform:translateY(-50%)}
 .gg-kl{font-weight:900;line-height:1.1;letter-spacing:var(--tight);will-change:transform}
+.gg-fnRow{position:absolute}
+.gg-fnBar{position:absolute;inset:0;border-radius:var(--r-sm);box-shadow:var(--surf-shadow)}
+.gg-fnIn{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:0 30px;white-space:nowrap;overflow:hidden}
+.gg-fnLb{font-weight:700;letter-spacing:var(--tight);overflow:hidden;text-overflow:ellipsis}
+.gg-fnSide{position:absolute;left:100%;margin-left:26px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:22px;white-space:nowrap}
+.gg-fnNum{font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;flex:0 0 auto}
+.gg-fnUnit{font-style:normal;font-size:.62em;font-weight:700;margin-left:.12em;opacity:.85}
+.gg-fnRate{position:absolute;text-align:center;font-size:23px;font-weight:700;color:var(--dim);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.gg-anatArt{position:absolute}
+.gg-co{position:absolute}
+.gg-coLb{font-weight:800;letter-spacing:var(--tight);line-height:1.28}
+.gg-coNote{margin-top:7px;font-size:22px;color:var(--dim);line-height:1.42}
+.gg-anatLn{opacity:.7}
+.gg-fmHead{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow);font-weight:800;text-align:center;padding:0 12px}
+.gg-fmRow{position:absolute;display:flex;align-items:stretch;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-sm);backdrop-filter:var(--bd-1)}
+.gg-fmRowLb{display:flex;align-items:center;font-weight:700;color:var(--ink2);padding:0 26px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gg-fmCell{display:flex;align-items:center;justify-content:center}
+.gg-fmYes{color:var(--good)}
+.gg-fmNo{color:var(--dim);opacity:.55}
+.gg-fmTxt{font-weight:700;color:var(--ink)}
+.gg-fmHi{position:absolute;border:var(--surf-lw2) solid var(--acc);border-radius:var(--r-md);box-shadow:var(--target-ring);pointer-events:none;z-index:25}
+.gg-chNo{position:absolute;font-weight:900;line-height:1;letter-spacing:-.05em;color:var(--acc);font-variant-numeric:tabular-nums;text-align:center;filter:var(--glow);}
+.gg-chSeg{position:absolute;display:flex;flex-direction:column;align-items:center;gap:14px}
+.gg-chTrack{width:100%;height:8px;border-radius:4px;background:var(--surf-line);overflow:hidden}
+.gg-chFill{width:100%;height:100%;border-radius:4px;background:var(--acc);transform-origin:0 50%;transform:scaleX(0)}
+.gg-chDone .gg-chFill{transform:scaleX(1);opacity:.42}
+.gg-chNow .gg-chFill{transform:scaleX(1)}
+.gg-chSegLb{color:var(--dim);font-weight:600;line-height:1.3;text-align:center;word-break:keep-all}
+.gg-chNow .gg-chSegLb{color:var(--ink);font-weight:700}
+.gg-chCur{position:absolute;text-align:center;color:var(--ink);font-weight:700;letter-spacing:var(--tight);word-break:keep-all}
+.gg-rkRow{position:absolute;display:flex;align-items:center;gap:22px;padding:0 30px;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}
+.gg-rkNo{flex:0 0 auto;font-weight:900;color:var(--dim);font-variant-numeric:tabular-nums;letter-spacing:-.04em;line-height:1;text-align:center}
+.gg-rkTop .gg-rkNo{color:var(--acc)}
+.gg-rkVis{flex:0 0 auto;display:flex;align-items:center}
+.gg-rkBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.gg-rkLb{font-weight:700;color:var(--ink);letter-spacing:var(--tight);line-height:1.24;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gg-rkNote{font-size:22px;color:var(--dim);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gg-rkVal{flex:0 0 auto;font-weight:800;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.gg-rkUnit{font-size:.6em;font-weight:700;margin-left:.14em;opacity:.85}
+.gg-rkHi{position:absolute;border:var(--surf-lw2) solid var(--acc);border-radius:var(--r-md);box-shadow:var(--target-ring);pointer-events:none;z-index:25}
+.gg-qzOpt{position:absolute;display:flex;align-items:center;gap:20px;padding:0 28px;background:var(--surf-fill);border:var(--surf-lw) solid var(--surf-line);border-radius:var(--r-md);backdrop-filter:var(--bd-1);box-shadow:var(--surf-shadow)}
+.gg-qzKey{flex:0 0 auto;display:grid;place-items:center;width:58px;height:58px;border-radius:50%;border:var(--surf-lw2) solid var(--acc);color:var(--acc);font-weight:800;font-size:27px}
+.gg-qzBody{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.gg-qzLb{font-weight:700;color:var(--ink);letter-spacing:var(--tight);line-height:1.28}
+.gg-qzNote{font-size:21px;color:var(--dim);line-height:1.4}
+.gg-qzHi{position:absolute;border:var(--surf-lw2) solid #11813b;border-radius:var(--r-md);box-shadow:var(--target-ring);pointer-events:none;z-index:25}
+.gg-qzAns{position:absolute;display:flex;align-items:center;justify-content:center;gap:20px;padding:24px 32px;background:var(--surf-fill);border:var(--surf-lw2) solid #11813b;border-radius:var(--r-md);backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow);text-align:left}
+.gg-qzAns .gg-ic{color:#11813b}
+.gg-qzAnsT{font-weight:800;color:var(--ink);letter-spacing:var(--tight);line-height:1.3}
+.gg-qzAnsN{margin-top:7px;font-size:22px;color:var(--dim);line-height:1.42}
+.gg-ecCta{position:absolute;display:flex;align-items:center;justify-content:center;gap:14px;border-radius:999px;background:var(--surf-fill);border:var(--surf-lw2) solid var(--acc);backdrop-filter:var(--bd-2);box-shadow:var(--surf-shadow);font-weight:800;color:var(--ink);letter-spacing:var(--tight)}
+.gg-ecHandle{position:absolute;text-align:center;color:var(--dim);font-weight:700;letter-spacing:.06em}
 .gg-player{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:14px;padding:11px 18px;border-radius:999px;background:rgba(10,12,20,.72);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(14px);font:500 14px/1 var(--font);color:#fff;opacity:0;transition:opacity .22s ease-out}
 .gg-player::before{content:"";position:absolute;inset:-26px -20px;border-radius:999px;z-index:-1}
 .gg-player:hover,.gg-player:focus-within{opacity:1}
@@ -250,13 +341,15 @@ body{display:block}
 <div class="gg-fit">
 <div class="gg-scale">
 <main class="gg-stage" role="img" aria-label="3분기 지표 리포트 — 신규 유입은 늘었지만 정착이 따라오지 않았다 — 4분기는 온보딩에 집중한다">
-<section class="gg-scene" id="s1" data-pattern="dataCounter" data-id="headline" style="z-index:1" aria-label="1. 숫자 셋으로 보는 분기"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head gg-c" style="left:96px;top:130px;width:1728px;text-align:center"><div class="gg-kicker">2026 3분기</div><h2 class="gg-title" style="font-size:71px"><span class="gg-mask"><span class="gg-mk ">숫자 셋으로 보는 분기</span></span></h2></div><div class="gg-stat" data-i="0" style="left:96px;top:514px;width:536px"><svg class="gg-ic gg-statIc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9.5 11a4 4 0 100-8 4 4 0 000 8M22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg><div class="gg-num" style="font-size:144px"><span class="gg-pre"></span><span class="gg-val" data-to="18400" data-dec="0">0</span><span class="gg-unit" style="font-size:60px"></span></div><div class="gg-statLb" style="font-size:35px">신규 가입</div><div class="gg-statNote">전분기 +32%</div></div><div class="gg-stat" data-i="1" style="left:692px;top:514px;width:536px"><svg class="gg-ic gg-statIc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM12 18a6 6 0 100-12 6 6 0 000 12zM12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><div class="gg-num" style="font-size:144px"><span class="gg-pre"></span><span class="gg-val" data-to="34" data-dec="0">0</span><span class="gg-unit" style="font-size:60px">%</span></div><div class="gg-statLb" style="font-size:35px">4주 정착률</div><div class="gg-statNote">전분기 41% → 하락</div></div><div class="gg-stat" data-i="2" style="left:1288px;top:514px;width:536px"><svg class="gg-ic gg-statIc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM8 8l2 8 2-5 2 5 2-8M7 12h10"/></svg><div class="gg-num" style="font-size:144px"><span class="gg-pre"></span><span class="gg-val" data-to="2.7" data-dec="1">0</span><span class="gg-unit" style="font-size:60px">억</span></div><div class="gg-statLb" style="font-size:35px">분기 매출</div><div class="gg-statNote">목표의 94%</div></div></div></section>
-<section class="gg-scene" id="s2" data-pattern="chart" data-id="curve" style="z-index:2" aria-label="2. 4월부터 두 선이 갈라졌다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.1"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.1"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.1"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.12"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head" style="left:96px;top:122px;width:1728px"><h2 class="gg-title" style="font-size:71px"><span class="gg-mask"><span class="gg-mk ">4월부터 두 선이 갈라졌다</span></span></h2></div><div class="gg-chart" style="left:96px;top:247px;width:1728px;height:625px"><svg class="gg-cSvg" viewBox="0 0 1728 625"><path class="gg-cGrid" d="M125.28 525.64 L1676.16 525.64" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="536.44" text-anchor="end" font-size="28.08" fill="#746f64">0</text><path class="gg-cGrid" d="M125.28 433.47 L1676.16 433.47" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="444.27" text-anchor="end" font-size="28.08" fill="#746f64">500</text><path class="gg-cGrid" d="M125.28 341.3 L1676.16 341.3" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="352.1" text-anchor="end" font-size="28.08" fill="#746f64">1,000</text><path class="gg-cGrid" d="M125.28 249.14 L1676.16 249.14" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="259.94" text-anchor="end" font-size="28.08" fill="#746f64">1,500</text><path class="gg-cGrid" d="M125.28 156.97 L1676.16 156.97" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="167.77" text-anchor="end" font-size="28.08" fill="#746f64">2,000</text><path class="gg-cGrid" d="M125.28 64.8 L1676.16 64.8" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="75.6" text-anchor="end" font-size="28.08" fill="#746f64">2,500</text><text class="gg-cTick" x="125.28" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">1월</text><text class="gg-cTick" x="435.46" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">2월</text><text class="gg-cTick" x="745.63" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">3월</text><text class="gg-cTick" x="1055.81" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">4월</text><text class="gg-cTick" x="1365.98" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">5월</text><text class="gg-cTick" x="1676.16" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">6월</text><path class="gg-cAxis" d="M125.28 525.64 L1676.16 525.64" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none"/><path class="gg-cLine" data-i="0" d="M125.28 374.48 L435.46 322.87 L745.63 278.63 L1055.81 227.02 L1365.98 191.99 L1676.16 149.59" fill="none" stroke="#2a78d6" stroke-width="4.32" stroke-linecap="round" stroke-linejoin="round"/><circle class="gg-cDot" data-i="0" cx="1676.16" cy="149.59" r="10.8" fill="#2a78d6" stroke="#f7f5f0" stroke-width="4.32"/><text class="gg-cVal" x="1706.4" y="162.55" text-anchor="start" font-size="34.56" font-weight="700" fill="#1b1a17">2,040</text><path class="gg-cLine" data-i="1" d="M125.28 450.06 L435.46 437.16 L745.63 439 L1055.81 444.53 L1365.98 448.22 L1676.16 453.75" fill="none" stroke="#eb6834" stroke-width="4.32" stroke-linecap="round" stroke-linejoin="round"/><circle class="gg-cDot" data-i="1" cx="1676.16" cy="453.75" r="10.8" fill="#eb6834" stroke="#f7f5f0" stroke-width="4.32"/><text class="gg-cVal" x="1706.4" y="466.71" text-anchor="start" font-size="34.56" font-weight="700" fill="#1b1a17">390</text></svg></div><div class="gg-legend" style="left:96px;top:886px;width:1728px;font-size:23px"><span class="gg-lgI"><i style="background:#2a78d6"></i>신규 가입</span><span class="gg-lgI"><i style="background:#eb6834"></i>4주 정착</span></div><div class="gg-caption gg-c" style="left:96px;top:944px;width:1728px;font-size:30px">유입은 2.5배가 됐지만 정착은 제자리다</div></div></section>
-<section class="gg-scene" id="s3" data-pattern="timeline" data-id="trend" style="z-index:3" aria-label="3. 유입은 7월에 터졌다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head" style="left:96px;top:122px;width:1728px"><div class="gg-kicker">분기 흐름</div><h2 class="gg-title" style="font-size:73px"><span class="gg-mask"><span class="gg-mk ">유입은 7월에 터졌다</span></span></h2></div><svg class="gg-svg" viewBox="0 0 1920 1080" aria-hidden="true"><path class="gg-axis" d="M136 648 L1784 648"/><circle class="gg-dot" data-i="0" cx="136" cy="648" r="11"/><circle class="gg-dot" data-i="1" cx="960" cy="648" r="11"/><circle class="gg-dot" data-i="2" cx="1784" cy="648" r="11"/></svg><div class="gg-ev gg-evUp" data-i="0" style="left:-14px;top:458px;width:300px;text-align:center"><div class="gg-evWhen">7월</div><div class="gg-evLb" style="font-size:31px">제휴 캠페인</div><div class="gg-evNote">가입 +9,200</div></div><div class="gg-ev" data-i="1" style="left:810px;top:694px;width:300px;text-align:center"><div class="gg-evWhen">8월</div><div class="gg-evLb" style="font-size:31px">온보딩 개편</div><div class="gg-evNote">1주 이탈 개선 실패</div></div><div class="gg-ev gg-evUp" data-i="2" style="left:1634px;top:458px;width:300px;text-align:center"><div class="gg-evWhen">9월</div><div class="gg-evLb" style="font-size:31px">가격 실험</div><div class="gg-evNote">전환 +4%p</div></div></div></section>
-<section class="gg-scene" id="s4" data-pattern="splitCompare" data-id="gap" style="z-index:4" aria-label="4. 들어오는 문은 열렸고 머무는 방이 좁다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head gg-c" style="left:96px;top:122px;width:1728px;text-align:center"><h2 class="gg-title" style="font-size:71px"><span class="gg-mask"><span class="gg-mk ">들어오는 문은 열렸고 머무는 방이 좁다</span></span></h2></div><svg class="gg-svg" viewBox="0 0 1920 1080" aria-hidden="true"><path class="gg-split" d="M960 296.5 L960 944.5"/></svg><div class="gg-side gg-lt gg-t-good" style="left:96px;top:341px;width:799px;min-height:560px"><svg class="gg-ic " width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M17 7h4v4"/></svg><div class="gg-sideLb" style="font-size:44px">유입</div><div class="gg-sideVal" style="font-size:92px">+32%</div><ul class="gg-sideList" style="font-size:30px"><li>제휴 채널이 절반</li><li>CAC 는 유지</li><li>검색 유입도 상승</li></ul></div><div class="gg-side gg-rt gg-t-bad" style="left:1025px;top:341px;width:799px;min-height:560px"><svg class="gg-ic " width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 6 4-4 8 8M17 17h4v-4"/></svg><div class="gg-sideLb" style="font-size:44px">정착</div><div class="gg-sideVal" style="font-size:92px">-7%p</div><ul class="gg-sideList" style="font-size:30px"><li>1주 이탈 58%</li><li>첫 성공 경험까지 4일</li><li>온보딩 완주 31%</li></ul></div></div></section>
-<section class="gg-scene" id="s5" data-pattern="divergence" data-id="plan" style="z-index:5" aria-label="5. 온보딩 하나에 집중한다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head gg-c" style="left:96px;top:120px;width:1728px;text-align:center"><div class="gg-kicker">4분기</div><h2 class="gg-title" style="font-size:69px"><span class="gg-mask"><span class="gg-mk ">온보딩 하나에 집중한다</span></span></h2></div><svg class="gg-svg" viewBox="0 0 1920 1080" aria-hidden="true"><path class="gg-flow" data-i="0" d="M960 645 Q986.64 511.8 960 378.6"/><path class="gg-flow" data-i="1" d="M960 645 Q1210 695 1460 645"/><path class="gg-flow" data-i="2" d="M960 645 Q933.36 778.2 960 911.4"/><path class="gg-flow" data-i="3" d="M960 645 Q710 595 460 645"/></svg><div class="gg-target gg-source" style="left:760px;top:559px;width:400px;min-height:172px"><svg class="gg-ic " width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM12 18a6 6 0 100-12 6 6 0 000 12zM12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><div class="gg-targetLb" style="font-size:40px">첫 7일</div></div><div class="gg-chip" data-i="0" style="left:862px;top:331px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><div class="gg-chipLb" style="font-size:24px">첫날 성공 경험</div></div><div class="gg-chip" data-i="1" style="left:1362px;top:597px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.9 19.1a10 10 0 010-14.2M19.1 4.9a10 10 0 010 14.2M7.8 16.2a6 6 0 010-8.4M16.2 7.8a6 6 0 010 8.4M12 14a2 2 0 100-4 2 2 0 000 4"/></svg><div class="gg-chipLb" style="font-size:24px">3일차 리마인드</div></div><div class="gg-chip" data-i="2" style="left:862px;top:863px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7a3 3 0 100-6 3 3 0 000 6zM6 23a3 3 0 100-6 3 3 0 000 6zM8.1 5.9L20 20M8.1 18.1L20 4"/></svg><div class="gg-chipLb" style="font-size:24px">막히는 단계 제거</div></div><div class="gg-chip" data-i="3" style="left:362px;top:597px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><div class="gg-chipLb" style="font-size:24px">주간 코호트 추적</div></div></div></section>
+<div class="gg-scenes-wrap">
+<section class="gg-scene" id="s1" data-pattern="dataCounter" data-id="headline" style="z-index:1" aria-label="1. 숫자 셋으로 보는 분기"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head gg-c" style="left:96px;top:130px;width:1728px;text-align:center"><div class="gg-kicker">2026 3분기</div><h2 class="gg-title" style="font-size:71px"><span class="gg-mask"><span class="gg-mk " data-l="0">숫자 셋으로 보는 분기</span></span></h2></div><div class="gg-stat" data-i="0" style="left:96px;top:514px;width:536px"><svg class="gg-ic gg-statIc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9.5 11a4 4 0 100-8 4 4 0 000 8M22 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/></svg><div class="gg-num" style="font-size:144px"><span class="gg-pre"></span><span class="gg-val" data-to="18400" data-dec="0">0</span><span class="gg-unit" style="font-size:60px"></span></div><div class="gg-statLb" style="font-size:35px">신규 가입</div><div class="gg-statNote">전분기 +32%</div></div><div class="gg-stat" data-i="1" style="left:692px;top:514px;width:536px"><svg class="gg-ic gg-statIc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM12 18a6 6 0 100-12 6 6 0 000 12zM12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><div class="gg-num" style="font-size:144px"><span class="gg-pre"></span><span class="gg-val" data-to="34" data-dec="0">0</span><span class="gg-unit" style="font-size:60px">%</span></div><div class="gg-statLb" style="font-size:35px">4주 정착률</div><div class="gg-statNote">전분기 41% → 하락</div></div><div class="gg-stat" data-i="2" style="left:1288px;top:514px;width:536px"><svg class="gg-ic gg-statIc" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM8 8l2 8 2-5 2 5 2-8M7 12h10"/></svg><div class="gg-num" style="font-size:144px"><span class="gg-pre"></span><span class="gg-val" data-to="2.7" data-dec="1">0</span><span class="gg-unit" style="font-size:60px">억</span></div><div class="gg-statLb" style="font-size:35px">분기 매출</div><div class="gg-statNote">목표의 94%</div></div></div></section>
+<section class="gg-scene" id="s2" data-pattern="chart" data-id="curve" style="z-index:2" aria-label="2. 4월부터 두 선이 갈라졌다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.1"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.1"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.1"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.12"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head" style="left:96px;top:122px;width:1728px"><h2 class="gg-title" style="font-size:71px"><span class="gg-mask"><span class="gg-mk " data-l="0">4월부터 두 선이 갈라졌다</span></span></h2></div><div class="gg-chart" style="left:96px;top:247px;width:1728px;height:625px"><svg class="gg-cSvg" viewBox="0 0 1728 625"><path class="gg-cGrid" d="M125.28 525.64 L1676.16 525.64" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="536.44" text-anchor="end" font-size="28.08" fill="#6e695f">0</text><path class="gg-cGrid" d="M125.28 433.47 L1676.16 433.47" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="444.27" text-anchor="end" font-size="28.08" fill="#6e695f">500</text><path class="gg-cGrid" d="M125.28 341.3 L1676.16 341.3" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="352.1" text-anchor="end" font-size="28.08" fill="#6e695f">1,000</text><path class="gg-cGrid" d="M125.28 249.14 L1676.16 249.14" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="259.94" text-anchor="end" font-size="28.08" fill="#6e695f">1,500</text><path class="gg-cGrid" d="M125.28 156.97 L1676.16 156.97" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="167.77" text-anchor="end" font-size="28.08" fill="#6e695f">2,000</text><path class="gg-cGrid" d="M125.28 64.8 L1676.16 64.8" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none" opacity=".55"/><text class="gg-cTick" x="99.36" y="75.6" text-anchor="end" font-size="28.08" fill="#6e695f">2,500</text><text class="gg-cTick" x="125.28" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">1월</text><text class="gg-cTick" x="435.46" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">2월</text><text class="gg-cTick" x="745.63" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">3월</text><text class="gg-cTick" x="1055.81" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">4월</text><text class="gg-cTick" x="1365.98" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">5월</text><text class="gg-cTick" x="1676.16" y="581.8" text-anchor="middle" font-size="28.08" fill="#5c5a52">6월</text><path class="gg-cAxis" d="M125.28 525.64 L1676.16 525.64" stroke="rgba(27,26,23,.14)" stroke-width="2.16" fill="none"/><path class="gg-cLine" data-i="0" d="M125.28 374.48 L435.46 322.87 L745.63 278.63 L1055.81 227.02 L1365.98 191.99 L1676.16 149.59" fill="none" stroke="#2a78d6" stroke-width="4.32" stroke-linecap="round" stroke-linejoin="round"/><circle class="gg-cDot" data-i="0" cx="1676.16" cy="149.59" r="10.8" fill="#2a78d6" stroke="#f7f5f0" stroke-width="4.32"/><text class="gg-cVal" x="1706.4" y="162.55" text-anchor="start" font-size="34.56" font-weight="700" fill="#1b1a17">2,040</text><path class="gg-cLine" data-i="1" d="M125.28 450.06 L435.46 437.16 L745.63 439 L1055.81 444.53 L1365.98 448.22 L1676.16 453.75" fill="none" stroke="#eb6834" stroke-width="4.32" stroke-linecap="round" stroke-linejoin="round"/><circle class="gg-cDot" data-i="1" cx="1676.16" cy="453.75" r="10.8" fill="#eb6834" stroke="#f7f5f0" stroke-width="4.32"/><text class="gg-cVal" x="1706.4" y="466.71" text-anchor="start" font-size="34.56" font-weight="700" fill="#1b1a17">390</text></svg></div><div class="gg-legend" style="left:96px;top:886px;width:1728px;font-size:23px"><span class="gg-lgI"><i style="background:#2a78d6"></i>신규 가입</span><span class="gg-lgI"><i style="background:#eb6834"></i>4주 정착</span></div><div class="gg-caption gg-c" style="left:96px;top:944px;width:1728px;font-size:30px">유입은 2.5배가 됐지만 정착은 제자리다</div></div></section>
+<section class="gg-scene" id="s3" data-pattern="timeline" data-id="trend" style="z-index:3" aria-label="3. 유입은 7월에 터졌다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head" style="left:96px;top:122px;width:1728px"><div class="gg-kicker">분기 흐름</div><h2 class="gg-title" style="font-size:73px"><span class="gg-mask"><span class="gg-mk " data-l="0">유입은 7월에 터졌다</span></span></h2></div><svg class="gg-svg" viewBox="0 0 1920 1080" aria-hidden="true"><path class="gg-axis" d="M136 648 L1784 648"/><circle class="gg-dot" data-i="0" cx="136" cy="648" r="11"/><circle class="gg-dot" data-i="1" cx="960" cy="648" r="11"/><circle class="gg-dot" data-i="2" cx="1784" cy="648" r="11"/></svg><div class="gg-ev gg-evUp" data-i="0" style="left:-14px;top:458px;width:300px;text-align:center"><div class="gg-evWhen">7월</div><div class="gg-evLb" style="font-size:31px">제휴 캠페인</div><div class="gg-evNote">가입 +9,200</div></div><div class="gg-ev" data-i="1" style="left:810px;top:694px;width:300px;text-align:center"><div class="gg-evWhen">8월</div><div class="gg-evLb" style="font-size:31px">온보딩 개편</div><div class="gg-evNote">1주 이탈 개선 실패</div></div><div class="gg-ev gg-evUp" data-i="2" style="left:1634px;top:458px;width:300px;text-align:center"><div class="gg-evWhen">9월</div><div class="gg-evLb" style="font-size:31px">가격 실험</div><div class="gg-evNote">전환 +4%p</div></div></div></section>
+<section class="gg-scene" id="s4" data-pattern="splitCompare" data-id="gap" style="z-index:4" aria-label="4. 들어오는 문은 열렸고 머무는 방이 좁다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head gg-c" style="left:96px;top:122px;width:1728px;text-align:center"><h2 class="gg-title" style="font-size:71px"><span class="gg-mask"><span class="gg-mk " data-l="0">들어오는 문은 열렸고 머무는 방이 좁다</span></span></h2></div><svg class="gg-svg" viewBox="0 0 1920 1080" aria-hidden="true"><path class="gg-split" d="M960 296.5 L960 944.5"/></svg><div class="gg-side gg-lt gg-t-good" style="left:96px;top:341px;width:799px;min-height:560px"><svg class="gg-ic " width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M17 7h4v4"/></svg><div class="gg-sideLb" style="font-size:44px">유입</div><div class="gg-sideVal" style="font-size:92px">+32%</div><ul class="gg-sideList" style="font-size:30px"><li>제휴 채널이 절반</li><li>CAC 는 유지</li><li>검색 유입도 상승</li></ul></div><div class="gg-side gg-rt gg-t-bad" style="left:1025px;top:341px;width:799px;min-height:560px"><svg class="gg-ic " width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l6 6 4-4 8 8M17 17h4v-4"/></svg><div class="gg-sideLb" style="font-size:44px">정착</div><div class="gg-sideVal" style="font-size:92px">-7%p</div><ul class="gg-sideList" style="font-size:30px"><li>1주 이탈 58%</li><li>첫 성공 경험까지 4일</li><li>온보딩 완주 31%</li></ul></div></div></section>
+<section class="gg-scene" id="s5" data-pattern="divergence" data-id="plan" style="z-index:5" aria-label="5. 온보딩 하나에 집중한다"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-head gg-c" style="left:96px;top:120px;width:1728px;text-align:center"><div class="gg-kicker">4분기</div><h2 class="gg-title" style="font-size:69px"><span class="gg-mask"><span class="gg-mk " data-l="0">온보딩 하나에 집중한다</span></span></h2></div><svg class="gg-svg" viewBox="0 0 1920 1080" aria-hidden="true"><path class="gg-flow" data-i="0" d="M960 645 Q986.64 511.8 960 378.6"/><path class="gg-flow" data-i="1" d="M960 645 Q1210 695 1460 645"/><path class="gg-flow" data-i="2" d="M960 645 Q933.36 778.2 960 911.4"/><path class="gg-flow" data-i="3" d="M960 645 Q710 595 460 645"/></svg><div class="gg-target gg-source" style="left:760px;top:559px;width:400px;min-height:172px"><svg class="gg-ic " width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zM12 18a6 6 0 100-12 6 6 0 000 12zM12 14a2 2 0 100-4 2 2 0 000 4z"/></svg><div class="gg-targetLb" style="font-size:40px">첫 7일</div></div><div class="gg-chip" data-i="0" style="left:862px;top:331px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg><div class="gg-chipLb" style="font-size:24px">첫날 성공 경험</div></div><div class="gg-chip" data-i="1" style="left:1362px;top:597px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.9 19.1a10 10 0 010-14.2M19.1 4.9a10 10 0 010 14.2M7.8 16.2a6 6 0 010-8.4M16.2 7.8a6 6 0 010 8.4M12 14a2 2 0 100-4 2 2 0 000 4"/></svg><div class="gg-chipLb" style="font-size:24px">3일차 리마인드</div></div><div class="gg-chip" data-i="2" style="left:862px;top:863px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7a3 3 0 100-6 3 3 0 000 6zM6 23a3 3 0 100-6 3 3 0 000 6zM8.1 5.9L20 20M8.1 18.1L20 4"/></svg><div class="gg-chipLb" style="font-size:24px">막히는 단계 제거</div></div><div class="gg-chip" data-i="3" style="left:362px;top:597px;width:196px"><svg class="gg-ic " width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10M12 20V4M6 20v-6"/></svg><div class="gg-chipLb" style="font-size:24px">주간 코호트 추적</div></div></div></section>
 <section class="gg-scene" id="s6" data-pattern="quote" data-id="voice" style="z-index:6" aria-label="6. 가입은 쉬웠는데
-뭘 해야 할지 몰라서 닫았어요"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-quote gg-c" style="left:290px;top:350px;width:1340px"><div class="gg-qm" style="font-size:169px">“</div><blockquote class="gg-qt" style="font-size:65px"><span class="gg-mask"><span class="gg-mk ">가입은 쉬웠는데</span></span><span class="gg-mask"><span class="gg-mk ">뭘 해야 할지 몰라서 닫았어요</span></span></blockquote><div class="gg-qby" style="font-size:32px">3주차 이탈 사용자<span class="gg-qrole"> · 인터뷰 7명 중 5명이 같은 말</span></div></div></div></section>
+뭘 해야 할지 몰라서 닫았어요"><div class="gg-decorL"><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><circle class="gg-drDrift" style="animation-delay:0s" cx="1958.4" cy="108" r="594" fill="none" stroke="#2563eb" stroke-width="2.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-7s" cx="-76.8" cy="993.6" r="453.6" fill="none" stroke="#7c3aed" stroke-width="1.6" opacity="0.17"/><circle class="gg-drDrift" style="animation-delay:-14s" cx="960" cy="-194.4" r="518.4" fill="none" stroke="#2563eb" stroke-width="1.6" opacity="0.17"/></svg><svg class="gg-decor" viewBox="0 0 1920 1080" aria-hidden="true"><defs><pattern id="ggDots" width="49" height="49" patternUnits="userSpaceOnUse"><circle cx="24.5" cy="24.5" r="1.9" fill="#2563eb" opacity="0.2"/></pattern><radialGradient id="ggDotFade"><stop offset="40%" stop-color="#fff"/><stop offset="100%" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="ggDotMask"><rect width="1920" height="1080" fill="url(#ggDotFade)"/></mask></defs><rect width="1920" height="1080" fill="url(#ggDots)" mask="url(#ggDotMask)"/></svg></div><div class="gg-world"><div class="gg-quote gg-c" style="left:290px;top:350px;width:1340px"><div class="gg-qm" style="font-size:169px">“</div><blockquote class="gg-qt" style="font-size:65px"><span class="gg-mask"><span class="gg-mk " data-l="0">가입은 쉬웠는데</span></span><span class="gg-mask"><span class="gg-mk " data-l="1">뭘 해야 할지 몰라서 닫았어요</span></span></blockquote><div class="gg-qby" style="font-size:32px">3주차 이탈 사용자<span class="gg-qrole"> · 인터뷰 7명 중 5명이 같은 말</span></div></div></div></section>
+</div>
 <div class="gg-flash" aria-hidden="true"></div>
 <svg class="gg-grain" aria-hidden="true"><filter id="ggGrain"><feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter><rect width="100%" height="100%" filter="url(#ggGrain)"/></svg>
 </main>
@@ -381,11 +474,14 @@ body{display:block}
  */
 (function () {
   'use strict';
-  var SPEC = {"w":1920,"h":1080,"total":26.19,"mode":"step","theme":"paper","energy":"E2","present":false,"title":"3분기 지표 리포트","scenes":[{"sid":"s1","id":"headline","pattern":"dataCounter","at":0,"dur":3.79,"ce":2.46,"trans":"cut","tdur":0,"tw":[{"k":"from","t":"#s1 .gg-kicker","at":0,"v":{"y":18,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s1 .gg-title .gg-mk","at":0.18,"v":{"yPercent":115,"duration":0.6,"ease":"power3.out"},"st":0.08},{"k":"from","t":"#s1 .gg-stat[data-i=\"0\"]","at":0.53,"v":{"y":30,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"count","t":"#s1 .gg-stat[data-i=\"0\"] .gg-val","at":0.73,"dur":1.25,"from":0,"to":18400,"dec":0,"unit":"","prefix":""},{"k":"from","t":"#s1 .gg-stat[data-i=\"0\"] .gg-statLb","at":1.22,"v":{"y":14,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s1 .gg-stat[data-i=\"1\"]","at":0.77,"v":{"y":30,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"count","t":"#s1 .gg-stat[data-i=\"1\"] .gg-val","at":0.97,"dur":1.25,"from":0,"to":34,"dec":0,"unit":"","prefix":""},{"k":"from","t":"#s1 .gg-stat[data-i=\"1\"] .gg-statLb","at":1.46,"v":{"y":14,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s1 .gg-stat[data-i=\"2\"]","at":1.01,"v":{"y":30,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"count","t":"#s1 .gg-stat[data-i=\"2\"] .gg-val","at":1.21,"dur":1.25,"from":0,"to":2.7,"dec":1,"unit":"","prefix":""},{"k":"from","t":"#s1 .gg-stat[data-i=\"2\"] .gg-statLb","at":1.7,"v":{"y":14,"opacity":0,"duration":0.35,"ease":"power3.out"}}],"head":"숫자 셋으로 보는 분기"},{"sid":"s2","id":"curve","pattern":"chart","at":3.28,"dur":7.32,"ce":3.09,"trans":"pushLeft","tdur":0.64,"tw":[{"k":"from","t":"#s2 .gg-title .gg-mk","at":0,"v":{"yPercent":115,"duration":0.6,"ease":"power3.out"},"st":0.08},{"k":"from","t":"#s2 .gg-cAxis,.gg-cGrid","at":0.36,"v":{"opacity":0,"duration":0.35,"ease":"power3.out"},"st":0.04},{"k":"from","t":"#s2 .gg-cTick","at":0.56,"v":{"opacity":0,"duration":0.35,"ease":"power3.out"},"st":0.02},{"k":"draw","t":"#s2 .gg-cLine","at":0.64,"dur":1.1,"ease":"power2.inOut","st":0.12},{"k":"from","t":"#s2 .gg-cDot","at":1.44,"v":{"scale":0,"opacity":0,"transformOrigin":"50% 50%","duration":0.6,"ease":"back.out(1.6)"},"st":0.1},{"k":"from","t":"#s2 .gg-cVal","at":1.54,"v":{"opacity":0,"duration":0.6,"ease":"power3.out"},"st":0.08},{"k":"from","t":"#s2 .gg-lgI","at":2.39,"v":{"y":10,"opacity":0,"duration":0.35,"ease":"power3.out"},"st":0.08},{"k":"from","t":"#s2 .gg-caption","at":2.74,"v":{"y":12,"opacity":0,"duration":0.35,"ease":"power3.out"}}],"head":"4월부터 두 선이 갈라졌다"},{"sid":"s3","id":"trend","pattern":"timeline","at":10.09,"dur":3.24,"ce":2,"trans":"pushLeft","tdur":0.64,"tw":[{"k":"from","t":"#s3 .gg-kicker","at":0,"v":{"y":18,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s3 .gg-title .gg-mk","at":0.18,"v":{"yPercent":115,"duration":0.6,"ease":"power3.out"},"st":0.08},{"k":"draw","t":"#s3 .gg-axis","at":0.53,"dur":1.1,"ease":"power2.inOut"},{"k":"from","t":"#s3 .gg-dot[data-i=\"0\"]","at":0.53,"v":{"scale":0,"opacity":0,"duration":0.35,"ease":"back.out(1.6)"}},{"k":"from","t":"#s3 .gg-ev[data-i=\"0\"]","at":0.73,"v":{"y":16,"x":0,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s3 .gg-dot[data-i=\"1\"]","at":0.99,"v":{"scale":0,"opacity":0,"duration":0.35,"ease":"back.out(1.6)"}},{"k":"from","t":"#s3 .gg-ev[data-i=\"1\"]","at":1.19,"v":{"y":16,"x":0,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s3 .gg-dot[data-i=\"2\"]","at":1.45,"v":{"scale":0,"opacity":0,"duration":0.35,"ease":"back.out(1.6)"}},{"k":"from","t":"#s3 .gg-ev[data-i=\"2\"]","at":1.65,"v":{"y":16,"x":0,"opacity":0,"duration":0.35,"ease":"power3.out"}}],"head":"유입은 7월에 터졌다"},{"sid":"s4","id":"gap","pattern":"splitCompare","at":12.88,"dur":5.61,"ce":2.28,"trans":"fade","tdur":0.56,"tw":[{"k":"from","t":"#s4 .gg-title .gg-mk","at":0,"v":{"yPercent":115,"duration":0.6,"ease":"power3.out"},"st":0.08},{"k":"draw","t":"#s4 .gg-split","at":0.36,"dur":0.6,"ease":"power2.inOut"},{"k":"from","t":"#s4 .gg-lt","at":0.66,"v":{"x":-70,"y":0,"opacity":0,"duration":0.6,"ease":"power3.out"}},{"k":"from","t":"#s4 .gg-rt","at":0.81,"v":{"x":70,"y":0,"opacity":0,"duration":0.6,"ease":"power3.out"}},{"k":"from","t":"#s4 .gg-side li","at":1.06,"v":{"x":16,"opacity":0,"duration":0.35,"ease":"power3.out"},"st":0.08},{"k":"from","t":"#s4 .gg-sideVal","at":1.23,"v":{"scale":0.72,"opacity":0,"duration":0.6,"ease":"back.out(1.6)"},"st":0.15}],"head":"들어오는 문은 열렸고 머무는 방이 좁다"},{"sid":"s5","id":"plan","pattern":"divergence","at":17.91,"dur":5.12,"ce":2.58,"trans":"zoomOut","tdur":0.72,"tw":[{"k":"from","t":"#s5 .gg-kicker","at":0,"v":{"y":18,"opacity":0,"duration":0.35,"ease":"power3.out"}},{"k":"from","t":"#s5 .gg-title .gg-mk","at":0.18,"v":{"yPercent":115,"duration":0.6,"ease":"power3.out"},"st":0.08},{"k":"from","t":"#s5 .gg-source","at":0.53,"v":{"scale":0.7,"opacity":0,"duration":0.6,"ease":"back.out(1.6)"}},{"k":"draw","t":"#s5 .gg-flow","at":1.29,"dur":0.6,"ease":"power2.inOut","st":0.04},{"k":"set","t":"#s5 .gg-chip[data-i=\"0\"]","at":0,"v":{"x":0,"y":266.4,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"0\"]","at":1.62,"dur":0.72,"d":"M0 0 Q26.64 -133.2 0 -266.4","ease":"power3.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"0\"]","at":1.62,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power3.out"}},{"k":"set","t":"#s5 .gg-chip[data-i=\"1\"]","at":0,"v":{"x":-500,"y":0,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"1\"]","at":1.7,"dur":0.72,"d":"M0 0 Q250 50 500 0","ease":"power3.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"1\"]","at":1.7,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power3.out"}},{"k":"set","t":"#s5 .gg-chip[data-i=\"2\"]","at":0,"v":{"x":0,"y":-266.4,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"2\"]","at":1.78,"dur":0.72,"d":"M0 0 Q-26.64 133.2 0 266.4","ease":"power3.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"2\"]","at":1.78,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power3.out"}},{"k":"set","t":"#s5 .gg-chip[data-i=\"3\"]","at":0,"v":{"x":500,"y":0,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"3\"]","at":1.86,"dur":0.72,"d":"M0 0 Q-250 -50 -500 0","ease":"power3.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"3\"]","at":1.86,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power3.out"}}],"head":"온보딩 하나에 집중한다"},{"sid":"s6","id":"voice","pattern":"quote","at":22.58,"dur":3.61,"ce":1.34,"trans":"fade","tdur":0.56,"tw":[{"k":"from","t":"#s6 .gg-qm","at":0,"v":{"y":20,"opacity":0,"scale":0.8,"duration":0.6,"ease":"back.out(1.6)"}},{"k":"from","t":"#s6 .gg-qt .gg-mk","at":0.18,"v":{"yPercent":110,"duration":0.66,"ease":"power3.out"},"st":0.15},{"k":"from","t":"#s6 .gg-qby","at":0.99,"v":{"x":-18,"opacity":0,"duration":0.35,"ease":"power3.out"}}],"head":"가입은 쉬웠는데 뭘 해야 할지 몰라서 닫았어요"}]};
-  var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var SPEC = {"w":1920,"h":1080,"total":26.19,"mode":"step","theme":"paper","energy":"E2","depth":0.34,"shutter":1,"reducedMotion":null,"present":false,"title":"3분기 지표 리포트","scenes":[{"sid":"s1","id":"headline","pattern":"dataCounter","at":0,"dur":3.79,"ce":2.46,"trans":"cut","tdur":0,"tw":[{"k":"from","t":"#s1 .gg-kicker","at":0,"v":{"y":18,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s1 .gg-title .gg-mk","at":0.18,"v":{"yPercent":115,"duration":0.6,"ease":"power4.out"},"st":0.08},{"k":"from","t":"#s1 .gg-stat[data-i=\"0\"]","at":0.53,"v":{"y":30,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"count","t":"#s1 .gg-stat[data-i=\"0\"] .gg-val","at":0.73,"dur":1.25,"from":0,"to":18400,"dec":0,"unit":"","prefix":""},{"k":"from","t":"#s1 .gg-stat[data-i=\"0\"] .gg-statLb","at":1.22,"v":{"y":14,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s1 .gg-stat[data-i=\"1\"]","at":0.77,"v":{"y":30,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"count","t":"#s1 .gg-stat[data-i=\"1\"] .gg-val","at":0.97,"dur":1.25,"from":0,"to":34,"dec":0,"unit":"","prefix":""},{"k":"from","t":"#s1 .gg-stat[data-i=\"1\"] .gg-statLb","at":1.46,"v":{"y":14,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s1 .gg-stat[data-i=\"2\"]","at":1.01,"v":{"y":30,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"count","t":"#s1 .gg-stat[data-i=\"2\"] .gg-val","at":1.21,"dur":1.25,"from":0,"to":2.7,"dec":1,"unit":"","prefix":""},{"k":"from","t":"#s1 .gg-stat[data-i=\"2\"] .gg-statLb","at":1.7,"v":{"y":14,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"cam","amb":1,"at":0,"dur":3.79,"v0":{"scale":1},"v":{"scale":1.05},"ease":"none"}],"head":"숫자 셋으로 보는 분기"},{"sid":"s2","id":"curve","pattern":"chart","at":3.28,"dur":7.32,"ce":3.14,"trans":"pushLeft","tdur":0.64,"tw":[{"k":"from","t":"#s2 .gg-title .gg-mk","at":0,"v":{"yPercent":115,"duration":0.6,"ease":"power4.out"},"st":0.08},{"k":"from","t":"#s2 .gg-cAxis,.gg-cGrid","at":0.36,"v":{"opacity":0,"duration":0.35,"ease":"power4.out"},"st":0.04},{"k":"from","t":"#s2 .gg-cTick","at":0.56,"v":{"opacity":0,"duration":0.35,"ease":"power4.out"},"st":0.02},{"k":"draw","t":"#s2 .gg-cLine","at":0.64,"dur":1.1,"ease":"power3.inOut","st":0.12},{"k":"from","t":"#s2 .gg-cDot","at":1.44,"v":{"scale":0,"opacity":0,"transformOrigin":"50% 50%","duration":0.6,"ease":"back.out(1.4)"},"st":0.1},{"k":"from","t":"#s2 .gg-cVal","at":1.54,"v":{"opacity":0,"duration":0.6,"ease":"power4.out"},"st":0.08},{"k":"from","t":"#s2 .gg-lgI","at":2.39,"v":{"y":10,"opacity":0,"duration":0.35,"ease":"power4.out"},"st":0.08},{"k":"from","t":"#s2 .gg-caption","at":2.74,"v":{"y":12,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"cam","amb":1,"at":0,"dur":7.32,"v0":{"scale":1},"v":{"scale":1.05},"ease":"none"}],"head":"4월부터 두 선이 갈라졌다"},{"sid":"s3","id":"trend","pattern":"timeline","at":10.09,"dur":3.24,"ce":2,"trans":"pushLeft","tdur":0.64,"tw":[{"k":"from","t":"#s3 .gg-kicker","at":0,"v":{"y":18,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s3 .gg-title .gg-mk","at":0.18,"v":{"yPercent":115,"duration":0.6,"ease":"power4.out"},"st":0.08},{"k":"draw","t":"#s3 .gg-axis","at":0.53,"dur":1.1,"ease":"power3.inOut"},{"k":"from","t":"#s3 .gg-dot[data-i=\"0\"]","at":0.53,"v":{"scale":0,"opacity":0,"duration":0.35,"ease":"back.out(1.4)"}},{"k":"from","t":"#s3 .gg-ev[data-i=\"0\"]","at":0.73,"v":{"y":16,"x":0,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s3 .gg-dot[data-i=\"1\"]","at":0.99,"v":{"scale":0,"opacity":0,"duration":0.35,"ease":"back.out(1.4)"}},{"k":"from","t":"#s3 .gg-ev[data-i=\"1\"]","at":1.19,"v":{"y":16,"x":0,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s3 .gg-dot[data-i=\"2\"]","at":1.45,"v":{"scale":0,"opacity":0,"duration":0.35,"ease":"back.out(1.4)"}},{"k":"from","t":"#s3 .gg-ev[data-i=\"2\"]","at":1.65,"v":{"y":16,"x":0,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"cam","amb":1,"at":0,"dur":3.24,"v0":{"scale":1},"v":{"scale":1.05},"ease":"none"}],"head":"유입은 7월에 터졌다"},{"sid":"s4","id":"gap","pattern":"splitCompare","at":12.88,"dur":5.61,"ce":2.58,"trans":"fade","tdur":0.56,"tw":[{"k":"from","t":"#s4 .gg-title .gg-mk","at":0,"v":{"yPercent":115,"duration":0.6,"ease":"power4.out"},"st":0.08},{"k":"draw","t":"#s4 .gg-split","at":0.36,"dur":0.6,"ease":"power3.inOut"},{"k":"from","t":"#s4 .gg-lt","at":0.66,"v":{"x":-70,"y":0,"opacity":0,"duration":0.6,"ease":"power4.out"}},{"k":"from","t":"#s4 .gg-rt","at":0.81,"v":{"x":70,"y":0,"opacity":0,"duration":0.6,"ease":"power4.out"}},{"k":"from","t":"#s4 .gg-side li","at":1.06,"v":{"x":16,"opacity":0,"duration":0.35,"ease":"power4.out"},"st":0.08},{"k":"from","t":"#s4 .gg-sideVal","at":1.23,"v":{"scale":0.72,"opacity":0,"duration":0.6,"ease":"back.out(1.4)"},"st":0.15},{"k":"cam","amb":1,"at":0,"dur":5.61,"v0":{"scale":1},"v":{"scale":1.05},"ease":"none"}],"head":"들어오는 문은 열렸고 머무는 방이 좁다"},{"sid":"s5","id":"plan","pattern":"divergence","at":17.91,"dur":5.12,"ce":2.58,"trans":"zoomOut","tdur":0.72,"tw":[{"k":"from","t":"#s5 .gg-kicker","at":0,"v":{"y":18,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"from","t":"#s5 .gg-title .gg-mk","at":0.18,"v":{"yPercent":115,"duration":0.6,"ease":"power4.out"},"st":0.08},{"k":"from","t":"#s5 .gg-source","at":0.53,"v":{"scale":0.7,"opacity":0,"duration":0.6,"ease":"back.out(1.4)"}},{"k":"draw","t":"#s5 .gg-flow","at":1.29,"dur":0.6,"ease":"power3.inOut","st":0.04},{"k":"set","t":"#s5 .gg-chip[data-i=\"0\"]","at":0,"v":{"x":0,"y":266.4,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"0\"]","at":1.62,"dur":0.72,"d":"M0 266.4 Q26.64 133.2 0 0","ease":"power4.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"0\"]","at":1.62,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power4.out"}},{"k":"set","t":"#s5 .gg-chip[data-i=\"1\"]","at":0,"v":{"x":-500,"y":0,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"1\"]","at":1.7,"dur":0.72,"d":"M-500 0 Q-250 50 0 0","ease":"power4.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"1\"]","at":1.7,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power4.out"}},{"k":"set","t":"#s5 .gg-chip[data-i=\"2\"]","at":0,"v":{"x":0,"y":-266.4,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"2\"]","at":1.78,"dur":0.72,"d":"M0 -266.4 Q-26.64 -133.2 0 0","ease":"power4.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"2\"]","at":1.78,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power4.out"}},{"k":"set","t":"#s5 .gg-chip[data-i=\"3\"]","at":0,"v":{"x":500,"y":0,"scale":0.45,"opacity":0}},{"k":"path","t":"#s5 .gg-chip[data-i=\"3\"]","at":1.86,"dur":0.72,"d":"M500 0 Q250 -50 0 0","ease":"power4.out","rotate":false},{"k":"to","t":"#s5 .gg-chip[data-i=\"3\"]","at":1.86,"v":{"scale":1,"opacity":1,"duration":0.69,"ease":"power4.out"}},{"k":"cam","amb":1,"at":0,"dur":5.12,"v0":{"scale":1},"v":{"scale":1.05},"ease":"none"}],"head":"온보딩 하나에 집중한다"},{"sid":"s6","id":"voice","pattern":"quote","at":22.58,"dur":3.61,"ce":1.59,"trans":"fade","tdur":0.56,"tw":[{"k":"from","t":"#s6 .gg-qm","at":0,"v":{"y":20,"opacity":0,"scale":0.8,"duration":0.6,"ease":"back.out(1.4)"}},{"k":"from","t":"#s6 .gg-qt .gg-mk","at":0.18,"v":{"yPercent":110,"duration":0.66,"ease":"power4.out"},"st":0.15},{"k":"from","t":"#s6 .gg-qby","at":0.99,"v":{"x":-18,"opacity":0,"duration":0.35,"ease":"power4.out"}},{"k":"cam","amb":1,"at":0,"dur":3.61,"v0":{"scale":1.05},"v":{"scale":1},"ease":"none"}],"head":"가입은 쉬웠는데 뭘 해야 할지 몰라서 닫았어요"}]};
+  var RM = SPEC.reducedMotion === true ||
+    (SPEC.reducedMotion == null && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   var QS = new URLSearchParams(location.search);
-  if (QS.get('motion') === 'on') RM = false;
-  if (QS.get('motion') === 'off') RM = true;
+  if (SPEC.reducedMotion == null && QS.get('motion') === 'on') RM = false;
+  if (SPEC.reducedMotion == null && QS.get('motion') === 'off') RM = true;
+  /* CSS 의 상시 루프(배경 float·마퀴·커서·숨쉬기)는 이 속성 하나로 멈춘다 — 미디어 쿼리는 ?motion=on 을 모른다 */
+  if (RM) document.documentElement.setAttribute('data-rm', '');
 
   gsap.registerPlugin(DrawSVGPlugin, MorphSVGPlugin, SplitText, CustomEase, CustomWiggle,
                       MotionPathPlugin, ScrambleTextPlugin);
@@ -422,13 +518,67 @@ body{display:block}
   function D(v) { return RM ? .001 : v; }
   function ST(v) { return RM ? 0 : (v || 0); }
 
+  /*
+   * 깊이 — 카메라가 움직일 때 배경(.gg-decorL)은 그만큼 덜 움직인다.
+   * 세 층이 서로 다른 속도로 움직여야 "공간에 들어간다"로 읽힌다.
+   * 같은 배율로 함께 움직이면 한 장의 그림을 확대·이동한 것으로 보인다.
+   *
+   *   .gg-decorL   배경 — 카메라의 DEPTH 배 (기본 .34)
+   *   .gg-world    피사체 — 카메라 그대로
+   *   .gg-fixed    UI(헤더·상세 패널) — 고정. 카메라를 아예 따라가지 않는다
+   */
+  var DEPTH = typeof SPEC.depth === 'number' ? SPEC.depth : .34;
+  /**
+   * 카메라 값 하나를 레이어의 변형으로 환산한다.
+   *   damp  따라가는 비율 (피사체 1, 배경 DEPTH)
+   *   cover 팬·틸트로 배경이 밀릴 때 프레임 밖이 드러나지 않게 미리 키워 두는 배율
+   */
+  function camVars(v, damp, cover) {
+    var o = {};
+    if (v.scale != null || cover !== 1) o.scale = cover * (1 + (num(v.scale, 1) - 1) * damp);
+    if (v.x != null) o.x = v.x * damp;
+    if (v.y != null) o.y = v.y * damp;
+    if (v.rotate != null) o.rotate = v.rotate * damp;
+    return o;
+  }
+  /*
+   * 배경이 필요로 하는 여유 배율. 팬·틸트로 레이어가 밀리면 프레임 밖(=아무것도 없는 곳)이
+   * 드러나므로, 밀리는 만큼 미리 키워 둔다. 배율 s 에서 남는 여유는 폭의 (s-1)/2 이라
+   * 필요한 최소값이 1 + 2|x|/W 다 — 실측으로 여유가 1px 밖에 안 남아 2.6 배를 쓴다
+   * (배경이 2% 커지는 것은 눈에 안 띄지만, 프레임 끝의 빈 줄은 바로 보인다).
+   *
+   * 피사체(.gg-world)에는 걸지 않는다. world 는 투명한 판이고 그 위의 요소만 움직이므로
+   * 밀려도 드러나는 것이 없다 — 여기에 배율을 걸면 팬을 시켰는데 화면이 확대된다.
+   */
+  function camCover(o, damp) {
+    var mx = 0, my = 0;
+    [o.v0, o.v].forEach(function (v) {
+      if (!v) return;
+      mx = Math.max(mx, Math.abs(num(v.x, 0)));
+      my = Math.max(my, Math.abs(num(v.y, 0)));
+    });
+    if (!mx && !my) return 1;
+    return 1 + Math.max(mx / SPEC.w, my / SPEC.h) * damp * 2.6;
+  }
+  function camLayer(tl, el, o, damp, cover) {
+    if (!el) return;
+    var to = camVars(o.v, damp, cover);
+    to.duration = D(o.dur); to.ease = o.ease || 'power2.inOut';
+    if (o.v0) tl.fromTo(el, camVars(o.v0, damp, cover), to, o.at);
+    else tl.to(el, to, o.at);
+  }
+
   /* --- IR 한 줄을 씬 타임라인에 올린다 --- */
   function apply(tl, o, scope) {
     var els;
+    /* rm:false — 움직임 자체가 내용인 중간 프레임(글리치 등). 동작을 줄인 환경에서는 건너뛰고 마지막 상태만 남긴다 */
+    if (RM && o.rm === false) return;
     if (o.k === 'cam') {
-      var world = scope.querySelector('.gg-world');
-      if (world) tl.to(world, { scale: o.v.scale, x: o.v.x, y: o.v.y, rotate: o.v.rotate || 0,
-        duration: D(o.dur), ease: o.ease || 'power2.inOut' }, o.at);
+      /* 앰비언트 카메라는 움직임 자체가 목적이다 — 동작을 줄인 환경에서는 아예 걸지 않는다.
+         D() 로 0 초로 만들면 시작 배율이 그대로 남아 화면이 영구히 확대된 채로 선다. */
+      if (o.amb && RM) return;
+      camLayer(tl, scope.querySelector('.gg-world'), o, 1, 1);
+      if (DEPTH > 0) camLayer(tl, scope.querySelector('.gg-decorL'), o, DEPTH, camCover(o, DEPTH));
       return;
     }
     if (o.k === 'label') { tl.addLabel(o.name, o.at); return; }
@@ -446,13 +596,28 @@ body{display:block}
       } else if (o.fn === 'pulse' && o.t && !RM) {
         tl.fromTo(o.t, { scale: 1 }, { scale: 1.06, duration: .3, yoyo: true, repeat: 1, ease: 'sine.inOut' }, o.at);
       } else if (o.fn === 'spin') {
-        /* 궤도 회전 — 마스터 밖에서 무한 루프. 시킹과 무관하게 돈다. */
+        /* 궤도 회전 — 마스터 밖에서 무한 루프. 시킹과 무관하게 돈다.
+           위성은 놓인 타원 위를 각도로 돈다. 컨테이너 강체 회전은 타원선을 벗어난다. */
         if (RM) return;
         scope.querySelectorAll('.gg-orbit').forEach(function (el) {
           var sec = parseFloat(el.getAttribute('data-spin')) || 26;
-          gsap.to(el, { rotation: 360, duration: sec, repeat: -1, ease: 'none' });
-          el.querySelectorAll('.gg-satIn').forEach(function (s) {
-            gsap.to(s, { rotation: -360, duration: sec, repeat: -1, ease: 'none' });
+          var sats = Array.prototype.slice.call(el.querySelectorAll('.gg-sat')).map(function (s) {
+            var a0 = (parseFloat(s.getAttribute('data-oa')) || 0) * Math.PI / 180,
+                rx = parseFloat(s.getAttribute('data-orx')) || 0,
+                ry = parseFloat(s.getAttribute('data-ory')) || 0;
+            /* left/top 이 이미 시작점에 놓여 있으므로 시작점 대비 변위만 준다 */
+            return { el: s, a0: a0, rx: rx, ry: ry, x0: Math.cos(a0) * rx, y0: Math.sin(a0) * ry };
+          });
+          if (!sats.length) return;
+          var st = { a: 0 };
+          gsap.to(st, {
+            a: Math.PI * 2, duration: sec, repeat: -1, ease: 'none',
+            onUpdate: function () {
+              for (var i = 0; i < sats.length; i++) {
+                var s = sats[i], a = s.a0 + st.a;
+                gsap.set(s.el, { x: Math.cos(a) * s.rx - s.x0, y: Math.sin(a) * s.ry - s.y0 });
+              }
+            }
           });
         });
       }
@@ -483,7 +648,8 @@ body{display:block}
       if (!parts.length) return;
       var v = Object.assign({}, o.v);
       v.duration = D(v.duration); v.stagger = ST(o.st);
-      tl.from(parts, v, o.at);
+      /* out — 퇴장. 이미 쪼갠 글자(등장 때의 __split)를 그대로 쓴다 */
+      if (o.out) tl.to(parts, v, o.at); else tl.from(parts, v, o.at);
       return;
     }
     if (o.k === 'count') {
@@ -521,6 +687,12 @@ body{display:block}
     if (o.k === 'scramble') {
       /* 글자가 무작위로 섞이다 제자리를 찾는다. 자동재생에서 가장 잘 먹는 타이포 연출. */
       els.forEach(function (el) {
+        if (o.out) {
+          /* 퇴장 — 섞이다 비워진다 */
+          tl.to(el, { duration: D(o.dur), ease: 'none',
+            scrambleText: { text: '', chars: o.chars || 'upperAndLowerCase', speed: num(o.speed, .6), revealDelay: 0 } }, o.at);
+          return;
+        }
         var txt = el.getAttribute('data-txt') || el.textContent;
         el.setAttribute('data-txt', txt);
         tl.fromTo(el, { text: '' },
@@ -540,6 +712,21 @@ body{display:block}
       });
       return;
     }
+    if (o.k === 'type') {
+      /* 타자기 — 인라인 상자(.gg-tw)의 폭을 0 에서 글자 폭까지 글자 수 단계로 늘린다.
+         바깥 상자(.gg-in)에 잰 폭을 박아 두어 가운데 정렬이 찍는 동안 흔들리지 않게 한다.
+         커서는 .gg-tw 의 오른쪽 테두리라 폭을 따라온다. 폰트는 build() 전에 로드되어 있다. */
+      els.forEach(function (el) {
+        var steps = 'steps(' + Math.max(1, o.n | 0) + ')';
+        /* out — 백스페이스. 폭은 등장 때 재 놓았으니 0 으로 되돌리기만 한다 */
+        if (o.out) { tl.to(el, { width: 0, duration: D(o.dur), ease: steps }, o.at); return; }
+        var w = el.offsetWidth;
+        if (!w) return;
+        if (el.parentNode && el.parentNode.classList.contains('gg-in')) el.parentNode.style.width = w + 'px';
+        tl.fromTo(el, { width: 0 }, { width: w, duration: D(o.dur), ease: steps }, o.at);
+      });
+      return;
+    }
     var vars = Object.assign({}, o.v);
     if (vars.duration != null) vars.duration = D(vars.duration);
     if (o.st) vars.stagger = ST(o.st);
@@ -555,7 +742,7 @@ body{display:block}
   }
 
   /* --- 트랜지션 --- */
-  var TR = {"cut":{"out":null,"inFrom":null},"fade":{"out":{"opacity":0},"inFrom":{"opacity":0}},"pushLeft":{"out":{"xPercent":-22,"opacity":0},"inFrom":{"xPercent":22,"opacity":0}},"pushRight":{"out":{"xPercent":22,"opacity":0},"inFrom":{"xPercent":-22,"opacity":0}},"pushUp":{"out":{"yPercent":-18,"opacity":0},"inFrom":{"yPercent":18,"opacity":0}},"zoomIn":{"out":{"scale":1.35,"opacity":0},"inFrom":{"scale":0.78,"opacity":0}},"zoomOut":{"out":{"scale":0.78,"opacity":0},"inFrom":{"scale":1.3,"opacity":0}},"wipe":{"out":{"opacity":0},"inFrom":{"clip":1,"opacity":1}},"match":{"out":{"scale":1.08,"opacity":0},"inFrom":{"scale":0.96,"opacity":0}},"curve":{"out":{"opacity":0},"inFrom":{"clip":"curve"}}};
+  var TR = {"cut":{"out":null,"inFrom":null},"fade":{"out":{"opacity":0,"scale":1.012},"inFrom":{"opacity":0,"scale":0.988}},"pushLeft":{"out":{"xPercent":-22,"opacity":0},"inFrom":{"xPercent":22,"opacity":0}},"pushRight":{"out":{"xPercent":22,"opacity":0},"inFrom":{"xPercent":-22,"opacity":0}},"pushUp":{"out":{"yPercent":-18,"opacity":0},"inFrom":{"yPercent":18,"opacity":0}},"zoomIn":{"out":{"scale":1.35,"opacity":0},"inFrom":{"scale":0.78,"opacity":0}},"zoomOut":{"out":{"scale":0.78,"opacity":0},"inFrom":{"scale":1.3,"opacity":0}},"wipe":{"out":{"opacity":0},"inFrom":{"clip":1,"opacity":1}},"match":{"out":{"scale":1.08,"opacity":0},"inFrom":{"scale":0.96,"opacity":0}},"curve":{"out":{"opacity":0},"inFrom":{"clip":"curve"}},"pageFlip":{"out":{"rotateY":-85,"transformOrigin":"0% 50%","opacity":0},"inFrom":{"rotateY":85,"transformOrigin":"100% 50%","opacity":0}},"paperPeel":{"out":{"xPercent":28,"yPercent":-18,"rotate":6,"opacity":0},"inFrom":{"scale":0.96,"opacity":0}},"curlWipe":{"out":{"opacity":0},"inFrom":{"clip":"curl"}},"clayPop":{"out":{"scaleX":1.14,"scaleY":0.86,"y":-45,"opacity":0,"ease":"back.in(1.6)"},"inFrom":{"scaleX":0.84,"scaleY":1.16,"scale":0.92,"opacity":0,"ease":"elastic.out(1.2, 0.45)"}},"squish":{"out":{"scaleX":1.22,"scaleY":0.72,"opacity":0},"inFrom":{"y":50,"scaleX":0.88,"scaleY":1.15,"opacity":0}}};
   /*
    * 크로스페이드는 대칭으로 걸면 두 씬의 글자가 같은 세기로 겹쳐 읽힌다.
    * 뒤 씬을 0.2배만큼 늦게 올려 앞 씬이 우세한 구간을 만든다.
@@ -567,27 +754,68 @@ body{display:block}
   /*
    * opacity 와 transform 의 이징을 분리한다. 같은 이징으로 묶으면 둘 중 하나가 반드시 어색해진다.
    *  - opacity: 양쪽 선형(none). 가속을 걸면 두 씬이 같이 흐려지는 순간이 생겨 화면이 빈다
-   *  - transform: 나가는 쪽 power2.in(가속해 밀려남), 들어오는 쪽 power2.out(감속해 안착)
+   *  - transform: 나가는 쪽 power2.in(가속해 밀려남), 들어오는 쪽 power3.out(감속해 안착)
+   *  - 트랜지션이 이징을 직접 적었으면(clayPop 의 elastic 등) 그 값이 이긴다 —
+   *    예전에는 기본값이 덮어써서 탄성 전환이 탄성 없이 재생됐다
    */
   function splitOpacity(v) {
     var op = v.opacity, rest = Object.assign({}, v);
     delete rest.opacity;
     return { op: op, rest: rest, hasRest: Object.keys(rest).length > 0 };
   }
+  /*
+   * 셔터 — 컷이 컷으로 읽히게 하는 잔상.
+   *
+   * 실제 카메라는 셔터가 열려 있는 동안의 움직임을 한 장에 담으므로, 빠르게 움직이는
+   * 프레임은 흐리다. 웹 애니메이션에는 그게 없어서 빠른 전환이 "순간이동"으로 보인다.
+   * 짧은 블러 한 번이 그 자리를 메운다 — 길게 걸면 초점이 안 맞은 화면이 된다.
+   *
+   * 움직임이 있는 전환에만 건다. 페이드·와이프처럼 제자리에서 바뀌는 전환에 걸면
+   * 정지한 그림이 흐려지는 것으로만 보인다.
+   *
+   * 값은 스테이지 1920px 기준 px 이므로 실제 폭에 맞춰 환산한다.
+   * 트윈이 끝나면 filter 를 인라인에서 지운다(clearProps) — 남겨 두면 그 씬이
+   * backdrop-filter 의 기준(backdrop root)이 되어 글래스 카드가 배경을 잃는다.
+   */
+  var SHUT = { cut: 8, pushLeft: 6, pushRight: 6, pushUp: 6, zoomIn: 5, zoomOut: 5,
+               match: 4, pageFlip: 4, paperPeel: 4, clayPop: 3, squish: 3 };
+  function shutterPx(name) {
+    var mul = typeof SPEC.shutter === 'number' ? SPEC.shutter : 1;
+    if (RM || !mul || !SHUT[name]) return 0;
+    return Math.round(SHUT[name] * mul * (SPEC.w / 1920) * 10) / 10;
+  }
+  function shutter(master, el, name, dur, at, leaving) {
+    var k = shutterPx(name);
+    if (!k) return;
+    var d = Math.max(.1, Math.min(dur * .6, .22));
+    /*
+     * immediateRender:false 가 필수다. fromTo 는 기본이 즉시 렌더라, 조립 시점에
+     * 모든 씬에 blur(0px) 이 인라인으로 박힌다 — 그 순간부터 씬이 backdrop root 가 되어
+     * 글래스 카드가 배경을 잃고, 전환 한 번을 지날 때까지 돌아오지 않는다.
+     */
+    var to = leaving
+      ? { filter: 'blur(' + (k * .8) + 'px)', ease: 'power2.in' }
+      : { filter: 'blur(0px)', ease: 'power2.out' };
+    to.duration = d; to.clearProps = 'filter'; to.immediateRender = false;
+    master.fromTo(el, { filter: leaving ? 'blur(0px)' : 'blur(' + k + 'px)' }, to, at);
+  }
   function transIn(master, el, name, dur, at) {
-    var t = TR[name]; if (!t || !t.inFrom) return;
+    var t = TR[name]; if (!t) return;
     var lag = overlapDelay(name, dur), d = D(dur - lag);
+    /* 컷은 out·inFrom 이 없다 — 셔터는 그 앞에서 건다. 잔상이 필요한 전환이 바로 컷이다 */
+    shutter(master, el, name, dur, at + lag, false);
+    if (!t.inFrom) return;
     if (t.inFrom.clip) {
-      /* 곡선 와이프는 원호가 아래에서 올라와 덮는다. 직선 와이프보다 부드럽다. */
-      var from = t.inFrom.clip === 'curve' ? 'ellipse(0% 0% at 50% 108%)' : 'inset(0 100% 0 0)';
-      var to = t.inFrom.clip === 'curve' ? 'ellipse(160% 160% at 50% 108%)' : 'inset(0 0% 0 0)';
+      /* 곡선 와이프 & 컬 와이프 */
+      var from = t.inFrom.clip === 'curve' ? 'ellipse(0% 0% at 50% 108%)' : (t.inFrom.clip === 'curl' ? 'polygon(100% 100%, 100% 100%, 100% 100%, 100% 100%)' : 'inset(0 100% 0 0)');
+      var to = t.inFrom.clip === 'curve' ? 'ellipse(160% 160% at 50% 108%)' : (t.inFrom.clip === 'curl' ? 'polygon(-40% -40%, 140% -40%, 140% 140%, -40% 140%)' : 'inset(0 0% 0 0)');
       master.fromTo(el, { clipPath: from }, { clipPath: to, duration: D(dur), ease: 'power2.inOut' }, at);
       return;
     }
     var p = splitOpacity(t.inFrom);
     master.set(el, { opacity: p.op != null ? 0 : 1 }, at);
     if (p.hasRest) {
-      var r = Object.assign({}, p.rest); r.duration = d; r.ease = 'power2.out';
+      var r = Object.assign({}, p.rest); r.duration = d; r.ease = p.rest.ease || 'power3.out';
       master.from(el, r, at + lag);
     }
     if (p.op != null) {
@@ -595,11 +823,13 @@ body{display:block}
     }
   }
   function transOut(master, el, name, dur, at) {
-    var t = TR[name]; if (!t || !t.out) return;
+    var t = TR[name]; if (!t) return;
+    shutter(master, el, name, dur, at, true);
+    if (!t.out) return;
     var fast = name.indexOf('push') === 0 || name === 'cut' ? 1 : .85;
     var d = D(dur * fast), p = splitOpacity(t.out);
     if (p.hasRest) {
-      var r = Object.assign({}, p.rest); r.duration = D(dur); r.ease = 'power2.in';
+      var r = Object.assign({}, p.rest); r.duration = D(dur); r.ease = p.rest.ease || 'power2.in';
       master.to(el, r, at);
     }
     if (p.op != null) master.to(el, { opacity: p.op, duration: d, ease: 'none' }, at);
@@ -607,18 +837,34 @@ body{display:block}
 
   /* --- 조립 --- */
   var master = gsap.timeline({ paused: true });
+  var sceneAnimEnds = [];
   function build() {
     SPEC.scenes.forEach(function (s, i) {
       var el = document.getElementById(s.sid);
       if (!el) return;
       var stl = gsap.timeline();
       stl.addLabel('enter', 0);
-      s.tw.forEach(function (o) { apply(stl, o, el); });
-      /* 대사가 연출보다 짧으면 씬 타임라인을 그만큼 빠르게 돌린다 (자막 동기화) */
+      /*
+       * 앰비언트 카메라는 씬 타임라인에 넣지 않는다. 씬 전체 길이를 덮으므로 넣으면
+       * 아래의 "내용이 다 나온 시각"(maxEnd)이 씬 끝으로 밀려, 씬별 스크린샷과
+       * 발표 모드의 정지 지점이 hold 끝으로 어긋난다. 마스터에 절대 시각으로 얹는다.
+       */
+      s.tw.forEach(function (o) { if (!o.amb) apply(stl, o, el); });
+      /* 씬 내부의 모든 실제 애니메이션 자식 트윈 끝 시각을 실측 */
+      var maxEnd = 0;
+      var children = stl.getChildren(false, true, true);
+      children.forEach(function (child) {
+        if (typeof child.endTime === 'function') {
+          maxEnd = Math.max(maxEnd, child.endTime());
+        }
+      });
       if (s.ts && s.ts !== 1) stl.timeScale(s.ts);
-      /* 씬 타임라인의 총 길이를 hold 까지 확보한다 — 마지막 트윈 뒤 정적 구간이 hold 다 */
-      stl.set({}, {}, s.dur * (s.ts && s.ts !== 1 ? s.ts : 1));
+      var effectiveScale = s.ts && s.ts !== 1 ? s.ts : 1;
+      stl.set({}, {}, s.dur * effectiveScale);
       master.add(stl, s.at);
+      s.tw.forEach(function (o) {
+        if (o.amb) apply(master, Object.assign({}, o, { at: s.at + o.at }), el);
+      });
       master.set(el, { visibility: 'visible' }, s.at);
       if (i > 0) transIn(master, el, s.trans, s.tdur, s.at);
       var next = SPEC.scenes[i + 1];
@@ -626,6 +872,8 @@ body{display:block}
         transOut(master, el, next.trans, next.tdur, next.at);
         master.set(el, { visibility: 'hidden' }, next.at + next.tdur);
       }
+      var realAnimDuration = maxEnd > 0 ? (maxEnd / effectiveScale) : (s.ce != null ? s.ce : s.dur * .92);
+      sceneAnimEnds[i] = realAnimDuration;
     });
     master.set({}, {}, SPEC.total);
     if (SPEC.mode === 'loop') { master.repeat(-1); master.repeatDelay(.4); }
@@ -639,9 +887,11 @@ body{display:block}
      * 발표에서 씬에 머무는 시간은 hold 가 아니라 발표자가 정한다.
      */
     if (SPEC.present) {
-      SPEC.scenes.forEach(function (s) {
-        var at = s.at + (s.ce != null ? s.ce : s.dur * .9) + .06;
-        master.addPause(Math.min(at, SPEC.total));
+      SPEC.scenes.forEach(function (s, i) {
+        var animDur = sceneAnimEnds[i] != null ? sceneAnimEnds[i] : (s.ce != null ? s.ce : s.dur * .92);
+        var at = s.at + animDur + .08;
+        if (SPEC.scenes[i + 1]) at = Math.min(at, SPEC.scenes[i + 1].at - .001);
+        master.addPause(Math.max(s.at + .01, Math.min(at, SPEC.total)));
       });
     }
   }
@@ -691,6 +941,7 @@ body{display:block}
   var ccOn = QS.get('cc') !== '0';
   function paintCCState() {
     if (CC) CC.hidden = !ccOn;
+    if (stage) stage.setAttribute('data-cc', (CC && ccOn) ? 'true' : 'false');
     var b = document.querySelector('[data-a="cc"]');
     if (b) b.setAttribute('aria-pressed', ccOn ? 'true' : 'false');
   }
@@ -751,7 +1002,12 @@ body{display:block}
       var t = Math.max(0, Math.min(SPEC.total, AUD.currentTime - off));
       master.time(t); paint(t);
     });
-    AUD.addEventListener('ended', function () { audioLead = false; });
+    AUD.addEventListener('ended', function () {
+      audioLead = false;
+      /* 음성이 시계인 동안 master.repeat 는 안 돈다(master 는 pause 상태) — loop 는 여기서 다시 감는다.
+         0.4초는 repeatDelay 와 같은 숨. 그 사이 사용자가 시각을 옮겼으면(ended 가 풀림) 손대지 않는다 */
+      if (SPEC.mode === 'loop') setTimeout(function () { if (AUD.ended) doRestart(); }, 400);
+    });
     /* 음성과 화면의 길이가 크게 다르면 자막을 다시 맞춰야 한다 */
     AUD.addEventListener('loadedmetadata', function () {
       var span = AUD.duration - off;
@@ -796,6 +1052,9 @@ body{display:block}
     var rates = [.5, 1, 1.5, 2], ri = 1;
     rate.addEventListener('click', function () {
       ri = (ri + 1) % rates.length; master.timeScale(rates[ri]); rate.textContent = rates[ri] + '×';
+      /* 음성이 시계를 잡고 있을 때는 timeScale 이 무시된다(tick 이 매 프레임 currentTime 으로
+         master.time 을 덮어쓴다) — 오디오 자체 속도도 같이 바꿔야 실제로 빨라/느려진다. */
+      if (AUD) AUD.playbackRate = rates[ri];
     });
     sync();
   }
@@ -916,7 +1175,6 @@ body{display:block}
         else if (k === 'b' || k === 'B') { if (black) { black.hidden = !black.hidden; } }
         else if (k === 'o' || k === 'O') { if (toc) { toc.hidden = !toc.hidden; paint(); } }
         else if (k === 'p' || k === 'P') { openPresenter(); }
-        else if ((k === 'c' || k === 'C') && CC) { setCaptions(!ccOn); }
         else if (k === 'f' || k === 'F') {
           document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
         }
@@ -1050,8 +1308,9 @@ body{display:block}
   var GGM = window.GGM = {
     master: master, spec: SPEC, total: SPEC.total, scenes: SPEC.scenes.map(function (s, i) {
       var next = SPEC.scenes[i + 1];
+      var animDur = sceneAnimEnds[i] != null ? sceneAnimEnds[i] : (s.ce != null ? s.ce : s.dur * .92);
       return { id: s.id, pattern: s.pattern, at: s.at, dur: s.dur,
-               shot: +Math.min(s.at + (s.ce != null ? s.ce : s.dur * .92) + .12,
+               shot: +Math.min(s.at + animDur + .12,
                                next ? next.at - .03 : SPEC.total).toFixed(2) };
     }),
     reducedMotion: RM, ready: ready,
@@ -1069,7 +1328,8 @@ body{display:block}
     goto: function (i) {
       i = Math.max(0, Math.min(SPEC.scenes.length - 1, i));
       var s = SPEC.scenes[i], next = SPEC.scenes[i + 1];
-      var t = s.at + (s.ce != null ? s.ce : s.dur * .92) + .12;
+      var animDur = sceneAnimEnds[i] != null ? sceneAnimEnds[i] : (s.ce != null ? s.ce : s.dur * .92);
+      var t = s.at + animDur + .12;
       var cap = next ? next.at - .03 : SPEC.total;
       return GGM.seek(Math.min(Math.max(t, s.at + .05), cap));
     },

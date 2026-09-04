@@ -3,15 +3,19 @@
  * 경고는 연출에 대한 지적이라 그냥 숨기지 않는다 — 무시하려면 이유가 있어야 한다.
  */
 import type { Cue, Spec, ValidateResult } from "../engine/types";
+import { issueScene } from "../lib/issues";
 
 export function ValidatePanel({
   result,
   spec,
   cues,
+  onSelectScene,
 }: {
   result: ValidateResult;
   spec: Spec;
   cues: Cue[] | null;
+  /** 씬에 대한 지적을 누르면 그 씬으로 간다 */
+  onSelectScene: (i: number) => void;
 }) {
   const { errors, warnings, stats, sync } = result;
   const clean = !errors.length && !warnings.length;
@@ -26,6 +30,26 @@ export function ValidatePanel({
           say: String(spec.scenes.find((x) => x.say)?.say ?? "").slice(0, 60),
         }
       : null;
+
+  /* 씬에 대한 지적은 눌러서 그 씬으로 간다 — 30씬짜리에서 번호를 눈으로 찾지 않게 */
+  const issue = (m: string, cls: string, mark: string, key: string) => {
+    const i = issueScene(m);
+    if (i === null || i >= spec.scenes.length)
+      return (
+        <li key={key} className={cls}>
+          <span>{mark}</span>
+          {m}
+        </li>
+      );
+    return (
+      <li key={key} className={cls}>
+        <span>{mark}</span>
+        <button type="button" className="issue-go" onClick={() => onSelectScene(i)}>
+          {m}
+        </button>
+      </li>
+    );
+  };
 
   return (
     <div className="validate">
@@ -61,18 +85,8 @@ export function ValidatePanel({
       )}
 
       <ul className="issues">
-        {errors.map((e, i) => (
-          <li key={`e${i}`} className="err">
-            <span>✗</span>
-            {e}
-          </li>
-        ))}
-        {warnings.map((w, i) => (
-          <li key={`w${i}`} className="warn">
-            <span>!</span>
-            {w}
-          </li>
-        ))}
+        {errors.map((e, i) => issue(e, "err", "✗", `e${i}`))}
+        {warnings.map((w, i) => issue(w, "warn", "!", `w${i}`))}
       </ul>
 
       {clean && !stats && <p className="dim pad">씬을 추가하면 검증이 돈다.</p>}

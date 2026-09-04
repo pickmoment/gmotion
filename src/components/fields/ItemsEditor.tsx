@@ -115,7 +115,7 @@ export function ItemsEditor({
           return (
             <div key={i} className={`item${isOpen ? " open" : ""}`}>
               <div className="item-head">
-                <span className="idx">{i}</span>
+                <span className="idx">{i + 1}</span>
 
                 {fields.includes("icon") && (
                   <button

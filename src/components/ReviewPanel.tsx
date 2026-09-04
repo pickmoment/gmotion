@@ -1,18 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Spec, ValidateResult } from "../engine/types";
 import { build, type SyncInput } from "../lib/build";
 
 type MotionMode = "full" | "reduced";
 type SafeArea = "" | "video" | "shorts" | "captions";
-
-type ReviewApi = {
-  ready: Promise<unknown>;
-  goto(index: number): number;
-};
-
-interface ReviewWindow extends Window {
-  GGM?: ReviewApi;
-}
 
 export function ReviewPanel({
   spec,
@@ -43,6 +34,21 @@ export function ReviewPanel({
       ),
     [spec, sync, captions, motion, safeArea],
   );
+
+  /* 카드마다 씬 하나의 완성 프레임을 세운다. iframe 은 `allow-same-origin` 없이 띄우므로
+     (스펙의 svg 가 앱 문서를 만지지 못하게) 산출물 안의 GGM 을 직접 못 부른다 —
+     런타임의 다리가 `ready` 를 보내오면 그 창에 goto 를 돌려보낸다. */
+  const frames = useRef<(HTMLIFrameElement | null)[]>([]);
+  useEffect(() => {
+    const onMessage = (e: MessageEvent<{ gg?: string }>) => {
+      if (e.data?.gg !== "ready") return;
+      const i = frames.current.findIndex((f) => f && f.contentWindow === e.source);
+      if (i < 0) return;
+      frames.current[i]?.contentWindow?.postMessage({ gg: "cmd", op: "goto", i }, "*");
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
 
   return (
     <div className="modal review-modal" role="dialog" aria-label="씬별 화면 검수">
@@ -103,16 +109,13 @@ export function ReviewPanel({
                 >
                   <iframe
                     title={`씬 ${index + 1} ${scene.title || scene.pattern}`}
+                    ref={(el) => {
+                      frames.current[index] = el;
+                    }}
                     srcDoc={html}
-                    sandbox="allow-scripts allow-same-origin"
+                    sandbox="allow-scripts"
                     loading="lazy"
                     tabIndex={-1}
-                    onLoad={(event) => {
-                      // Same-origin srcDoc exposes the runtime API after its inline script boots.
-                      const frameWindow = event.currentTarget.contentWindow as ReviewWindow | null;
-                      const api = frameWindow?.GGM;
-                      if (api) void Promise.resolve(api.ready).then(() => api.goto(index));
-                    }}
                   />
                 </span>
                 <span className="review-meta">

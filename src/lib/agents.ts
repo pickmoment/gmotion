@@ -12,8 +12,10 @@
 export interface AgentAdapter {
   id: string;
   label: string;
-  /** 프롬프트 하나를 넘겨 한 번에 답을 받는 인자. model 이 비면 CLI 의 기본 모델로 돈다 */
-  args(prompt: string, model?: string): string[];
+  /** 프롬프트 파일 하나를 넘겨 한 번에 답을 받는 인자. model 이 비면 CLI 의 기본 모델로 돈다 */
+  args(promptFile: string, model?: string): string[];
+  /** 프롬프트 파일 본문을 stdin 으로 부을지. false 면 stdin 은 닫힌 채로 돈다 */
+  stdin: boolean;
   /** 목록에 함께 보여 줄 한 줄 — 준비물이 있으면 그것을 적는다 */
   hint: string;
   /** 모델 칸 도움말 — CLI 마다 받는 표기가 다르다 */
@@ -27,15 +29,20 @@ const withModel = (args: string[], model?: string): string[] =>
   model && model.trim() ? [...args, "--model", model.trim()] : args;
 
 /**
- * 프롬프트는 argv 로 넘긴다. stdin 은 쓰지 않는다 —
- * `codex exec` 는 stdin 이 열려 있으면 추가 입력을 기다리다 멈춘다.
- * 길이는 문제되지 않는다(macOS·리눅스의 인자 한계는 1MB 안팎, 우리 프롬프트는 수십 KB).
+ * 프롬프트는 argv 로 넘기지 않는다. macOS·리눅스는 인자 한계가 1MB 안팎이라 문제없지만
+ * Windows 는 CreateProcess 가 32,767자, `.cmd` 런처를 거치면 8,191자인데 프롬프트는
+ * spec.md 전문을 실어 수십 KB 다. 그래서 파일(`prompt.md`)로 쓰고 CLI 마다 받는 방식을 고른다 —
+ * stdin 을 프롬프트로 읽는 CLI(claude·codex)는 파일 본문을 stdin 으로 붓고, 메시지에
+ * `@파일` 첨부를 받는 CLI(pi·omp)는 경로를 넘긴다. stdin 은 쓰고 나서 닫아야 한다 —
+ * `codex exec` 는 EOF 가 올 때까지 기다린다(`agent.rs`).
  */
 export const ADAPTERS: Record<string, AgentAdapter> = {
   claude: {
     id: "claude",
     label: "Claude Code",
-    args: (p, m) => withModel(["-p", p], m),
+    /* claude -p 는 파이프된 stdin 을 프롬프트로 받는다 */
+    args: (_f, m) => withModel(["-p"], m),
+    stdin: true,
     hint: "claude -p · 로그인돼 있으면 바로 된다",
     modelHint: "별칭(opus·sonnet·haiku) 또는 정식 이름. 비우면 CLI 설정의 기본 모델",
     models: ["opus", "sonnet", "haiku"],
@@ -44,8 +51,9 @@ export const ADAPTERS: Record<string, AgentAdapter> = {
     id: "codex",
     label: "Codex CLI",
     /* --skip-git-repo-check 가 없으면 "Not inside a trusted directory" 로 거절한다 —
-       우리는 일부러 빈 임시 폴더에서 돌리므로 항상 붙인다. */
-    args: (p, m) => withModel(["exec", "--skip-git-repo-check", p], m),
+       우리는 일부러 빈 임시 폴더에서 돌리므로 항상 붙인다. `-` 는 지시문을 stdin 에서 읽으라는 뜻. */
+    args: (_f, m) => withModel(["exec", "--skip-git-repo-check", "-"], m),
+    stdin: true,
     hint: "codex exec · 임시 폴더에서 돌리므로 신뢰 검사를 건너뛴다",
     modelHint: "codex 가 아는 모델 이름. 비우면 config 의 기본 모델",
     models: ["gpt-5.2-codex", "gpt-5.2"],
@@ -53,7 +61,9 @@ export const ADAPTERS: Record<string, AgentAdapter> = {
   pi: {
     id: "pi",
     label: "pi",
-    args: (p, m) => withModel(["-p", p], m),
+    /* `pi [options] [@files...] [messages...]` — @파일의 내용이 메시지로 첨부된다 */
+    args: (f, m) => withModel(["-p", `@${f}`], m),
+    stdin: false,
     hint: "pi -p · 제공자·API 키 설정이 되어 있어야 한다",
     modelHint: "provider/id 표기를 받는다(예: openai/gpt-5.2). 비우면 기본 제공자(google)",
     models: ["anthropic/claude-opus-5", "openai/gpt-5.2", "google/gemini-3-pro"],
@@ -61,7 +71,9 @@ export const ADAPTERS: Record<string, AgentAdapter> = {
   omp: {
     id: "omp",
     label: "omp",
-    args: (p, m) => withModel(["-p", p], m),
+    /* `MESSAGES  Messages to send (prefix files with @)` */
+    args: (f, m) => withModel(["-p", `@${f}`], m),
+    stdin: false,
     hint: "omp -p · 제공자·API 키 설정이 되어 있어야 한다",
     modelHint: "퍼지 매칭이 된다(opus · gpt-5.2 · openai/gpt-5.2). 비우면 설정의 기본 모델",
     models: ["opus", "sonnet", "gpt-5.2"],

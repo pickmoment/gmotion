@@ -9,6 +9,7 @@
 import { api } from "./tauri";
 import { validate } from "./build";
 import { adapterOf, extractJson } from "./agents";
+import { resolveRef } from "./media";
 import {
   buildPrompt,
   buildStoryboardPrompt,
@@ -81,12 +82,16 @@ export async function generateSpec(o: GenOpts): Promise<GenResult> {
   /* 에이전트 CLI 는 현재 디렉토리를 작업 공간으로 본다 — 사용자 프로젝트가 아니라
      빈 임시 폴더에서 돌린다. 파일을 만들려 해도 여기서 끝난다. */
   const cwd = await api.tempPath("gmotion-agent");
+  /* 프롬프트는 이 폴더의 파일로 쓴다 — argv 로는 Windows 에서 길이 한계에 걸린다(`agents.ts`) */
+  const promptFile = resolveRef(cwd, "prompt.md");
   const call = async (text: string) => {
+    await api.writeText(promptFile, text);
     const run = await api.agentRun({
       bin: o.tool.bin,
-      args: ad.args(text, o.model),
+      args: ad.args(promptFile, o.model),
       cwd,
       timeout_sec: o.timeoutSec,
+      stdin_file: ad.stdin ? promptFile : null,
     });
     if (run.canceled) throw new CanceledError();
     if (run.timed_out) throw new Error(`${o.timeoutSec}초 안에 끝나지 않아 멈췄다`);

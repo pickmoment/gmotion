@@ -79,7 +79,7 @@
       "stats": [
         { "value": 28, "unit": "종", "label": "씬 패턴", "note": "말하려는 일마다 다른 동사", "icon": "grid" },
         { "value": 15, "unit": "종", "label": "테마", "note": "배경·글자색이 한 벌로 따라온다", "icon": "eye" },
-        { "value": 191, "unit": "개", "label": "픽토그램", "note": "한글 이름으로 찾는다", "icon": "search" }
+        { "value": 238, "unit": "개", "label": "픽토그램", "note": "한글 이름으로 찾는다", "icon": "search" }
       ]
     },
     {

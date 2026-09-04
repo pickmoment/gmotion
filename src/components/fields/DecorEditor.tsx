@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { VECTORS } from "../../engine/boot";
 import { DECOR_CATEGORIES, renderDecorSvg } from "../../lib/design";
+import { sanitizeSvg } from "../../lib/svg";
 import { useDesignStore } from "../../lib/designStore";
 
 export function DecorEditor({
@@ -171,7 +172,7 @@ export function DecorEditor({
         {!isDefault && !isFalse && (
           <div className="decor-chips-list">
             {currentList.map((k, idx) => {
-              const svg = renderDecorSvg(k, theme, decorLevel ?? 1, 64, 36);
+              const svg = sanitizeSvg(renderDecorSvg(k, theme, decorLevel ?? 1, 64, 36));
               const custom = !!library.decors[k];
               return (
                 <div key={`${k}-${idx}`} className="decor-layer-chip">
@@ -242,7 +243,7 @@ export function DecorEditor({
 
           <div className="decor-thumb-grid">
             {filteredDecors.map((d) => {
-              const svg = renderDecorSvg(d.key, theme, decorLevel ?? 1, 140, 78);
+              const svg = sanitizeSvg(renderDecorSvg(d.key, theme, decorLevel ?? 1, 140, 78));
               return (
                 <button
                   key={d.key}

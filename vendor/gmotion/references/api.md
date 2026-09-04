@@ -13,9 +13,9 @@ node $G timing   spec.json -o sheet.csv     # 씬별 타임코드 (편집기용)
 node $G build spec.json --subs voice.srt --audio voice.mp3 --captions -o out.html
 node $G check    out.html                   # 산출물 기계 검수
 node $G test                                # 엔진 회귀 검사 (엔진을 고쳤으면 반드시)
-node $G info     [patterns|themes|trans|energy|aspects|tokens]
+node $G info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|aspects|tokens|chart]
 node $G pattern  convergence                # 패턴 하나의 필드
-node $G icons    채팅                        # 픽토그램 191종 검색 (한글 지원)
+node $G icons    채팅                        # 픽토그램 238종 검색 (한글 지원)
 node $G info     decor|mark|frame|art       # 벡터 세트 102종
 ```
 
@@ -228,7 +228,10 @@ GGM.scenes                 // [{id, pattern, at, dur, shot}] — shot 이 검수
 GGM.goto(i)                // 씬 i 의 기준 프레임으로 세우고 정지
 GGM.seek(t)                // t초로 세우고 정지
 GGM.frame(n, fps=30)       // 프레임 번호로
-GGM.play() / pause() / replay()
+GGM.step(n, fps=30)        // 지금 시각에서 n 프레임 앞뒤로 세우고 정지 (음수는 뒤로)
+GGM.next() / prev()        // 지금 시각 기준 다음·이전 씬 시작으로. 도착한 씬 인덱스를 돌려준다
+GGM.play() / pause() / replay() / playing()
+GGM.rate(x)                // 배속(0.5·1·1.5·2 …). 인자 없이 부르면 현재 값. 음성이 시계면 음성 속도도 같이
 GGM.master                 // GSAP 타임라인 (직접 조작 가능)
 
 // --present 로 빌드했을 때만
@@ -399,7 +402,7 @@ done
 자기 선언 대신 grep 으로 확인한다.
 
 ```
-lang="ko" · prefers-reduced-motion · aria-label · data-pattern · window.GGM
+lang="ko" · [data-rm] 감소 모션 게이트 · aria-label · data-pattern · window.GGM
 document.fonts · 레이아웃 속성 애니메이션 없음 · 허용 외 외부 스크립트 없음
 씬 수 · 패턴 종류 수 · 파일 크기
 ```

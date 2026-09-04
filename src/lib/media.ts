@@ -184,3 +184,27 @@ export async function loadSpecMedia(
   if (refs.captions && !out.cues) out.missing.push("자막을 못 읽어 화면 자막은 끈 채로 연다");
   return out;
 }
+
+/**
+ * 음성의 길이(초). 브라우저가 메타데이터만 읽고 알려 준다 — ffprobe 를 부르지 않는다.
+ *
+ * 렌더는 이 길이와 타임라인 길이가 어긋나면 한쪽을 조용히 잘라내므로,
+ * 시작 전에 그 차이를 보여 주려고 잰다. 못 읽으면 null(모르는 것은 모른다고 둔다).
+ */
+/* `Promise.withResolvers` 는 ES2024 다 — 이 앱은 tsconfig 가 ES2020 이고 오래된 시스템
+   웹뷰(WKWebView)에서도 돌아야 하므로 여기서는 executor 형태를 쓴다. */
+export function measureAudioSec(src: string): Promise<number | null> {
+  return new Promise((resolve) => {
+    const a = new Audio();
+    const finish = (v: number | null) => {
+      a.src = "";
+      resolve(v);
+    };
+    a.preload = "metadata";
+    a.addEventListener("loadedmetadata", () =>
+      finish(Number.isFinite(a.duration) ? a.duration : null),
+    );
+    a.addEventListener("error", () => finish(null));
+    a.src = src;
+  });
+}

@@ -6,13 +6,15 @@
 //! 1. **PATH.** 앱을 Finder 에서 실행하면 PATH 가 빈약해 `claude` 도 `node` 도 안 보인다.
 //!    그래서 흔한 설치 위치를 직접 훑어 실행 파일을 찾고, 자식 프로세스에는 그 경로들을
 //!    PATH 앞에 붙여 준다 — CLI 본체가 node·bun 을 다시 찾기 때문이다.
-//! 2. **stdin 을 닫는다.** `codex exec` 는 stdin 이 TTY 가 아니면 "Reading additional
-//!    input from stdin..." 하며 기다린다. 열어 두면 영영 끝나지 않는다.
+//! 2. **stdin 을 반드시 닫는다.** 프롬프트는 argv 가 아니라 파일로 받아(`src/lib/agents.ts` —
+//!    Windows 인자 길이 한계) CLI 에 따라 stdin 으로 붓거나 `@파일` 인자로 넘긴다. stdin 으로
+//!    부을 때는 다 쓰고 EOF 를 줘야 한다 — `codex exec` 는 stdin 이 열려 있으면 "Reading
+//!    additional input from stdin..." 하며 영영 기다린다. 안 쓰는 경우는 처음부터 닫아 둔다.
 //! 3. **취소와 타임아웃.** 모델 호출은 몇 분씩 걸리고 멈추지 않는 경우도 있다.
 //!    렌더와 같은 `AtomicBool` 패턴으로 멈추고, 시한이 지나면 죽인다.
 
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, Read, Write};
 use std::path::PathBuf;
 use std::process::{Child, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -114,6 +116,9 @@ pub struct RunOpts {
     /// 사용자 프로젝트가 아니라 빈 임시 폴더에서 돌린다.
     pub cwd: Option<String>,
     pub timeout_sec: u64,
+    /// 본문을 자식 stdin 으로 부을 파일. 없으면 stdin 을 닫은 채 돈다.
+    #[serde(default)]
+    pub stdin_file: Option<String>,
 }
 
 /// 진행 로그 한 줄. 어느 스트림에서 왔는지 같이 보낸다 — 오류는 대개 stderr 로 온다.
@@ -215,7 +220,12 @@ pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, 
     /* 대화형 UI 를 끄고 색을 빼면 로그가 읽을 만해진다 */
     cmd.env("NO_COLOR", "1").env("TERM", "dumb").env("CI", "1");
 
-    cmd.stdin(Stdio::null()) /* codex exec 는 stdin 이 열려 있으면 입력을 기다린다 */
+    /* stdin 으로 부을 본문은 spawn 전에 읽는다 — 파일이 없으면 자식을 띄우기 전에 끝난다 */
+    let stdin_body = match o.stdin_file.as_deref().filter(|s| !s.trim().is_empty()) {
+        Some(f) => Some(std::fs::read(f).map_err(|e| format!("{f}: {e}"))?),
+        None => None,
+    };
+    cmd.stdin(if stdin_body.is_some() { Stdio::piped() } else { Stdio::null() })
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
     /* 취소·시한 초과 때 트리째 죽일 수 있게 자식을 제 프로세스 그룹의 리더로 만든다 */
@@ -236,6 +246,14 @@ pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, 
     let se = child.stderr.take().ok_or("stderr 을 열지 못했다")?;
     let h_out = pump(so, "out", out_buf.clone(), emit.clone());
     let h_err = pump(se, "err", err_buf.clone(), emit.clone());
+    /* 별도 스레드에서 붓는다 — 파이프 버퍼보다 긴 본문을 자식이 읽지 않으면 write 가 막혀
+       아래 취소·시한 루프까지 멈춘다. 다 쓰면 핸들을 버려 EOF 를 준다. */
+    let h_in = stdin_body.and_then(|body| {
+        let mut si = child.stdin.take()?;
+        Some(std::thread::spawn(move || {
+            let _ = si.write_all(&body);
+        }))
+    });
 
     let deadline = Duration::from_secs(o.timeout_sec.clamp(10, 3600));
     let mut timed_out = false;
@@ -264,6 +282,9 @@ pub fn run(emit: OnLine, o: RunOpts, cancel: Arc<AtomicBool>) -> Result<RunOut, 
     /* 파이프가 닫힐 때까지 기다린다 — 마지막 줄이 잘리면 JSON 이 깨진다 */
     let _ = h_out.join();
     let _ = h_err.join();
+    if let Some(h) = h_in {
+        let _ = h.join();
+    }
 
     let stdout = out_buf.lock().map(|s| s.clone()).unwrap_or_default();
     let stderr = err_buf.lock().map(|s| s.clone()).unwrap_or_default();
@@ -310,6 +331,7 @@ mod tests {
                 args: vec!["-c".into(), "echo 첫줄; echo 둘째 1>&2; exit 3".into()],
                 cwd: None,
                 timeout_sec: 20,
+                stdin_file: None,
             },
             Arc::new(AtomicBool::new(false)),
         )
@@ -323,7 +345,7 @@ mod tests {
         assert!(!out.timed_out && !out.canceled);
     }
 
-    /// stdin 은 닫혀 있어야 한다 — codex exec 는 열려 있으면 입력을 기다리다 멈춘다.
+    /// stdin 파일이 없으면 stdin 은 닫혀 있어야 한다 — codex exec 는 열려 있으면 입력을 기다리다 멈춘다.
     #[cfg(unix)]
     #[test]
     fn stdin_is_closed() {
@@ -337,12 +359,43 @@ mod tests {
                 args: vec!["-c".into(), "cat; echo 끝".into()],
                 cwd: None,
                 timeout_sec: 15,
+                stdin_file: None,
             },
             Arc::new(AtomicBool::new(false)),
         )
         .expect("실행 실패");
         assert!(!out.timed_out, "stdin 이 열려 있으면 cat 이 끝나지 않는다");
         assert!(out.stdout.contains("끝"));
+    }
+
+    /// stdin 파일은 본문이 그대로 들어가고 끝에 EOF 가 와야 한다. 파이프 버퍼(64KB)보다
+    /// 큰 본문으로 — 자식이 다 읽기 전에 write 가 막혀도 run 이 멈추지 않는지 같이 본다.
+    #[cfg(unix)]
+    #[test]
+    fn stdin_file_is_fed_then_closed() {
+        use std::sync::atomic::AtomicBool;
+        use std::sync::Arc;
+        let body = format!("{}\n마지막줄\n", "프롬프트 본문 ".repeat(20_000));
+        let f = std::env::temp_dir().join("gmotion-agent-test-stdin.md");
+        std::fs::write(&f, &body).unwrap();
+        let emit: super::OnLine = Arc::new(|_l| {});
+        let out = super::run(
+            emit,
+            super::RunOpts {
+                bin: "/bin/sh".into(),
+                args: vec!["-c".into(), "cat; echo 끝".into()],
+                cwd: None,
+                timeout_sec: 15,
+                stdin_file: Some(f.to_string_lossy().into()),
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .expect("실행 실패");
+        let _ = std::fs::remove_file(&f);
+        assert!(!out.timed_out, "EOF 가 없으면 cat 이 끝나지 않는다");
+        assert!(out.stdout.ends_with("마지막줄\n끝\n"), "본문 뒤에 echo 가 와야 한다");
+        /* pump 가 줄 끝 공백을 다듬으므로 길이 대신 조각 수로 센다 */
+        assert_eq!(out.stdout.matches("프롬프트 본문").count(), 20_000, "본문이 통째로 들어가야 한다");
     }
 
     /// 시한이 지나면 죽인다.
@@ -359,6 +412,7 @@ mod tests {
                 args: vec!["-c".into(), "sleep 60".into()],
                 cwd: None,
                 timeout_sec: 10, /* clamp 하한이 10 이다 */
+                stdin_file: None,
             },
             Arc::new(AtomicBool::new(false)),
         )
@@ -393,6 +447,7 @@ mod tests {
                 args: vec!["/C".into(), "(echo one)&(echo two 1>&2)&exit /b 3".into()],
                 cwd: None,
                 timeout_sec: 20,
+                stdin_file: None,
             },
             Arc::new(AtomicBool::new(false)),
         )
@@ -409,7 +464,7 @@ mod tests {
         assert!(!out.timed_out && !out.canceled);
     }
 
-    /// stdin 은 닫혀 있어야 한다 (Windows) — more 는 stdin 이 열려 있으면 끝나지 않는다.
+    /// stdin 파일이 없으면 stdin 은 닫혀 있어야 한다 (Windows) — more 는 stdin 이 열려 있으면 끝나지 않는다.
     #[cfg(windows)]
     #[test]
     fn stdin_is_closed() {
@@ -423,12 +478,43 @@ mod tests {
                 args: vec!["/C".into(), "more & echo end".into()],
                 cwd: None,
                 timeout_sec: 15,
+                stdin_file: None,
             },
             Arc::new(AtomicBool::new(false)),
         )
         .expect("실행 실패");
         assert!(!out.timed_out, "stdin 이 열려 있으면 more 가 끝나지 않는다");
         assert!(out.stdout.contains("end"));
+    }
+
+    /// stdin 파일은 본문이 그대로 들어가고 끝에 EOF 가 와야 한다 (Windows). 파이프 버퍼보다
+    /// 큰 본문으로 — 자식이 다 읽기 전에 write 가 막혀도 run 이 멈추지 않는지 같이 본다.
+    #[cfg(windows)]
+    #[test]
+    fn stdin_file_is_fed_then_closed() {
+        use std::sync::atomic::AtomicBool;
+        use std::sync::Arc;
+        let body = format!("{}\r\nlastline\r\n", "prompt body ".repeat(20_000));
+        let f = std::env::temp_dir().join("gmotion-agent-test-stdin.md");
+        std::fs::write(&f, &body).unwrap();
+        let emit: super::OnLine = Arc::new(|_l| {});
+        let out = super::run(
+            emit,
+            super::RunOpts {
+                bin: cmd_exe(),
+                args: vec!["/C".into(), "more & echo end".into()],
+                cwd: None,
+                timeout_sec: 15,
+                stdin_file: Some(f.to_string_lossy().into()),
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .expect("실행 실패");
+        let _ = std::fs::remove_file(&f);
+        assert!(!out.timed_out, "EOF 가 없으면 more 가 끝나지 않는다");
+        assert!(out.stdout.contains("lastline"), "본문이 들어가야 한다");
+        assert!(out.stdout.trim_end().ends_with("end"), "본문 뒤에 echo 가 와야 한다");
+        assert!(out.stdout.matches("prompt body").count() >= 20_000, "본문이 통째로 들어가야 한다");
     }
 
     /// 시한이 지나면 죽인다 (Windows). timeout.exe 는 stdin 이 닫히면 오류라 ping 으로 잔다.
@@ -445,6 +531,7 @@ mod tests {
                 args: vec!["/C".into(), "ping -n 60 127.0.0.1 > NUL".into()],
                 cwd: None,
                 timeout_sec: 10, /* clamp 하한이 10 이다 */
+                stdin_file: None,
             },
             Arc::new(AtomicBool::new(false)),
         )

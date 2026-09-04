@@ -1,5 +1,31 @@
 import { describe, it, expect } from "vitest";
-import { extractJson } from "./agents";
+import { ADAPTERS, extractJson } from "./agents";
+
+describe("ADAPTERS", () => {
+  const file = "/tmp/gmotion-agent/prompt.md";
+  it("stdin 어댑터는 프롬프트를 argv 에 싣지 않고 stdin 으로 받는다", () => {
+    expect(ADAPTERS.claude.stdin).toBe(true);
+    expect(ADAPTERS.claude.args(file)).toEqual(["-p"]);
+    expect(ADAPTERS.codex.stdin).toBe(true);
+    expect(ADAPTERS.codex.args(file)).toEqual(["exec", "--skip-git-repo-check", "-"]);
+  });
+  it("@파일 어댑터는 경로를 메시지로 넘기고 stdin 은 닫는다", () => {
+    expect(ADAPTERS.pi.stdin).toBe(false);
+    expect(ADAPTERS.pi.args(file)).toEqual(["-p", `@${file}`]);
+    expect(ADAPTERS.omp.stdin).toBe(false);
+    expect(ADAPTERS.omp.args(file)).toEqual(["-p", `@${file}`]);
+  });
+  it("모델은 비우면 넘기지 않고, 주면 --model 로 붙는다", () => {
+    expect(ADAPTERS.claude.args(file, "  ")).toEqual(["-p"]);
+    expect(ADAPTERS.claude.args(file, "haiku")).toEqual(["-p", "--model", "haiku"]);
+    expect(ADAPTERS.pi.args(file, "openai/gpt-5.2")).toEqual([
+      "-p",
+      `@${file}`,
+      "--model",
+      "openai/gpt-5.2",
+    ]);
+  });
+});
 
 describe("extractJson", () => {
   it("코드펜스 안의 JSON 을 꺼낸다", () => {

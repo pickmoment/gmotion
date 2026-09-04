@@ -16,11 +16,17 @@ export function FieldRenderer({
   field,
   obj,
   onPatch,
+  theme = "midnight",
+  max,
 }: {
   field: Field;
   obj: Obj;
   /** key 하나를 갈아끼운 새 객체를 돌려준다 */
   onPatch: (next: Obj) => void;
+  /** 문서 테마 — 픽커 미리보기 색. 씬 객체에는 theme 이 없어 위에서 내려받는다 */
+  theme?: string;
+  /** 패턴의 밀도 상한 — 항목 배열이 자기 max 가 없을 때 쓴다 */
+  max?: number | null;
 }) {
   const set = (v: unknown) => onPatch(setField(obj, field.key, v));
   const v = obj[field.key];
@@ -33,7 +39,7 @@ export function FieldRenderer({
         onChange={set}
         decorLevel={obj.decorLevel as 0 | 1 | 2 | undefined}
         onChangeLevel={(lvl) => onPatch(setField(obj, "decorLevel", lvl))}
-        theme={(obj.theme as string) || "midnight"}
+        theme={theme}
         hint={field.hint}
       />
     );
@@ -44,7 +50,7 @@ export function FieldRenderer({
         label={field.label}
         value={v as string | undefined}
         onChange={set}
-        theme={(obj.theme as string) || "midnight"}
+        theme={theme}
         hint={field.hint}
       />
     );
@@ -55,7 +61,7 @@ export function FieldRenderer({
         label={field.label}
         value={v as string | undefined}
         onChange={set}
-        theme={(obj.theme as string) || "midnight"}
+        theme={theme}
         hint={field.hint}
       />
     );
@@ -66,7 +72,7 @@ export function FieldRenderer({
         label={field.label}
         value={v as string | undefined}
         onChange={set}
-        theme={(obj.theme as string) || "midnight"}
+        theme={theme}
         hint={field.hint}
       />
     );
@@ -87,7 +93,10 @@ export function FieldRenderer({
       return (
         <div className="field">
           <Label f={field} />
-          <input value={(v as string) ?? ""} onChange={(e) => set(e.target.value)} />
+          <input
+            value={v === undefined ? "" : String(v)}
+            onChange={(e) => set(field.numeric ? numOrText(e.target.value) : e.target.value)}
+          />
           <Hint f={field} />
         </div>
       );
@@ -190,13 +199,15 @@ export function FieldRenderer({
           label={field.label}
           hint={field.hint}
           req={field.req}
+          max={field.max === undefined ? max : field.max}
           primary={field.primary}
           fields={field.fields}
         />
       );
 
     case "group": {
-      const g = (v as Obj) ?? {};
+      /* 스펙은 항목 하나짜리 객체(target·center·answer)를 문자열로도 받는다 — 첫 필드(라벨)로 읽는다 */
+      const g: Obj = typeof v === "string" ? { [field.fields[0].key]: v } : ((v as Obj) ?? {});
       return (
         <fieldset className="group">
           <legend>
@@ -211,6 +222,8 @@ export function FieldRenderer({
                 field={f}
                 obj={g}
                 onPatch={(next) => set(Object.keys(next).length ? next : undefined)}
+                theme={theme}
+                max={max}
               />
             ))}
           </div>
@@ -229,6 +242,12 @@ export function FieldRenderer({
         />
       );
   }
+}
+
+/** "3" 은 숫자, "PART 3" 은 글자 — 엔진이 typeof 로 가르므로 여기서 미리 가른다 */
+function numOrText(s: string): number | string {
+  const n = Number(s);
+  return s.trim() !== "" && Number.isFinite(n) ? n : s;
 }
 
 function Label({ f }: { f: Field }) {

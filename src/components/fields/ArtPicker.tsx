@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { VECTORS } from "../../engine/boot";
 import { renderArtSvg } from "../../lib/design";
+import { sanitizeSvg } from "../../lib/svg";
 import { useDesignStore } from "../../lib/designStore";
 
 export function ArtPicker({
@@ -50,7 +51,7 @@ export function ArtPicker({
     );
   }, [allArts, q]);
 
-  const currentSvg = value ? renderArtSvg(value, theme) : null;
+  const currentSvg = value ? sanitizeSvg(renderArtSvg(value, theme)) : null;
   const currentDef = value ? VECTORS.ART[value] || library.arts[value] : null;
 
   return (
@@ -98,7 +99,7 @@ export function ArtPicker({
           />
           <div className="art-grid">
             {filteredArts.map((a) => {
-              const svg = renderArtSvg(a.key, theme);
+              const svg = sanitizeSvg(renderArtSvg(a.key, theme));
               const isSelected = a.key === value;
               return (
                 <button

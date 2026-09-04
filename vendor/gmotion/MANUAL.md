@@ -259,7 +259,7 @@ convergence — 수렴
 이름을 외울 필요 없다. 전부 검색으로 찾는다.
 
 ```bash
-gm icons 서버              # 픽토그램 191종에서 검색 (한글로 찾아진다)
+gm icons 서버              # 픽토그램 238종에서 검색 (한글로 찾아진다)
 gm icons                  # 전체 목록
 gm info decor             # 배경 레이어 20종
 gm info mark              # 강조 마크 15종 (밑줄·동그라미·형광펜…)
@@ -565,7 +565,8 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info skins` | 스킨 6종 + 디자인 프리미티브 48종 |
 | `gm info trans` | 트랜지션 15종 |
 | `gm info numfx` | dataCounter 숫자 표기 2종 (count · roll) |
-| `gm info textfx` | 글자 등장 8종 (scramble·typewriter·blur·wipe·flip·glitch·outline·roll) · 글자 퇴장 9종(exitFx) · `*낱말*` 인라인 강조 |
+| `gm info textfx` | 글자 등장 8종 (scramble·typewriter·blur·wipe·flip·glitch·outline·roll) · `*낱말*` 인라인 강조 |
+| `gm info exitfx` | 글자 퇴장 9종 (up·down·fade·typewriter·flip·scramble·blur·wipe·glitch) |
 | `gm info cam` | 씬 카메라 7종 |
 | `gm info energy` | 에너지 3종 |
 | `gm info aspects` | 화면비 4종 |
@@ -583,7 +584,7 @@ gm test -v       # 무엇을 검사했는지 본다
 
 ### `gm icons [검색어]`
 
-픽토그램 191종을 찾는다. 검색어를 빼면 전체가 나온다. **한글로 검색된다.**
+픽토그램 238종을 찾는다. 검색어를 빼면 전체가 나온다. **한글로 검색된다.**
 
 ---
 
@@ -782,6 +783,8 @@ gm build starter-narrated.json -o /tmp/nar.html
 |---|---|
 | `Space` | 재생 / 일시정지 |
 | `←` `→` | 이전 / 다음 씬 |
+| `,` `.` | 한 프레임 뒤로 / 앞으로 (멈춘 채로) |
+| `[` `]` | 배속 내리기 / 올리기 (0.5 · 1 · 1.5 · 2) |
 | `R` | 처음부터 |
 | `F` | 전체화면 |
 | `C` | 화면 자막 켜기 / 끄기 (`--captions` 로 빌드했을 때만. 발표용에는 자막이 없다) |
@@ -817,7 +820,10 @@ GGM.scenes         // 씬 목록 [{id, pattern, at, dur, shot}]
 GGM.seek(12.5)     // 12.5초로 세우고 정지
 GGM.goto(3)        // 씬 3 의 기준 프레임으로
 GGM.frame(450, 30) // 450번째 프레임(30fps)으로
-GGM.play()  GGM.pause()  GGM.replay()
+GGM.step(-1)       // 한 프레임 뒤로 (정지 상태에서 어긋남을 볼 때)
+GGM.next()  GGM.prev()  // 다음·이전 씬 시작으로
+GGM.play()  GGM.pause()  GGM.replay()  GGM.playing()
+GGM.rate(1.5)      // 배속 — 음성이 있으면 음성도 같이
 ```
 
 ---

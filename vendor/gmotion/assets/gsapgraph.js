@@ -642,10 +642,12 @@ var EXIT_FX = {
   flip:       { label: '플립 — 글자가 위 축으로 넘어가며 사라진다' },
   glitch:     { label: '글리치 — 찢기고 어긋난 뒤 꺼진다' }
 };
-/* 퇴장 fx 를 받는 글자 — 헤더 제목·키네틱 줄(스택 전부, 컷은 마지막 줄)·인용문 */
-var EXIT_TEXT = ['.gg-title .gg-mk', '.gg-kstack .gg-kl .gg-mk', '.gg-kcut:last-of-type .gg-kl .gg-mk', '.gg-qt .gg-mk'];
+/* 퇴장 fx 를 받는 글자 — 헤더 제목·키네틱 줄(스택 전부, 컷은 마지막 줄)·인용문·matchCut 의 to 제목(롤은 아래 칸) */
+var EXIT_TEXT = ['.gg-title .gg-mk', '.gg-kstack .gg-kl .gg-mk', '.gg-kcut:last-of-type .gg-kl .gg-mk', '.gg-qt .gg-mk',
+                 '.gg-mcTo .gg-mk', '.gg-mcRoll .gg-mcT:last-child'];
 /* 곁글자 — fx 와 무관하게 페이드로 따라 나간다 */
-var EXIT_SIDE = ['.gg-kicker', '.gg-sub', '.gg-title .gg-mark', '.gg-qm', '.gg-qby', '.gg-kcut:last-of-type .gg-kl'];
+var EXIT_SIDE = ['.gg-kicker', '.gg-sub', '.gg-title .gg-mark', '.gg-qm', '.gg-qby', '.gg-kcut:last-of-type .gg-kl',
+                 '.gg-mcTo .gg-mcS', '.gg-mcRoll .gg-mcS'];
 /** 퇴장에 걸리는 시간(초). 씬 길이를 이만큼의 일부로 늘리는 데도 쓴다 */
 function exitDur(ctx, fx, chars) {
   var d = ctx.d('normal');
@@ -2149,7 +2151,9 @@ PATTERNS.matchCut = {
     var roll = sc.textFx === 'roll';
     function block(cls, o) {
       return '<div class="gg-mc ' + cls + ' gg-c" style="left:' + x + 'px;top:' + Math.round(ay + asz * .72) + 'px;width:' + w + 'px">' +
-        (o.title ? '<div class="gg-mcT" style="font-size:' + Math.round(ctx.fs.title * .8) + 'px">' + emText(o.title) + '</div>' : '') +
+        /* 제목은 헤더처럼 마스크 안에 둔다 — exitFx up/down 이 잘려 나가야 사라지는 것으로 읽힌다 */
+        (o.title ? '<div class="gg-mcT" style="font-size:' + Math.round(ctx.fs.title * .8) + 'px"><span class="gg-mask"><span class="gg-mk">' +
+          emText(o.title) + '</span></span></div>' : '') +
         (o.sub ? '<div class="gg-mcS" style="font-size:' + Math.round(ctx.fs.sub * .9) + 'px">' + emText(o.sub) + '</div>' : '') + '</div>';
     }
     if (roll) {
@@ -3513,7 +3517,9 @@ function compile(spec, opts) {
     /* 글자 퇴장 — hold 뒤에 exitDur 의 70% 를 씬에 더한다(나머지 30% 는 다음 씬의 트랜지션과 겹친다).
        자막에 맞춘 씬은 길이가 대사로 정해지므로 늘리지 않고 끝에서 exitDur 만큼 앞에 얹는다. */
     var exFx = EXIT_FX[sc.exitFx] ? sc.exitFx : '';
-    var exChars = plain(sc.question || sc.title || sc.text || lineItems(sc.lines).map(function (l) { return l.text; }).join('')).replace(/\s/g, '').length;
+    /* 세는 글자는 fx 를 받는 본문만 — kicker·sub 같은 곁글자는 글자 수와 무관하게 고정 페이드로 따라 나간다(EXIT_SIDE) */
+    var exChars = plain(sc.question || sc.title || sc.text || (sc.to && sc.to.title) ||
+      lineItems(sc.lines).map(function (l) { return l.text; }).join('')).replace(/\s/g, '').length;
     var exDur = exFx ? exitDur(ctx, exFx, exChars) : 0;
     exits.push(exFx ? { ctx: ctx, fx: exFx, dur: exDur, chars: exChars } : null);
     out.push({
@@ -3727,8 +3733,8 @@ function validate(spec, opts) {
       errors.push(tag + 'exitFx "' + sc.exitFx + '" 는 없다 (' + Object.keys(EXIT_FX).join(' ') + ').');
     if (sc.exitFx === 'typewriter' && sc.textFx !== 'typewriter')
       errors.push(tag + 'exitFx "typewriter"(백스페이스)는 textFx "typewriter" 로 찍은 글자만 지울 수 있다.');
-    if (sc.exitFx && !(sc.title || sc.question || sc.text || arr(sc.lines).length))
-      warnings.push(tag + 'exitFx 가 있는데 나갈 글자(title·text·lines)가 없다.');
+    if (sc.exitFx && !(sc.title || sc.question || sc.text || (sc.to && sc.to.title) || arr(sc.lines).length))
+      warnings.push(tag + 'exitFx 가 있는데 나갈 글자(title·question·text·lines·matchCut 의 to.title)가 없다.');
     var emFields = ['title', 'sub', 'text', 'question'].filter(function (k) { return hasEm(sc[k]); })
       .concat(lineItems(sc.lines).some(function (l) { return hasEm(l.text); }) ? ['lines'] : []);
     if (emFields.length && fxNames.indexOf('scramble') >= 0)
@@ -3917,7 +3923,13 @@ function validate(spec, opts) {
       if (Object.keys(uniq).length <= Math.max(2, Math.floor(durs.length / 3)))
         warnings.push('씬 길이가 거의 같다 — 강조할 씬은 길게, 넘길 씬은 짧게 해서 리듬을 만든다.');
     }
-    if (c.total > 150) warnings.push('전체 ' + Math.round(c.total) + '초다 — 2분을 넘으면 모션그래픽이 아니라 영상이다. 나누는 걸 검토한다.');
+    /* 유튜브 한 편은 장(chapterCard)으로 이어 붙인 긴 물건이고, 자막(media.subs)이 있으면 길이는 목소리가 정한다 —
+       그 둘 중 하나라도 있으면 2분 기준으로 따지지 않는다 */
+    var youtube = arr(spec.scenes).some(function (sc) { return sc && (sc.pattern === 'chapterCard' || sc.pattern === 'endCard'); }) ||
+      !!mediaOf(spec).subs;
+    if (c.total > 150 && !youtube)
+      warnings.push('전체 ' + Math.round(c.total) + '초다 — 2분을 넘으면 모션그래픽이 아니라 영상이다. 나누거나, ' +
+        '유튜브 한 편이면 장(chapterCard)으로 나눴는지 확인한다.');
   }
   if (opts.captions && opts.captions.length) {
     var capN = arr(spec.scenes).filter(function (sc) { return sc && sc.caption; }).length;
@@ -4007,7 +4019,6 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
   'transition:transform .28s cubic-bezier(.16,1,.3,1);will-change:transform}',
 '.gg-stage[data-cc="true"] .gg-scenes-wrap{transform:translateY(-' + Math.round(A.h * (A.w < A.h ? .038 : .032)) + 'px)}',
 '.gg-stage[data-cc="false"] .gg-scenes-wrap{transform:translateY(0)}',
-'@media (prefers-reduced-motion:reduce){.gg-scenes-wrap{transition:none}}',
 '.gg-grain{position:absolute;inset:0;pointer-events:none;opacity:' + T.grain + ';z-index:60;mix-blend-mode:overlay}',
 '.gg-vig{position:absolute;inset:0;pointer-events:none;z-index:59;' +
   'background:radial-gradient(110% 80% at 50% 45%,transparent 55%,rgba(0,0,0,' + num(T.vig, .42) + ') 100%)}',
@@ -4036,8 +4047,6 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-drPulse{animation:ggPulse 7s ease-in-out infinite;transform-origin:center}',
 '.gg-drDrift{animation:ggDrift 20s ease-in-out infinite}',
 '.gg-drTwinkle{animation:ggTwinkle 5s ease-in-out infinite}',
-'@media (prefers-reduced-motion:reduce){' +
-  '.gg-drFloat,.gg-drSlide,.gg-drSpin,.gg-drPulse,.gg-drDrift,.gg-drTwinkle,.gg-tw,.gg-em,.gg-breath,.gg-glowT{animation:none}}',
 /* 공통 텍스트 */
 '.gg-head{position:absolute}',
 '.gg-c{text-align:center}',
@@ -4104,7 +4113,6 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-artLoop{animation-play-state:paused;transform-box:view-box}',
 '.gg-cardArt{position:absolute;right:-10px;bottom:-10px;width:52%;opacity:.28;pointer-events:none}',
 '.gg-cardArt svg{width:100%;height:auto;display:block}',
-'@media (prefers-reduced-motion:reduce){.gg-artSpin,.gg-artSpinR,.gg-artFlow,.gg-mkStar{animation:none}}',
 /* ---- 마퀴 ---- */
 '.gg-mqRow{position:absolute;left:0;width:100%;overflow:hidden;display:flex;align-items:center;' +
   'mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);' +
@@ -4114,7 +4122,15 @@ F.solo ? 'body{font-synthesis-weight:none;-webkit-font-smoothing:antialiased}' :
 '.gg-mqI{display:inline-flex;align-items:center;gap:16px;padding:0 42px;white-space:nowrap;flex:0 0 auto}',
 '.gg-mqI b{font-weight:700;color:var(--ink)}',
 '.gg-mqI em{font-style:normal;font-size:.72em;color:var(--dim)}',
-'@media (prefers-reduced-motion:reduce){.gg-mqTrack{animation:none}}',
+/* ---- 감소 모션 ----
+   상시 CSS 루프(배경·마퀴·커서·숨쉬기·일러스트)는 마스터 타임라인 밖에서 돌므로 GSAP 의 D()/ST() 가 못 막는다.
+   미디어 쿼리를 직접 보지 않는다 — RM 판정(OS 설정·루트 reducedMotion·?motion=on|off)은 runtime 한 곳이 하고
+   결과를 <html data-rm> 으로 세운다. 미디어 쿼리를 CSS 에 남기면 ?motion=on 이 OS 설정을 못 이긴다.
+   두 클래스가 겹치는 .gg-breath.gg-glowT 와 같은 특이도라 이 블록은 그 뒤에 와야 이긴다. */
+'[data-rm] .gg-scenes-wrap{transition:none}',
+'[data-rm] .gg-drFloat,[data-rm] .gg-drSlide,[data-rm] .gg-drSpin,[data-rm] .gg-drPulse,[data-rm] .gg-drDrift,[data-rm] .gg-drTwinkle,' +
+  '[data-rm] .gg-tw,[data-rm] .gg-em,[data-rm] .gg-breath,[data-rm] .gg-glowT,[data-rm] .gg-mkStar,' +
+  '[data-rm] .gg-artSpin,[data-rm] .gg-artSpinR,[data-rm] .gg-artFlow,[data-rm] .gg-mqTrack{animation:none}',
 /* ---- 차트 ---- */
 '.gg-chart{position:absolute}',
 '.gg-cSvg{width:100%;height:100%;display:block;font-family:var(--font);overflow:visible}',

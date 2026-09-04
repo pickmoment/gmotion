@@ -75,7 +75,7 @@ export const SKINS = SK as unknown as {
 /** 산출물에 인라인되는 소스 — toHTML 에 항상 이 둘을 넘긴다. */
 export const ASSETS = { gsap: gsapSrc, runtime: runtimeSrc };
 
-/** 픽토그램 191종. 이름·별칭 검색과 24x24 path 를 그대로 노출한다. */
+/** 픽토그램 238종. 이름·별칭 검색과 24x24 path 를 그대로 노출한다. */
 export const ICONS = {
   all: Object.keys(ICO.ICONS as Record<string, string>).sort(),
   path: (key: string) => (ICO.ICONS as Record<string, string>)[key],

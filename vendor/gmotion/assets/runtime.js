@@ -2,15 +2,18 @@
  * gmotion runtime — 트윈 IR 을 GSAP 마스터 타임라인으로 조립한다.
  * 산출물 HTML 안에서 실행된다. 엔진이 SPEC · TR 자리에 IR 을 심는다(플레이스홀더 치환).
  *
- * 노출 API (검수·캡처용):
+ * 노출 API (검수·캡처·에디터 전송부용):
  *   GGM.ready      폰트 로드 + 타임라인 조립 완료 Promise
  *   GGM.master     GSAP 타임라인
  *   GGM.total      전체 초
- *   GGM.scenes     [{id, pattern, at, dur}]
+ *   GGM.scenes     [{id, pattern, at, dur, shot}]  shot = 씬별 스크린샷 기준 시각
  *   GGM.seek(t)    t초로 세우고 정지. 프레임 캡처용
  *   GGM.frame(n,fps=30)  프레임 번호로 세우고 정지
+ *   GGM.step(n,fps=30)   지금 시각에서 n 프레임 앞뒤로 세우고 정지 (음수는 뒤로)
  *   GGM.goto(i)    씬 i 의 hold 지점(내용이 다 나온 순간)으로 세운다 — 씬별 스크린샷용
- *   GGM.play() GGM.pause() GGM.replay()
+ *   GGM.next() GGM.prev()  지금 시각 기준 다음·이전 씬 시작으로. 도착한 씬 인덱스를 돌려준다
+ *   GGM.play() GGM.pause() GGM.replay() GGM.playing()
+ *   GGM.rate(x)    배속. 인자 없이 부르면 현재 값. 음성이 시계면 음성 속도도 같이 간다
  *   GGM.setCaptions(on) / GGM.captionsOn   화면 자막 켜기·끄기 (C 키·플레이어 CC 버튼과 같은 것)
  */
 (function () {
@@ -21,6 +24,8 @@
   var QS = new URLSearchParams(location.search);
   if (SPEC.reducedMotion == null && QS.get('motion') === 'on') RM = false;
   if (SPEC.reducedMotion == null && QS.get('motion') === 'off') RM = true;
+  /* CSS 의 상시 루프(배경 float·마퀴·커서·숨쉬기)는 이 속성 하나로 멈춘다 — 미디어 쿼리는 ?motion=on 을 모른다 */
+  if (RM) document.documentElement.setAttribute('data-rm', '');
 
   gsap.registerPlugin(DrawSVGPlugin, MorphSVGPlugin, SplitText, CustomEase, CustomWiggle,
                       MotionPathPlugin, ScrambleTextPlugin);
@@ -541,7 +546,12 @@
       var t = Math.max(0, Math.min(SPEC.total, AUD.currentTime - off));
       master.time(t); paint(t);
     });
-    AUD.addEventListener('ended', function () { audioLead = false; });
+    AUD.addEventListener('ended', function () {
+      audioLead = false;
+      /* 음성이 시계인 동안 master.repeat 는 안 돈다(master 는 pause 상태) — loop 는 여기서 다시 감는다.
+         0.4초는 repeatDelay 와 같은 숨. 그 사이 사용자가 시각을 옮겼으면(ended 가 풀림) 손대지 않는다 */
+      if (SPEC.mode === 'loop') setTimeout(function () { if (AUD.ended) doRestart(); }, 400);
+    });
     /* 음성과 화면의 길이가 크게 다르면 자막을 다시 맞춰야 한다 */
     AUD.addEventListener('loadedmetadata', function () {
       var span = AUD.duration - off;
@@ -552,6 +562,43 @@
     });
   }
 
+  /** 시각 t 에 걸리는 씬 인덱스 — 씬 시작 직전 10ms 는 그 씬으로 친다(경계에 멈춘 프레임을 앞 씬으로 세지 않게) */
+  function sceneIndexAt(t) {
+    var k = 0;
+    SPEC.scenes.forEach(function (s, i) { if (t >= s.at - .01) k = i; });
+    return k;
+  }
+  /** 지금 씬에서 di 만큼 옮겨 그 씬 시작으로. 돌려주는 값은 도착한 씬 인덱스 */
+  function jumpScene(di) {
+    var i = sceneIndexAt(master.time());
+    var j = Math.max(0, Math.min(SPEC.scenes.length - 1, i + di));
+    var s = SPEC.scenes[j];
+    doSeek(s.at); flashHint('씬 ' + (j + 1) + ' · ' + s.pattern);
+    return j;
+  }
+  /** 멈춘 채로 n 프레임 앞뒤 — 프레임 단위로 어긋남을 볼 때 */
+  function stepFrames(n, fps) {
+    doPause();
+    return doSeek(master.time() + n / (fps || 30));
+  }
+
+  /* 배속은 플레이어 버튼·`[` `]`·GGM.rate 가 한 값을 공유한다 */
+  var RATES = [.5, 1, 1.5, 2], RATE = 1, rateBtn = null;
+  function setRate(x) {
+    RATE = x; master.timeScale(x);
+    /* 음성이 시계를 잡고 있을 때는 timeScale 이 무시된다(tick 이 매 프레임 currentTime 으로
+       master.time 을 덮어쓴다) — 오디오 자체 속도도 같이 바꿔야 실제로 빨라/느려진다. */
+    if (AUD) AUD.playbackRate = x;
+    if (rateBtn) rateBtn.textContent = x + '×';
+    return RATE;
+  }
+  /** RATES 안에서 한 칸 위/아래. 목록 밖의 값(GGM.rate(1.25) 등)에서는 가장 가까운 칸 기준 */
+  function cycleRate(dir) {
+    var ri = 0, best = Infinity;
+    RATES.forEach(function (r, i) { var d = Math.abs(r - RATE); if (d < best) { best = d; ri = i; } });
+    return setRate(RATES[Math.max(0, Math.min(RATES.length - 1, ri + dir))]);
+  }
+
   /* --- 플레이어 --- */
   function player() {
     var p = document.querySelector('.gg-player');
@@ -559,8 +606,8 @@
     /* ?clean=1 — 스크린샷·녹화 때 조작 UI 를 치운다 */
     if (QS.get('clean') === '1') { p.remove(); return; }
     var btn = p.querySelector('[data-a="toggle"]'), bar = p.querySelector('.gg-bar'),
-        prog = p.querySelector('.gg-prog'), time = p.querySelector('.gg-time'),
-        rate = p.querySelector('[data-a="rate"]');
+        prog = p.querySelector('.gg-prog'), time = p.querySelector('.gg-time');
+    rateBtn = p.querySelector('[data-a="rate"]');
     SPEC.scenes.forEach(function (s) {
       if (!s.at) return;
       var m = document.createElement('span');
@@ -583,29 +630,24 @@
     p.querySelector('[data-a="replay"]').addEventListener('click', function () { doRestart(); });
     var ccBtn = p.querySelector('[data-a="cc"]');
     if (ccBtn) ccBtn.addEventListener('click', function () { setCaptions(!ccOn); });
-    var rates = [.5, 1, 1.5, 2], ri = 1;
-    rate.addEventListener('click', function () {
-      ri = (ri + 1) % rates.length; master.timeScale(rates[ri]); rate.textContent = rates[ri] + '×';
-      /* 음성이 시계를 잡고 있을 때는 timeScale 이 무시된다(tick 이 매 프레임 currentTime 으로
-         master.time 을 덮어쓴다) — 오디오 자체 속도도 같이 바꿔야 실제로 빨라/느려진다. */
-      if (AUD) AUD.playbackRate = rates[ri];
+    /* 버튼은 한 방향 순환 — 2× 다음은 0.5× */
+    rateBtn.addEventListener('click', function () {
+      var ri = RATES.indexOf(RATE);
+      setRate(RATES[(ri < 0 ? 1 : ri + 1) % RATES.length]);
     });
     sync();
   }
 
   /* --- 조작키 --- */
   function keys() {
-    function sceneIndexAt(t) {
-      var k = 0;
-      SPEC.scenes.forEach(function (s, i) { if (t >= s.at - .01) k = i; });
-      return k;
-    }
     document.addEventListener('keydown', function (e) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      var k = e.key, i = sceneIndexAt(master.time());
+      var k = e.key;
       if (k === ' ') { e.preventDefault(); playing() ? doPause() : doPlay(); }
-      else if (k === 'ArrowRight') { e.preventDefault(); var n = SPEC.scenes[i + 1]; if (n) { doSeek(n.at); flashHint('씬 ' + (i + 2) + ' · ' + n.pattern); } }
-      else if (k === 'ArrowLeft') { e.preventDefault(); var pv = SPEC.scenes[Math.max(0, i - 1)]; doSeek(pv.at); flashHint('씬 ' + (Math.max(0, i - 1) + 1) + ' · ' + pv.pattern); }
+      else if (k === 'ArrowRight') { e.preventDefault(); jumpScene(1); }
+      else if (k === 'ArrowLeft') { e.preventDefault(); jumpScene(-1); }
+      else if (k === ',' || k === '.') { e.preventDefault(); stepFrames(k === ',' ? -1 : 1); flashHint(master.time().toFixed(2) + 's', 700); }
+      else if (k === '[' || k === ']') { flashHint(cycleRate(k === '[' ? -1 : 1) + '×'); }
       else if (k === 'r' || k === 'R') { doRestart(); flashHint('처음부터'); }
       else if (k === 'f' || k === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
       else if ((k === 'c' || k === 'C') && CC) { setCaptions(!ccOn); flashHint(ccOn ? '자막 켬' : '자막 끔'); }
@@ -616,6 +658,43 @@
         master.paused() ? master.play() : null;
       });
     }
+  }
+
+  /* --- 에디터 다리 ------------------------------------------------
+   * 에디터의 미리보기는 이 산출물을 `allow-same-origin` **없이** 띄운다 — 스펙의
+   * 어떤 글자도 앱 문서(Tauri IPC 가 닿는 곳)를 만질 수 없게 한다. 그래서 부모는
+   * `window.GGM` 을 직접 부르지 못하고, 같은 조작을 메시지로 주고받는다.
+   *   부모 → 여기 : {gg:'cmd', op:'seek|goto|play|pause|replay|step|rate|captions', …}
+   *   여기 → 부모 : {gg:'ready', total, scenes} · {gg:'state', t, playing, captionsOn}
+   * ---------------------------------------------------------------- */
+  function bridge() {
+    if (window.parent === window) return;         /* 혼자 열린 산출물에는 부모가 없다 */
+    function post(m) { try { window.parent.postMessage(m, '*'); } catch (e) { } }
+    function state() {
+      return { gg: 'state', t: master.time(), playing: playing(), captionsOn: GGM.captionsOn };
+    }
+    window.addEventListener('message', function (e) {
+      var m = e.data;
+      if (!m || m.gg !== 'cmd' || e.source !== window.parent) return;
+      if (m.op === 'seek') GGM.seek(m.t);
+      else if (m.op === 'goto') GGM.goto(m.i);
+      else if (m.op === 'play') GGM.play();
+      else if (m.op === 'pause') GGM.pause();
+      else if (m.op === 'replay') GGM.replay();
+      else if (m.op === 'step') GGM.step(m.n);
+      else if (m.op === 'rate') GGM.rate(m.x);
+      else if (m.op === 'captions') GGM.setCaptions(!!m.on);
+      post(state());
+    });
+    /* 시계는 부모의 스크러버가 읽는다 — 값이 실제로 움직였을 때만 보낸다 */
+    var lastT = -1, lastP = null;
+    gsap.ticker.add(function () {
+      var t = master.time(), p = playing();
+      if (Math.abs(t - lastT) < .03 && p === lastP) return;
+      lastT = t; lastP = p;
+      post(state());
+    });
+    post({ gg: 'ready', total: SPEC.total, scenes: GGM.scenes, captions: !!CC });
   }
 
   /* ================================================================ *
@@ -835,6 +914,7 @@
       else if (isFinite(t0)) { doSeek(t0); doPause(); }
       else if (SPEC.mode !== 'step' && QS.get('paused') !== '1') { doPlay(); }
       else { doPause(); }
+      bridge();
       document.documentElement.setAttribute('data-gg-ready', '1');
       return GGM;
     });
@@ -855,6 +935,11 @@
       return master.time();
     },
     frame: function (n, fps) { return GGM.seek(n / (fps || 30)); },
+    step: function (n, fps) { return stepFrames(n, fps); },
+    /* 발표 모드의 next/prev 는 GGM.present 에 따로 있다 — 그쪽은 "내용이 다 나온 순간" 에 멈추는 규칙이 다르다 */
+    next: function () { return jumpScene(1); }, prev: function () { return jumpScene(-1); },
+    playing: function () { return playing(); },
+    rate: function (x) { return typeof x === 'number' && x > 0 ? setRate(x) : RATE; },
     /**
      * 씬 i 의 "내용이 다 나왔고 다음 씬은 아직 안 들어온" 순간으로 세운다.
      * 씬별 스크린샷 검수의 기준 프레임 — 트랜지션 겹침 구간을 피한다.

@@ -83,7 +83,11 @@ export function checkOutput(html: string): { lines: CheckLine[]; info: string; f
     if (m) fail++;
   };
   must('lang="ko"', /<html lang="ko">/, "한국어 문서 선언");
-  must("감소 모션 대응", /prefers-reduced-motion/, "모션 민감 사용자에게 정적 대체가 필요하다");
+  must(
+    "감소 모션 대응",
+    /\[data-rm\] [^{]*\{animation:none\}/,
+    "모션 민감 사용자에게 정적 대체가 필요하다 — 상시 CSS 루프는 [data-rm] 으로 멈춘다",
+  );
   must("스크린리더 라벨", /aria-label=/, "스테이지와 조작부에 라벨");
   must("씬 라벨", /data-pattern="/, "씬마다 패턴 표시 — 검수 추적용");
   must("검수 API", /window\.GGM/, "씬별 시킹 캡처에 필요하다");

@@ -767,6 +767,54 @@ fieldset.group > legend {
 .transport .sep {
   flex: 1;
 }
+/* 스크러버 — 산출물의 진행 바와 같은 시계. 씬 경계 틱은 range 위에 겹친다 */
+.scrub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 0;
+  border-top: 1px solid var(--line);
+  background: var(--bg2);
+  flex: none;
+}
+.scrub-track {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+.scrub-track input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--acc);
+  cursor: pointer;
+}
+.scrub-track input[type="range"]:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.scrub-track .tick {
+  position: absolute;
+  top: 1px;
+  width: 1px;
+  height: 4px;
+  background: var(--dim);
+  pointer-events: none;
+}
+.scrub .time {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink2);
+  min-width: 92px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.transport select.rate {
+  width: auto;
+  padding: 3px 6px;
+  font-size: 11px;
+}
 
 /* ── 검증 ─────────────────────────────────────────────────────── */
 
@@ -806,6 +854,21 @@ fieldset.group > legend {
 }
 .issues .warn {
   color: var(--warn);
+}
+/* 씬에 대한 지적은 버튼 — 글자 모양은 그대로 두고 눌리는 것만 드러낸다 */
+.issues .issue-go {
+  all: unset;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  border-radius: 4px;
+}
+.issues .issue-go:hover {
+  text-decoration: underline;
+}
+.issues .issue-go:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
 }
 
 .pill {
