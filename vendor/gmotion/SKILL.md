@@ -24,7 +24,11 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 |---|---|
 | 어떻게 진행할까요? | **화면 검수까지**(씬별 스크린샷을 눈으로 본다 — 권장) · **빠르게**(빌드하고 바로 넘긴다) |
 | 어디에 쓰나요? | **그대로 재생**(자동재생·공유) · **발표**(내가 말하며 넘긴다 → `--present`) · **컷 내보내기**(PNG 시퀀스를 편집기에) |
-| 화면비와 톤은? | **16:9**(midnight·ink·paper·mono) · **9:16 쇼츠**(neon) · **1:1/4:5**(warm) |
+| 화면비와 톤은? | **16:9**(midnight·ink·paper·mono) · **9:16 쇼츠**(neon·popart) · **1:1/4:5**(warm·fauve) · **회화 톤**(impasto·ukiyo·destijl·colorfield) |
+
+**회화 계열 여섯은 색·배경 문양·폰트·재질이 한 벌이다**(`impasto` `ukiyo` `destijl`
+`colorfield` `fauve` `popart`). 문화·예술·캠페인·전통·선언 톤이면 여기부터 본다 —
+`decor` 도 `skin` 도 따로 고르지 않는다(`theming.md` 의 테마 절).
 
 **분량은 묻지 않는다** — 씬 수는 내용이 정한다.
 
@@ -70,7 +74,7 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 | `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 씬 카메라, 글자 효과(`*낱말*`·textFx·exitFx·numFx)를 언제 쓰나, 흔한 실패 |
 | `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 인라인 강조·글자 등장/퇴장, 패턴 28종의 필드와 예시 |
 | `references/charts.md` | **차트를 넣을 때.** 어떤 차트인가, 색은 어떤 일을 하는가, 데이터 형태와 옵션 |
-| `references/theming.md` | 테마·**스킨**·화면비·에너지·**모션 스타일**·재생 모드·모션 토큰 |
+| `references/theming.md` | 테마(**회화 계열 여섯 포함**)·**스킨**·화면비·에너지·**모션 스타일**·재생 모드·모션 토큰 |
 | `references/api.md` | CLI, 검수 쿼리, agent-browser 캡처, 산출물 구조, GSAP 함정 |
 | `references/api.md` `#자막-동기화` | **음성·자막을 받았을 때.** 순서, 경고 읽는 법, 맞는 분량 |
 
@@ -269,6 +273,8 @@ node <skill>/assets/gm.js build spec.json -o 발표.html --present
 9. **재질은 색과 따로 고른다.** 테마가 색을, `skin` 이 표면·선·타이포의 모양을
    정한다(6종, `gm info skins`). 같은 내용을 문서 톤으로도 포스터 톤으로도 낼 수
    있으므로, 용도가 분명하면 스킨을 함께 고른다 — 기본값은 `glass` 다.
+   **테마가 기본 스킨을 정하는 경우도 있다**(`clay` `ukiyo` `destijl` `colorfield`
+   `fauve` `popart`) — 안 적으면 그 값이 오고, 적으면 스펙이 이긴다.
 10. **움직임의 성격도 고를 수 있다.** `energy` 가 속도라면 `motion` 이 성격이다
     (5종, `gm info motion`). 적지 않으면 `standard` — 지금까지의 움직임 그대로다.
     "더 다이나믹하게", "튀게", "쇼츠처럼 꽂히게", "다큐처럼 흐르게" 같은 말이 나오면
