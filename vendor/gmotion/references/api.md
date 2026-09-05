@@ -16,7 +16,7 @@ node $G test                                # 엔진 회귀 검사 (엔진을 �
 node $G info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|motion|aspects|tokens|chart]
 node $G pattern  convergence                # 패턴 하나의 필드
 node $G icons    채팅                        # 픽토그램 238종 검색 (한글 지원)
-node $G info     decor|mark|frame|art       # 벡터 세트 102종
+node $G info     decor|mark|frame|art       # 벡터 세트 108종
 ```
 
 빌드 플래그:

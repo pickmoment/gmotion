@@ -262,7 +262,7 @@ convergence — 수렴
 ```bash
 gm icons 서버              # 픽토그램 238종에서 검색 (한글로 찾아진다)
 gm icons                  # 전체 목록
-gm info decor             # 배경 레이어 20종
+gm info decor             # 배경 레이어 26종
 gm info mark              # 강조 마크 15종 (밑줄·동그라미·형광펜…)
 gm info frame             # 디바이스 프레임 19종 (브라우저·터미널·에디터·영수증…)
 gm info art               # 추상 일러스트 48종
@@ -283,7 +283,7 @@ server(서버·백엔드·서버실·호스팅)
 gm info themes    gm info skins    gm info trans    gm info cam    gm info aspects    gm info energy    gm info motion
 ```
 
-**테마 15종**
+**테마 21종**
 
 | 이름 | 성격 |
 |---|---|
@@ -302,11 +302,18 @@ gm info themes    gm info skins    gm info trans    gm info cam    gm info aspec
 | `kraft` | **밝은** 갈색 소포지 질감 + 따뜻한 잉크. 아날로그·기획 노트·공예 |
 | `clay` | **밝은** 3D 점토 볼륨 + 매트 파스텔. 클레이모피즘·친근한 설명 |
 | `blueprint` | 청사진 남색 + 백색 도면선. 설계·아키텍처·구조도 |
+| `impasto` | 남색 야경 + 크롬 옐로, 소용돌이 붓질. 감정이 실린 서사·예술 |
+| `ukiyo` | **밝은** 화지 + 프러시안 블루·인주 붉은색, 청해파. 전통·바다·공예 |
+| `destijl` | **밝은** 오프화이트 + 삼원색과 굵은 검은 선. 선언·편집 디자인 |
+| `colorfield` | 짙은 적갈색 색면. 인용·명상·여백이 말하는 화면 |
+| `fauve` | **밝은** 크림 + 코랄·터콰이즈 오림 형태. 캠페인·교육 |
+| `popart` | **밝은** 노란 바탕 + 마젠타·코발트와 망점. 쇼츠·굿즈·강한 한 마디 |
 
-**밝은 배경 여섯**(`paper` `slate` `sand` `mint` `kraft` `clay`), **어두운 배경 아홉.**
+**밝은 배경 열**(`paper` `slate` `sand` `mint` `kraft` `clay` `ukiyo` `destijl` `fauve` `popart`),
+**어두운 배경 열하나.**
 발표장이 밝거나 인쇄를 전제하면 밝은 쪽, 영상으로 재생하면 어두운 쪽이 낫다.
 
-15종 모두 **글자가 배경에서 읽히도록 대비를 맞춰 뒀다**(WCAG AA). 카드 설명 같은
+21종 모두 **글자가 배경에서 읽히도록 대비를 맞춰 뒀다**(WCAG AA). 카드 설명 같은
 작은 회색 글씨까지 포함해서다. 비교해 보려면 스펙의 `"theme"` 값만 바꿔 빌드하면 된다.
 
 **스킨 6종** — 테마가 **색**을 정하고, 스킨이 **재질**(표면·선·타이포의 모양)을 정한다.
@@ -590,7 +597,7 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info energy` | 에너지 3종 (속도) |
 | `gm info motion` | 모션 스타일 5종 (성격) |
 | `gm info aspects` | 화면비 4종 |
-| `gm info decor` | 배경 레이어 20종 |
+| `gm info decor` | 배경 레이어 26종 |
 | `gm info mark` | 강조 마크 15종 |
 | `gm info frame` | 디바이스 프레임 19종 |
 | `gm info art` | 추상 일러스트 48종 |

@@ -1,9 +1,9 @@
 /*!
  * vectors — 디자인 요소 벡터 세트. 네 종류.
  *
- *   DECOR  배경·분위기 레이어 15종   씬 배경에 깔린다. 테마 색 자동, 느린 무한 드리프트
+ *   DECOR  배경·분위기 레이어 26종   씬 배경에 깔린다. 테마 색 자동, 느린 무한 드리프트
  *   FRAME  디바이스·프레임 19종       안에 콘텐츠를 넣는다
- *   MARK   데코·강조 요소 12종        글자·수치에 붙어 시선을 몬다. 드로우온 모션
+ *   MARK   데코·강조 요소 15종        글자·수치에 붙어 시선을 몬다. 드로우온 모션
  *   ART    추상 일러스트 48종         도형 조합으로 개념을 표현. 픽토그램보다 크고 구성적
  *
  * 전부 코드로 그린다 — 테마 색을 받아 그 자리에서 SVG 를 만들고, 스펙이 실제로 쓴 것만
@@ -399,6 +399,169 @@ DECOR.dough = {
     }
     s.push('</svg>');
     return s.join('');
+  }
+};
+
+/* ---- 회화 계열 여섯 — impasto·ukiyo·destijl·colorfield·fauve·popart 테마의 기본 배경.
+   전부 테마 색만 쓰고, 움직임은 CSS 무한 루프라 마스터 타임라인·프레임 캡처와 무관하다. ---- */
+DECOR.swirl = {
+  label: '소용돌이 붓질 — 감기는 굵은 붓 자국과 짧은 터치. 야경·감정·회화',
+  build: function (W, H, T, lv) {
+    var o = [.1, .16, .25][lv], R = rng(23), M = Math.min(W, H);
+    var sd = r2(M * .004);
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>' +
+      /* 살짝 번지게 한다 — 또렷한 선으로 두면 배경이 아니라 그림 기호로 읽힌다 */
+      '<filter id="ggSwirlSoft" x="-20%" y="-20%" width="140%" height="140%">' +
+      '<feGaussianBlur stdDeviation="' + sd + '"/></filter></defs>'];
+    var cols = [T.accent, T.accent2, T.accent];
+    for (var i = 0; i < 3; i++) {
+      var cx = W * (.12 + R() * .76), cy = H * (.16 + R() * .66);
+      var rad = M * (.22 + R() * .2), tilt = R() * 180, d = '';
+      /* 나선 — 각을 돌며 반지름이 커진다. 세로를 눌러(.6) 하늘이 흐르는 결이 된다 */
+      for (var k = 0; k <= 60; k++) {
+        var a = k / 60 * 2.6 * Math.PI * 2, rr = rad * (.12 + .88 * k / 60);
+        d += (k ? ' L' : 'M') + r2(cx + Math.cos(a) * rr) + ' ' + r2(cy + Math.sin(a) * rr * .6);
+      }
+      s.push('<g class="gg-drSpin" style="animation-duration:' + (230 + i * 50) + 's;' +
+        'transform-origin:' + r2(cx) + 'px ' + r2(cy) + 'px">' +
+        '<path d="' + d + '" transform="rotate(' + r2(tilt) + ' ' + r2(cx) + ' ' + r2(cy) + ')" ' +
+        'fill="none" stroke="' + cols[i] + '" stroke-width="' + r2(M * .016) + '" ' +
+        'stroke-linecap="round" opacity="' + r2(o * (i === 1 ? .7 : 1)) + '" filter="url(#ggSwirlSoft)"/></g>');
+    }
+    /* 짧은 터치 — 나선 사이를 메워 붓이 지나간 화면으로 읽히게 한다 */
+    for (var j = 0; j < 30; j++) {
+      var x = W * R(), y = H * R(), len = M * (.03 + R() * .05), ang = -60 + R() * 120;
+      s.push('<path class="gg-drFloat" style="animation-delay:' + r2(-j * 1.3) + 's" ' +
+        'd="M' + r2(x) + ' ' + r2(y) + ' q' + r2(len * .5) + ' ' + r2(-len * .3) + ' ' + r2(len) + ' 0" ' +
+        'transform="rotate(' + r2(ang) + ' ' + r2(x) + ' ' + r2(y) + ')" fill="none" ' +
+        'stroke="' + (j % 3 === 0 ? T.accent2 : T.accent) + '" stroke-width="' + r2(M * .007) + '" ' +
+        'stroke-linecap="round" opacity="' + r2(o * .6) + '" filter="url(#ggSwirlSoft)"/>');
+    }
+    return s.join('') + '</svg>';
+  }
+};
+DECOR.seigaiha = {
+  label: '청해파 — 겹치는 물결 비늘 문양. 목판화·전통·바다',
+  build: function (W, H, T, lv) {
+    var o = [.13, .2, .3][lv], u = Math.round(Math.min(W, H) / 3.4);
+    /* 비늘 하나 = 위로 뜬 반원 세 겹. 원을 통째로 그리면 꽃무늬가 되지 문양이 아니다.
+       행 간격은 반지름의 .42 배 — 겹쳐야 물결이 층으로 읽힌다. */
+    function scale(cx, cy) {
+      var out = '';
+      for (var r = 0; r < 3; r++) {
+        var rr = u * (1 - r * .3);
+        out += '<path d="M' + r2(cx - rr) + ' ' + r2(cy) + ' A' + r2(rr) + ' ' + r2(rr) + ' 0 0 1 ' +
+          r2(cx + rr) + ' ' + r2(cy) + '" fill="none" stroke="' + (r === 1 ? T.accent2 : T.accent) +
+          '" stroke-width="' + r2(u * .045) + '"/>';
+      }
+      return out;
+    }
+    var step = u * .42, tile = '';
+    /* 타일은 2u × 2step. 이웃에서 넘어와야 할 호까지 미리 그린다 — 패턴이 타일 밖을 자른다 */
+    for (var gy = -2; gy <= 2; gy++) {
+      for (var gx = -1; gx <= 2; gx++) {
+        tile += scale(gx * u + (Math.abs(gy % 2) ? u * .5 : 0), gy * step);
+      }
+    }
+    /* 아래쪽에만 깔고 위로 사라진다 — 문양이 화면을 다 덮으면 벽지가 되고 글자가 떨린다 */
+    return '<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>' +
+      '<pattern id="ggSeigaiha" width="' + r2(u * 2) + '" height="' + r2(step * 2) + '" patternUnits="userSpaceOnUse">' +
+      tile + '</pattern>' +
+      '<linearGradient id="ggSeigaihaFade" x1="0" y1="1" x2="0" y2="0">' +
+      '<stop offset="0%" stop-color="#fff"/><stop offset="72%" stop-color="#000"/></linearGradient>' +
+      '<mask id="ggSeigaihaMask"><rect width="' + W + '" height="' + H + '" fill="url(#ggSeigaihaFade)"/></mask>' +
+      '</defs>' +
+      /* 슬라이드가 ±6% 라 폭을 넉넉히 잡아야 가장자리가 드러나지 않는다 */
+      '<rect class="gg-drSlide" x="' + r2(-W * .1) + '" y="0" width="' + r2(W * 1.2) + '" height="' + H + '" ' +
+      'fill="url(#ggSeigaiha)" mask="url(#ggSeigaihaMask)" opacity="' + r2(o) + '"/></svg>';
+  }
+};
+DECOR.blocks = {
+  label: '색면 구획 — 굵은 검은 선이 화면을 나누고 원색 면이 앉는다. 구성·편집·선언',
+  build: function (W, H, T, lv) {
+    var o = [.16, .26, .4][lv], lw = r2(Math.min(W, H) * .012);
+    /* 비대칭 분할 — 격자를 균등하게 나누면 배경이 아니라 표로 읽힌다 */
+    var vx = [.22, .63, .84], hy = [.28, .71];
+    var cells = [[0, 0, .22, .28, T.accent], [.63, .71, .21, .29, T.accent2],
+                 [.84, 0, .16, .28, T.warn], [.22, .71, .41, .29, T.panel]];
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    cells.forEach(function (c, i) {
+      s.push('<rect class="gg-drDrift" style="animation-delay:' + r2(-i * 4.5) + 's" ' +
+        'x="' + r2(W * c[0]) + '" y="' + r2(H * c[1]) + '" width="' + r2(W * c[2]) + '" height="' + r2(H * c[3]) + '" ' +
+        'fill="' + c[4] + '" opacity="' + r2(o * .7) + '"/>');
+    });
+    vx.forEach(function (x) {
+      s.push('<line x1="' + r2(W * x) + '" y1="0" x2="' + r2(W * x) + '" y2="' + H + '" ' +
+        'stroke="' + T.ink + '" stroke-width="' + lw + '" opacity="' + r2(o) + '"/>');
+    });
+    hy.forEach(function (y) {
+      s.push('<line x1="0" y1="' + r2(H * y) + '" x2="' + W + '" y2="' + r2(H * y) + '" ' +
+        'stroke="' + T.ink + '" stroke-width="' + lw + '" opacity="' + r2(o) + '"/>');
+    });
+    return s.join('') + '</svg>';
+  }
+};
+DECOR.fields = {
+  label: '색면 — 가장자리가 번진 큰 사각 색면이 겹친다. 인용·명상·여백',
+  build: function (W, H, T, lv) {
+    var o = [.1, .16, .24][lv], sd = r2(Math.min(W, H) * .075);
+    /* 색면 둘이 위아래로 앉는다 — 로스코의 화면처럼 경계가 번져 서로에게 스민다 */
+    var band = [[.14, .12, .72, .34, T.accent], [.18, .55, .64, .3, T.accent2]];
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>' +
+      '<filter id="ggFieldSoft" x="-30%" y="-30%" width="160%" height="160%">' +
+      '<feGaussianBlur stdDeviation="' + sd + '"/></filter></defs>'];
+    band.forEach(function (b, i) {
+      s.push('<rect class="gg-drPulse" style="animation-duration:' + (18 + i * 5) + 's;' +
+        'animation-delay:' + r2(-i * 7) + 's;transform-origin:' + r2(W * (b[0] + b[2] / 2)) + 'px ' +
+        r2(H * (b[1] + b[3] / 2)) + 'px" ' +
+        'x="' + r2(W * b[0]) + '" y="' + r2(H * b[1]) + '" width="' + r2(W * b[2]) + '" height="' + r2(H * b[3]) + '" ' +
+        'fill="' + b[4] + '" opacity="' + r2(o * (1 - i * .25)) + '" filter="url(#ggFieldSoft)"/>');
+    });
+    return s.join('') + '</svg>';
+  }
+};
+DECOR.cutouts = {
+  label: '오림 형태 — 가위로 오린 듯한 잎·별 조각이 흩어진다. 컷아웃·캠페인·생기',
+  build: function (W, H, T, lv) {
+    var o = [.16, .26, .38][lv], R = rng(31), M = Math.min(W, H), n = 8;
+    var cols = [T.accent, T.accent2, T.good, T.accent2];
+    var s = ['<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">'];
+    for (var i = 0; i < n; i++) {
+      var cx = W * (.08 + R() * .84), cy = H * (.12 + R() * .76);
+      var w = M * (.05 + R() * .05), h = w * (1.5 + R() * .8), ang = R() * 360;
+      /* 잎 — 양쪽이 다르게 휘어 손으로 오린 티가 난다 */
+      var d = 'M0 ' + r2(-h) + ' C' + r2(w * 1.05) + ' ' + r2(-h * .35) + ' ' + r2(w * .72) + ' ' + r2(h * .55) + ' 0 ' + r2(h) +
+              ' C' + r2(-w * .8) + ' ' + r2(h * .5) + ' ' + r2(-w * 1.02) + ' ' + r2(-h * .3) + ' 0 ' + r2(-h) + ' Z';
+      s.push('<g class="' + (i % 2 ? 'gg-drDrift' : 'gg-drFloat') + '" ' +
+        'style="animation-delay:' + r2(-i * 3.1) + 's;transform-origin:' + r2(cx) + 'px ' + r2(cy) + 'px">' +
+        '<path d="' + d + '" transform="translate(' + r2(cx) + ' ' + r2(cy) + ') rotate(' + r2(ang) + ')" ' +
+        'fill="' + cols[i % cols.length] + '" opacity="' + r2(o) + '"/></g>');
+    }
+    return s.join('') + '</svg>';
+  }
+};
+DECOR.halftone = {
+  label: '망점 — 인쇄 망점이 대각으로 옅어진다. 팝아트·굿즈·강한 한 마디',
+  build: function (W, H, T, lv) {
+    var o = [.2, .32, .46][lv], cell = Math.round(Math.min(W, H) / 22);
+    /* 중심을 비우는 방사 페이드 — 망점이 화면 전체를 균일하게 덮으면 글자가 그 위에서
+       떨린다. 가장자리에만 남기면 인쇄물의 결은 살고 가운데는 읽을 자리가 된다. */
+    return '<svg class="gg-decor" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><defs>' +
+      '<pattern id="ggHalfA" width="' + cell + '" height="' + cell + '" patternUnits="userSpaceOnUse">' +
+      '<circle cx="' + r2(cell / 2) + '" cy="' + r2(cell / 2) + '" r="' + r2(cell * .24) + '" fill="' + T.accent + '"/></pattern>' +
+      '<pattern id="ggHalfB" width="' + cell * 2 + '" height="' + cell * 2 + '" patternUnits="userSpaceOnUse">' +
+      '<circle cx="' + cell + '" cy="' + cell + '" r="' + r2(cell * .3) + '" fill="' + T.accent2 + '"/></pattern>' +
+      '<radialGradient id="ggHalfFadeA" cx="50%" cy="48%" r="66%">' +
+      '<stop offset="34%" stop-color="#000"/><stop offset="100%" stop-color="#fff"/></radialGradient>' +
+      '<linearGradient id="ggHalfFadeB" x1="1" y1="1" x2="0" y2="0">' +
+      '<stop offset="0%" stop-color="#fff"/><stop offset="46%" stop-color="#000"/></linearGradient>' +
+      '<mask id="ggHalfMaskA"><rect width="' + W + '" height="' + H + '" fill="url(#ggHalfFadeA)"/></mask>' +
+      '<mask id="ggHalfMaskB"><rect width="' + W + '" height="' + H + '" fill="url(#ggHalfFadeB)"/></mask>' +
+      '</defs>' +
+      '<rect width="' + W + '" height="' + H + '" fill="url(#ggHalfA)" mask="url(#ggHalfMaskA)" opacity="' + r2(o) + '"/>' +
+      '<rect class="gg-drPulse" style="animation-duration:12s;transform-origin:center" ' +
+      'width="' + W + '" height="' + H + '" fill="url(#ggHalfB)" mask="url(#ggHalfMaskB)" opacity="' + r2(o * .6) + '"/>' +
+      '</svg>';
   }
 };
 

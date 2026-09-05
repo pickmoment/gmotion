@@ -70,6 +70,22 @@ function readSec(text, energy) {
   var base = 0.55 + n * 0.075;          // 한글 기준 대략 초당 13자
   return clamp(base, 0.7, 4.5) * (energy === 'E3' ? 0.75 : energy === 'E1' ? 1.25 : 1);
 }
+/**
+ * SVG 조각의 id 를 씬마다 갈라 준다.
+ *
+ * 배경 레이어는 씬마다 다시 그려지는데 defs 의 id 는 고정 문자열이라, 같은 배경을
+ * 쓰는 씬이 여럿이면 한 문서에 같은 id 가 여러 번 실린다. 브라우저는 그중 첫 번째만
+ * 쓰고, **패턴·마스크 같은 페인트 서버는 다른 `<svg>` 뿌리에 있으면 아예 칠해지지
+ * 않는다** — 배경이 1번 씬에만 보이는 증상이 이것이다.
+ *
+ * 번호는 씬·레이어 순서에서 나오므로 결정적이다 — CLI 와 앱의 산출물이 여전히 같다.
+ */
+function scopeSvgIds(svg, tag) {
+  return String(svg)
+    .replace(/id="(gg[A-Za-z0-9_-]*)"/g, 'id="$1_' + tag + '"')
+    .replace(/url\(#(gg[A-Za-z0-9_-]*)\)/g, 'url(#$1_' + tag + ')')
+    .replace(/href="#(gg[A-Za-z0-9_-]*)"/g, 'href="#$1_' + tag + '"');
+}
 
 /* ================================================================== *
  * 테마 — 색·타이포·질감. 씬 패턴은 색을 직접 쓰지 않고 토큰만 참조한다.
@@ -181,6 +197,56 @@ var THEMES = {
     glow: 0, font: 'round', grain: .07, vig: .2, decor: ['clayBlobs', 'dots'],
     /* 테마가 기본 스킨을 정할 수 있다 — 스펙의 skin 이 있으면 그쪽이 이긴다 */
     skin: 'clay'
+  },
+  /* ---- 회화 계열 여섯 — 색만이 아니라 화면의 질감·붓·문양까지 한 벌로 묶은 테마.
+     키는 사조·기법 이름으로 둔다(특정 화가의 이름을 키로 쓰면 그 화가의 그림처럼
+     보인다는 약속이 되어 버린다). 라벨에 계보를 적는다. ---- */
+  impasto: {
+    label: '임파스토 — 남색 야경 + 크롬 옐로, 소용돌이 붓질. 후기인상주의 계열 서사',
+    bg: '#101a33', bg2: '#1b2b4d', ink: '#f7f0dd', ink2: '#c3cbe6', dim: '#9aa6c6',
+    accent: '#f2c14e', accent2: '#7fb8e8', good: '#86c88a', warn: '#f2a93b', bad: '#e2725b',
+    line: 'rgba(242,193,78,.24)', panel: 'rgba(247,240,221,.05)', panelLine: 'rgba(242,193,78,.18)',
+    glow: 1, font: 'serif', grain: .1, vig: .48, decor: ['swirl', 'constellation']
+  },
+  ukiyo: {
+    label: '우키요 — 화지 바탕 + 프러시안 블루와 인주 붉은색, 청해파 문양. 목판화·전통·바다',
+    bg: '#f0e9da', bg2: '#e3d9c6', ink: '#1a1a18', ink2: '#4a463d', dim: '#5f5a4e',
+    accent: '#1c4f8f', accent2: '#a83f2e', good: '#2f6b3a', warn: '#8a5a06', bad: '#a92f2f',
+    line: 'rgba(26,26,24,.16)', panel: 'rgba(252,249,242,.78)', panelLine: 'rgba(26,26,24,.12)',
+    glow: 0, font: 'classic', grain: .1, vig: 0, decor: ['seigaiha', 'creases'],
+    skin: 'paper'
+  },
+  destijl: {
+    label: '데스테일 — 오프화이트 + 원색 삼원색과 굵은 검은 선. 구성·편집·선언',
+    bg: '#f6f4ee', bg2: '#e9e6dd', ink: '#121212', ink2: '#3d3d3d', dim: '#575757',
+    accent: '#c8102e', accent2: '#1740a8', good: '#16713a', warn: '#8a6300', bad: '#b3121b',
+    line: 'rgba(18,18,18,.2)', panel: 'rgba(255,255,255,.86)', panelLine: 'rgba(18,18,18,.16)',
+    glow: 0, font: 'gothic', grain: .03, vig: 0, decor: ['blocks', 'grid'],
+    skin: 'brutalist'
+  },
+  colorfield: {
+    label: '컬러필드 — 짙은 적갈색 색면이 번져 겹친다. 인용·명상·여백이 말하는 화면',
+    bg: '#2b1210', bg2: '#3b1b16', ink: '#f7e9de', ink2: '#dbb9a4', dim: '#c09a86',
+    accent: '#e8763c', accent2: '#e06a7d', good: '#86b06a', warn: '#e2a53a', bad: '#e2604f',
+    line: 'rgba(232,118,60,.22)', panel: 'rgba(247,233,222,.05)', panelLine: 'rgba(232,118,60,.16)',
+    glow: 0, font: 'serif', grain: .12, vig: .56, decor: ['fields'],
+    skin: 'flat'
+  },
+  fauve: {
+    label: '포브 — 크림 바탕 + 코랄과 터콰이즈 오림 형태. 컷아웃·캠페인·생기',
+    bg: '#fbf3e2', bg2: '#f2e6cd', ink: '#1d1a15', ink2: '#4c4437', dim: '#625848',
+    accent: '#c4351f', accent2: '#0e7b6c', good: '#2c7a3f', warn: '#96590a', bad: '#b32d24',
+    line: 'rgba(29,26,21,.16)', panel: 'rgba(255,252,245,.8)', panelLine: 'rgba(29,26,21,.12)',
+    glow: 0, font: 'round', grain: .06, vig: 0, decor: ['cutouts', 'dots'],
+    skin: 'flat'
+  },
+  popart: {
+    label: '팝아트 — 노란 바탕 + 마젠타·코발트와 망점. 쇼츠·굿즈·강한 한 마디',
+    bg: '#fff0c9', bg2: '#ffe2a0', ink: '#101010', ink2: '#3a3a3a', dim: '#545454',
+    accent: '#d1006e', accent2: '#0044cc', good: '#157a35', warn: '#8a5a00', bad: '#cc1111',
+    line: 'rgba(16,16,16,.24)', panel: 'rgba(255,255,255,.84)', panelLine: 'rgba(16,16,16,.2)',
+    glow: 0, font: 'impact', grain: .04, vig: 0, decor: ['halftone'],
+    skin: 'brutalist'
   }
 };
 /* ------------------------------------------------------------------ *
@@ -3589,8 +3655,8 @@ function compile(spec, opts) {
     var dLv = clamp(dLvBase, 0, 2);
     var decorSVG = '';
     /* 여러 겹을 쌓을 수 있다 — 격자 위에 덩어리를 얹는 식으로 층이 생긴다 */
-    if (dSpec) arr(dSpec).forEach(function (dn) {
-      if (VEC.DECOR[dn]) decorSVG += VEC.DECOR[dn].build(ctx.W, ctx.H, T, dLv);
+    if (dSpec) arr(dSpec).forEach(function (dn, li) {
+      if (VEC.DECOR[dn]) decorSVG += scopeSvgIds(VEC.DECOR[dn].build(ctx.W, ctx.H, T, dLv), i + '_' + li);
       else errors.push('씬 ' + (i + 1) + ': decor "' + dn + '" 는 없다 (' + Object.keys(VEC.DECOR).join(' ') + ').');
     });
 

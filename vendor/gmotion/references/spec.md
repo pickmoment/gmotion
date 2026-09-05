@@ -40,7 +40,7 @@
 파일이 없을 때의 동작은 `api.md` 의 자막 동기화 절에 있다.
 
 `skin` 은 색이 아니라 **재질**을 정한다 — 테마가 색을 정하고 스킨이 표면·선·타이포의
-모양을 정하므로 둘은 곱해서 쓴다(테마 15종 × 스킨 6종). 생략하면 테마가 정한 기본
+모양을 정하므로 둘은 곱해서 쓴다(테마 21종 × 스킨 6종). 생략하면 테마가 정한 기본
 스킨이고, 그것도 없으면 `glass` 다. 자세한 것은 `theming.md` 의 스킨 절을 본다.
 
 `motion` 은 **움직임의 성격**이다. `energy` 가 속도(지속시간·거리·hold)를 정한다면
@@ -324,11 +324,11 @@
 `warning` `decline` `fracture` `maze` 는 테마의 `warn`·`bad` 색을 쓴다 — 나머지가 강조색을
 쓰는 것과 달리, 색만으로도 "여기가 나쁜 대목"이 읽힌다.
 
-**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 238종 + 벡터 세트 102종이 있고 한글 이름도 따로 있다:
+**벡터 이름은 기억으로 쓰지 않는다.** 픽토그램 238종 + 벡터 세트 108종이 있고 한글 이름도 따로 있다:
 
 ```bash
 node <skill>/assets/gm.js icons 채팅       # 픽토그램 — speech(메시지·채팅·댓글)
-node <skill>/assets/gm.js info decor       # 배경 20종
+node <skill>/assets/gm.js info decor       # 배경 26종
 node <skill>/assets/gm.js info mark        # 강조 15종
 node <skill>/assets/gm.js info frame       # 디바이스·실물 프레임 19종
 node <skill>/assets/gm.js info art         # 일러스트 48종
