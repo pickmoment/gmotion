@@ -1942,7 +1942,15 @@ function TokensGuideTab({ currentTheme }: { currentTheme: string }) {
           <div className="token-box">
             <strong>에너지 (energy)</strong>
             <p className="dim">
-              E1 (여유·차분, hold 1.25x) / E2 (기본 템포) / E3 (하이에너지·쇼츠, hold 0.75x)
+              얼마나 빠른가. E1 (여유·차분, hold 1.25x) / E2 (기본 템포) / E3 (하이에너지·쇼츠, hold
+              0.75x)
+            </p>
+          </div>
+          <div className="token-box">
+            <strong>모션 스타일 (motion)</strong>
+            <p className="dim">
+              어떻게 움직이는가. standard (기본) / dynamic (오버슈트·임팩트) / bounce (탄성) / snap
+              (칼컷) / drift (유영)
             </p>
           </div>
           <div className="token-box">

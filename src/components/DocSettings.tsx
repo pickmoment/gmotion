@@ -114,7 +114,8 @@ export function DocSettings({
           hint="색은 테마가, 재질은 스킨이 정한다"
         />
         {sel("aspect", "화면비", GG.aspects)}
-        {sel("energy", "에너지", GG.energies)}
+        {sel("energy", "에너지", GG.energies, "얼마나 빠른가 — 지속시간·거리")}
+        {sel("motion", "모션 스타일", GG.motions, "어떻게 움직이는가 — 이징·궤적·기본 트랜지션")}
         {sel("font", "폰트", GG.fonts, "생략하면 테마가 정한다")}
         {sel("mode", "재생 모드", MODES)}
       </div>

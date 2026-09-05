@@ -65,7 +65,8 @@ export function ValidatePanel({
       {stats && (
         <p className="stats">
           씬 {stats.scenes}(패턴 {stats.patterns}종) · {stats.totalSec}초 · {stats.frames}프레임 ·{" "}
-          {stats.theme} · {stats.aspect} · {stats.energy} · {stats.mode} · 트윈 {stats.tweens}
+          {stats.theme} · {stats.aspect} · {stats.energy} · {stats.motion} · {stats.mode} · 트윈{" "}
+          {stats.tweens}
           {sync && ` · 자막에 맞춘 씬 ${sync.matched}/${stats.scenes}`}
         </p>
       )}

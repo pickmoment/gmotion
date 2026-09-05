@@ -753,6 +753,7 @@ export default function App() {
             theme: spec.theme || "midnight",
             skin: typeof spec.skin === "string" ? spec.skin : undefined,
             energy: spec.energy || "E2",
+            motion: spec.motion || undefined,
           }}
           onClose={() => setModal(null)}
           onApply={async (next, how) => {

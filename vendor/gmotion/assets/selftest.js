@@ -1025,6 +1025,93 @@ function output() {
 }
 
 /* ================================================================== *
+ * 1-d. 모션 스타일 — 성격만 갈아 끼운다
+ *
+ * 지켜야 할 계약은 두 줄이다.
+ *   1) 적지 않으면(=standard) 지금까지의 결과가 한 글자도 달라지지 않는다
+ *   2) 고르면 패턴을 하나도 고치지 않고 이징·궤적·기본 전환이 통째로 바뀐다
+ * ================================================================== */
+function motionStyles() {
+  console.log('모션 스타일');
+  /* dataCounter 는 스케일 없는 등장(y+opacity)을 가진 패턴이다 — 등장 보강이 실제로 붙는 자리 */
+  var scenes = [
+    { pattern: 'heroReveal', title: '선언' },
+    { pattern: 'cardsCascade', title: '항목', items: ['가', '나', '다'] },
+    { pattern: 'processFlow', title: '단계', steps: ['하나', '둘'] },
+    { pattern: 'quote', text: '한 문장.', transition: 'wipe' },
+    { pattern: 'dataCounter', title: '수치', stats: [{ value: 41, unit: '%', label: '가' }] }
+  ];
+  function twOf(c) { return JSON.stringify(c.scenes.map(function (s) { return s.tw; })); }
+  var plain = G.compile({ scenes: scenes });
+  is('적지 않으면 standard 다', plain.motion, 'standard');
+  is('standard 는 지금 결과 그대로다', twOf(G.compile({ motion: 'standard', scenes: scenes })), twOf(plain));
+  is('standard 는 트랜지션도 그대로다', G.compile({ motion: 'standard', scenes: scenes }).scenes[1].trans, 'fade');
+
+  var dyn = G.compile({ motion: 'dynamic', scenes: scenes });
+  var eases = {};
+  dyn.scenes.forEach(function (s) {
+    s.tw.forEach(function (o) { var e = o.ease || (o.v && o.v.ease); if (e) eases[e] = 1; });
+  });
+  truthy('패턴이 박아 쓴 오버슈트까지 갈아 끼운다', !!eases['back.out(2.8)'], Object.keys(eases).join(' '));
+  truthy('바뀌기 전 이징은 남지 않는다', !eases['back.out(1.4)'] && !eases['power4.out'], Object.keys(eases).join(' '));
+
+  /* 등장 보강 — opacity:0 으로 들어오는 from 에만, 이미 스케일이 있으면 손대지 않는다 */
+  var plainFroms = [], dynFroms = [];
+  plain.scenes.forEach(function (s) { s.tw.forEach(function (o) { if (o.k === 'from') plainFroms.push(o); }); });
+  dyn.scenes.forEach(function (s) { s.tw.forEach(function (o) { if (o.k === 'from') dynFroms.push(o); }); });
+  truthy('등장에 스케일·회전이 붙는다',
+    dynFroms.some(function (o) { return o.v.opacity === 0 && o.v.scale === .86 && o.v.rotation != null; }));
+  truthy('스케일이 이미 있는 등장은 그대로 둔다',
+    plainFroms.filter(function (o) { return o.v.opacity === 0 && o.v.scale != null && o.v.scale !== .86; }).length ===
+    dynFroms.filter(function (o) { return o.v.opacity === 0 && o.v.scale != null && o.v.scale !== .86; }).length);
+  truthy('마스크 리빌(opacity 없는 from)은 건드리지 않는다',
+    !dynFroms.some(function (o) { return o.v.opacity == null && (o.v.scale != null || o.v.rotation != null); }));
+
+  /* 기본 트랜지션 — 씬이 적었으면 그게 이긴다 */
+  is('첫 씬은 언제나 컷', dyn.scenes[0].trans, 'cut');
+  is('적지 않은 씬은 스타일이 정한다', dyn.scenes[1].trans, 'pushLeft');
+  is('스타일은 씬 순서로 돈다', dyn.scenes[2].trans, 'zoomIn');
+  is('씬이 적은 트랜지션이 이긴다', dyn.scenes[3].trans, 'wipe');
+  is('바운스는 탄성 전환을 쓴다', G.compile({ motion: 'bounce', scenes: scenes }).scenes[1].trans, 'squish');
+
+  /* 임팩트 — E3 아닌데도 스타일이 정하면 심는다 */
+  function impacts(c) {
+    return c.scenes.reduce(function (n, s) {
+      return n + s.tw.filter(function (o) { return o.k === 'fx' && o.fn === 'impact'; }).length;
+    }, 0);
+  }
+  is('standard·E2 는 임팩트가 없다', impacts(plain), 0);
+  truthy('dynamic 은 E2 에서도 임팩트를 심는다', impacts(dyn) > 0);
+  is('drift 는 임팩트를 심지 않는다', impacts(G.compile({ motion: 'drift', scenes: scenes })), 0);
+
+  /* 속도 왜곡 — 지금까지는 E3 전용이었다 */
+  var skewed = G.compile({ motion: 'dynamic', scenes: [{ pattern: 'cardsCascade', items: ['가', '나'], dir: 'left' }] });
+  truthy('스타일이 정하면 E2 에서도 스큐가 붙는다',
+    skewed.scenes[0].tw.some(function (o) { return o.v && o.v.skewX === 8; }));
+
+  /* 씬 길이 — ctx.d 를 함께 곱하므로 at 과 dur 이 어긋나지 않는다.
+     전체 길이가 아니라 씬 길이로 잰다 — 전체는 트랜지션 겹침(컷은 안 겹친다)에도 좌우된다 */
+  var slow = G.compile({ motion: 'drift', scenes: scenes });
+  var quick = G.compile({ motion: 'snap', scenes: scenes });
+  truthy('drift 는 씬이 더 길다', slow.scenes.every(function (s, i) { return s.dur > plain.scenes[i].dur; }),
+    slow.scenes.map(function (s) { return s.dur; }).join(' '));
+  truthy('snap 은 씬이 더 짧다', quick.scenes.every(function (s, i) { return s.dur < plain.scenes[i].dur; }),
+    quick.scenes.map(function (s) { return s.dur; }).join(' '));
+  slow.scenes.forEach(function (s, i) {
+    truthy('씬 ' + (i + 1) + ' 의 내용이 씬 길이 안에서 끝난다', s.contentEnd <= s.dur + .001,
+      s.contentEnd + ' / ' + s.dur);
+  });
+
+  /* 런타임에 실리는 배율 */
+  truthy('셔터에 스타일 배율이 곱해진다', /"shutter":1\.3\b/.test(G.toHTML({ motion: 'dynamic', scenes: [scenes[0]] }, {})));
+  var camOf = function (c) { return c.scenes[1].tw.filter(function (o) { return o.k === 'cam' && o.amb; })[0]; };
+  truthy('카메라 진폭에도 스타일 배율이 곱해진다', camOf(slow).v.scale > camOf(plain).v.scale);
+
+  var typo = G.validate({ message: 'm', motion: 'dynamix', scenes: [{ pattern: 'quote', text: 'x' }] });
+  truthy('없는 모션 스타일을 잡는다', typo.errors.some(function (e) { return e.indexOf('motion "dynamix"') >= 0; }));
+}
+
+/* ================================================================== *
  * 실행
  * ================================================================== */
 var t0 = process.hrtime();
@@ -1033,6 +1120,7 @@ hygiene();
 skins();
 inlineDesign();
 camera();
+motionStyles();
 contrast();
 var now = snapshot();
 output();

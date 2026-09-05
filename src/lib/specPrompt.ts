@@ -18,6 +18,8 @@ export interface PromptOpts {
   theme: string;
   skin?: string;
   energy: string;
+  /** 모션 스타일. 스탠다드면 생략한다 — 기본값을 굳이 실어 보내지 않는다 */
+  motion?: string;
   /** 용도·톤 같은 사람의 말. 그대로 실어 보낸다 */
   note?: string;
   /** 번들에서 읽은 references/spec.md. 없으면 카탈로그만으로 간다 */
@@ -96,7 +98,7 @@ const CRAFT = `## 화면을 만드는 규칙 (여기가 품질을 가른다)
 const SETTINGS = (o: PromptOpts) => `## 문서 설정 (그대로 쓴다)
 
 \`\`\`json
-{ "aspect": "${o.aspect}", "theme": "${o.theme}", "energy": "${o.energy}"${o.skin ? `, "skin": "${o.skin}"` : ""} }
+{ "aspect": "${o.aspect}", "theme": "${o.theme}", "energy": "${o.energy}"${o.skin ? `, "skin": "${o.skin}"` : ""}${o.motion && o.motion !== "standard" ? `, "motion": "${o.motion}"` : ""} }
 \`\`\`${o.note ? `\n\n용도·톤: ${o.note}` : ""}`;
 
 const CATALOG = () => `## 씬 패턴 카탈로그
@@ -110,7 +112,8 @@ ${patternTable()}
 - 트랜지션: ${list(GG.transitions)}
 - 테마: ${Object.keys(GG.themes).join(" · ")}
 - 스킨: ${Object.keys(GG.skins).join(" · ")}
-- 에너지: ${list(GG.energies)}`;
+- 에너지: ${list(GG.energies)}
+- 모션 스타일: ${list(GG.motions)}`;
 
 /* ── 1단계: 스토리보드 ───────────────────────────────────────────── */
 

@@ -70,7 +70,7 @@ description: 선언적 JSON 스펙을 작성하여 GSAP 기반 모션그래픽 �
 | `references/direction.md` | **씬 구성을 짤 때.** 내러티브 아크, 패턴 고르기, 밀도·리듬, 트랜지션 의미, 씬 카메라, 글자 효과(`*낱말*`·textFx·exitFx·numFx)를 언제 쓰나, 흔한 실패 |
 | `references/spec.md` | **JSON 을 쓸 때.** 루트·씬 공통 필드, 인라인 강조·글자 등장/퇴장, 패턴 28종의 필드와 예시 |
 | `references/charts.md` | **차트를 넣을 때.** 어떤 차트인가, 색은 어떤 일을 하는가, 데이터 형태와 옵션 |
-| `references/theming.md` | 테마·**스킨**·화면비·에너지·재생 모드·모션 토큰 |
+| `references/theming.md` | 테마·**스킨**·화면비·에너지·**모션 스타일**·재생 모드·모션 토큰 |
 | `references/api.md` | CLI, 검수 쿼리, agent-browser 캡처, 산출물 구조, GSAP 함정 |
 | `references/api.md` `#자막-동기화` | **음성·자막을 받았을 때.** 순서, 경고 읽는 법, 맞는 분량 |
 
@@ -269,7 +269,12 @@ node <skill>/assets/gm.js build spec.json -o 발표.html --present
 9. **재질은 색과 따로 고른다.** 테마가 색을, `skin` 이 표면·선·타이포의 모양을
    정한다(6종, `gm info skins`). 같은 내용을 문서 톤으로도 포스터 톤으로도 낼 수
    있으므로, 용도가 분명하면 스킨을 함께 고른다 — 기본값은 `glass` 다.
-10. **카메라를 끄지 않는다.** hold 가 정지 프레임이면 그 씬은 영상이 아니라 슬라이드다.
+10. **움직임의 성격도 고를 수 있다.** `energy` 가 속도라면 `motion` 이 성격이다
+    (5종, `gm info motion`). 적지 않으면 `standard` — 지금까지의 움직임 그대로다.
+    "더 다이나믹하게", "튀게", "쇼츠처럼 꽂히게", "다큐처럼 흐르게" 같은 말이 나오면
+    씬을 다시 짜지 말고 **문서 설정 한 줄을 바꾼다** — `dynamic` `bounce` `snap` `drift`.
+    설명이 목적인 화면에 `dynamic` `snap` 을 쓰면 정보가 튕겨 나간다.
+11. **카메라를 끄지 않는다.** hold 가 정지 프레임이면 그 씬은 영상이 아니라 슬라이드다.
     끌 이유는 하나뿐이다 — 정지 화면을 그대로 캡처해 쓸 때. 그때만 `camera: false` 다.
 
 ## 구성

@@ -7,7 +7,7 @@
  *                                   [--subs voice.srt] [--audio voice.mp3] [--captions]
  *                                   (design 의 image 가 로컬 경로면 스펙 파일 기준으로 data URI 인라인)
  *   node gm.js timing   <spec.json> [-o out.csv] [--fps 30] [--subs voice.srt]
- *   node gm.js info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|aspects|tokens|decor|mark|frame|art|chart]
+ *   node gm.js info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|motion|aspects|tokens|decor|mark|frame|art|chart]
  *   node gm.js pattern  <이름>            패턴 하나의 필드와 용도
  *   node gm.js icons    [검색어]          픽토그램 238종 찾기 (한글 이름 지원)
  *   node gm.js check    <out.html>        산출물 기계 검수 (자기 선언 금지)
@@ -230,7 +230,7 @@ if (cmd === 'info') {
   var topic = files[0];
   if (topic === 'vectors') topic = 'decor';
   /* 헤더 사용법과 같은 목록 — 모르는 토픽이 빈 출력으로 성공(exit 0)하면 스크립트가 빈 값을 믿는다 */
-  var TOPICS = ['patterns', 'themes', 'skins', 'fonts', 'trans', 'textfx', 'exitfx', 'numfx', 'cam', 'energy', 'aspects',
+  var TOPICS = ['patterns', 'themes', 'skins', 'fonts', 'trans', 'textfx', 'exitfx', 'numfx', 'cam', 'energy', 'motion', 'aspects',
                 'tokens', 'decor', 'mark', 'frame', 'art', 'chart'];
   if (topic && TOPICS.indexOf(topic) < 0) {
     console.error('그런 info 토픽은 없다: ' + topic + ' (있는 것: ' + TOPICS.join(' ') + ')');
@@ -287,7 +287,8 @@ if (cmd === 'info') {
   if (!topic || topic === 'exitfx') dump('글자 퇴장 (씬의 exitFx. 글자만 먼저 나가고 배경·그림은 트랜지션과 함께 간다)', G.exitFx);
   if (!topic || topic === 'numfx') dump('숫자 표기 (dataCounter 의 numFx)', G.numFx);
   if (!topic || topic === 'cam') dump('씬 카메라 (씬의 cam. 생략하면 패턴에 맞는 기본값. 루트 camera:false 로 전체 정지)', G.cams);
-  if (!topic || topic === 'energy') dump('에너지', G.energies);
+  if (!topic || topic === 'energy') dump('에너지 (루트 energy. 얼마나 빠른가 — 지속시간·거리·트랜지션 길이)', G.energies);
+  if (!topic || topic === 'motion') dump('모션 스타일 (루트 motion. 어떻게 움직이는가 — 이징·궤적·오버슈트·기본 트랜지션)', G.motions);
   if (!topic || topic === 'aspects') dump('화면비', G.aspects);
   if (!topic) {
     console.log('## 벡터 세트  (자세히: gm info decor|mark|frame|art)');
@@ -296,7 +297,7 @@ if (cmd === 'info') {
       '종 · 차트 ' + Object.keys(G.charts).length + '종 · 픽토그램 ' + G.iconCount + '종\n');
   }
   if (!topic || topic === 'tokens') {
-    console.log('## 모션 토큰 (패턴이 쓰는 값. 스펙에서 직접 못 쓴다 — 엔진이 에너지 배율을 곱한다)');
+    console.log('## 모션 토큰 (패턴이 쓰는 값. 스펙에서 직접 못 쓴다 — 엔진이 에너지·모션 스타일 배율을 곱한다)');
     console.log('  duration  ' + JSON.stringify(G.tokens.d));
     console.log('  ease      ' + JSON.stringify(G.tokens.e));
     console.log('  stagger   ' + JSON.stringify(G.tokens.s));

@@ -155,7 +155,8 @@ gm validate my.json
   "message": "이 영상이 남길 한 줄",  // 없으면 경고. 씬 구성을 검증하는 기준이 된다
   "theme":   "midnight",            // midnight ink paper mono neon warm
   "aspect":  "16:9",                // 16:9 · 9:16 · 1:1 · 4:5
-  "energy":  "E2",                  // E1 차분 · E2 표준 · E3 하이에너지
+  "energy":  "E2",                  // E1 차분 · E2 표준 · E3 하이에너지 (속도)
+  "motion":  "standard",            // standard · dynamic · bounce · snap · drift (성격)
   "mode":    "autoplay",            // autoplay · loop · step
   "scenes":  [ { "pattern": "…" } ]
 }
@@ -279,7 +280,7 @@ server(서버·백엔드·서버실·호스팅)
 ### 4-5. 테마 · 스킨 · 트랜지션 · 카메라 · 화면비
 
 ```bash
-gm info themes    gm info skins    gm info trans    gm info cam    gm info aspects    gm info energy
+gm info themes    gm info skins    gm info trans    gm info cam    gm info aspects    gm info energy    gm info motion
 ```
 
 **테마 15종**
@@ -452,13 +453,31 @@ SVG 는 템플릿이다 — `{accent}` `{W}` 같은 자리가 테마 색·화면
 
 **손글씨(`pen`)는 짧은 한 마디에서만 읽힌다.** 항목이 많은 씬에 쓰면 경고가 뜬다.
 
-**에너지 3종** — 전체 톤을 정한다.
+**에너지 3종** — 얼마나 빠른가. 지속시간·이동거리·hold 를 한꺼번에 정한다.
 
 | 값 | 성격 |
 |---|---|
 | `E1` | 차분 — 느린 호흡, 절제된 카메라 |
 | `E2` | 표준 (기본) |
 | `E3` | 하이에너지 — 크래시 줌·오버슈트·비트 컷. 쇼츠·런칭용 |
+
+**모션 스타일 5종** — 어떻게 움직이는가. 이징·궤적·기본 트랜지션이 한꺼번에 바뀐다.
+에너지와 직교하므로 곱해서 쓴다(`{"energy":"E1","motion":"drift"}`).
+
+| 값 | 성격 |
+|---|---|
+| `standard` | 기본값. 적지 않으면 지금까지의 움직임 그대로 |
+| `dynamic` | 멀리서 밀려 들어와 오버슈트로 앉는다. 컷마다 임팩트 |
+| `bounce` | 튀어 들어와 탄성으로 자리를 잡는다. 교육·캠페인 |
+| `snap` | 짧게 끊어 꽂힌다. 이동은 거의 없고 컷이 리듬을 만든다 |
+| `drift` | 길게 흘러 들어와 천천히 맺힌다. 다큐·감성 |
+
+```jsonc
+{ "theme": "midnight", "energy": "E2", "motion": "dynamic", "scenes": [ … ] }
+```
+
+설명이 목적이면 `standard`·`drift` 다. `dynamic` `snap` 은 정보를 튕겨 내보내므로
+읽어야 하는 화면에는 쓰지 않는다. 자세한 것은 `gm info motion`.
 
 ### 4-6. 예제에서 시작하는 편이 빠르다
 
@@ -568,7 +587,8 @@ gm test -v       # 무엇을 검사했는지 본다
 | `gm info textfx` | 글자 등장 8종 (scramble·typewriter·blur·wipe·flip·glitch·outline·roll) · `*낱말*` 인라인 강조 |
 | `gm info exitfx` | 글자 퇴장 9종 (up·down·fade·typewriter·flip·scramble·blur·wipe·glitch) |
 | `gm info cam` | 씬 카메라 7종 |
-| `gm info energy` | 에너지 3종 |
+| `gm info energy` | 에너지 3종 (속도) |
+| `gm info motion` | 모션 스타일 5종 (성격) |
 | `gm info aspects` | 화면비 4종 |
 | `gm info decor` | 배경 레이어 20종 |
 | `gm info mark` | 강조 마크 15종 |

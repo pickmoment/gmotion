@@ -18,7 +18,7 @@ import type { Cue, Spec } from "../engine/types";
 interface Props {
   cues: Cue[];
   /** 지금 문서 설정 — 초안도 같은 화면비·테마로 나오게 한다 */
-  base: { aspect: string; theme: string; skin?: string; energy: string };
+  base: { aspect: string; theme: string; skin?: string; energy: string; motion?: string };
   onClose: () => void;
   onApply: (spec: Spec, how: string) => void;
 }

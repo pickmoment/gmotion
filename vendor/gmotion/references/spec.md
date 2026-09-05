@@ -12,7 +12,8 @@
   "theme":   "midnight",                // midnight ink paper mono neon warm
   "skin":    "glass",                   // 표면·선·타이포의 구현부. 6종 (`gm info skins`). 테마와 직교
   "aspect":  "16:9",                    // 16:9 9:16 1:1 4:5
-  "energy":  "E2",                      // E1 차분 · E2 표준 · E3 하이에너지
+  "energy":  "E2",                      // E1 차분 · E2 표준 · E3 하이에너지 (얼마나 빠른가)
+  "motion":  "standard",                // standard dynamic bounce snap drift (어떻게 움직이는가)
   "font":    "display",                 // 10종. 생략하면 테마가 정한다 (`gm info fonts`)
   "mode":    "autoplay",                // autoplay loop step
   "camera":  true,                       // 씬 카메라. false 면 정지. 숫자면 진폭 배율
@@ -41,6 +42,13 @@
 `skin` 은 색이 아니라 **재질**을 정한다 — 테마가 색을 정하고 스킨이 표면·선·타이포의
 모양을 정하므로 둘은 곱해서 쓴다(테마 15종 × 스킨 6종). 생략하면 테마가 정한 기본
 스킨이고, 그것도 없으면 `glass` 다. 자세한 것은 `theming.md` 의 스킨 절을 본다.
+
+`motion` 은 **움직임의 성격**이다. `energy` 가 속도(지속시간·거리·hold)를 정한다면
+`motion` 은 궤적과 안착 곡선을 정한다 — 이징, 등장 시 스케일·회전, 속도 왜곡, 임팩트,
+씬이 `transition` 을 적지 않았을 때의 기본 전환까지 한 번에 바뀐다. 문서 하나에 하나만
+고른다(씬별 오버라이드가 없다 — 한 영상 안에서 성격이 바뀌면 손이 여럿으로 보인다).
+생략하면 `standard` 이고, 그때의 결과는 지금까지와 한 글자도 다르지 않다.
+자세한 것은 `theming.md` 의 모션 스타일 절을 본다.
 
 ### camera · depth · shutter — 영상처럼 보이게 하는 셋
 

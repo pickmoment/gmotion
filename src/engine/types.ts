@@ -114,6 +114,7 @@ export interface ValidateResult {
     theme: string;
     aspect: string;
     energy: string;
+    motion: string;
     mode: string;
     icons: number;
     patterns: number;
@@ -179,7 +180,10 @@ export interface Engine {
   numFx: Record<string, string>;
   /** 씬 카메라 무브 이름 → 라벨 */
   cams: Record<string, string>;
+  /** 에너지 이름 → 라벨 (속도·세기) */
   energies: Record<string, string>;
+  /** 모션 스타일 이름 → 라벨 (움직임의 성격) */
+  motions: Record<string, string>;
   aspects: Record<string, string>;
   /** 스킨 이름 → 라벨 */
   skins: Record<string, string>;
@@ -263,6 +267,8 @@ export interface Spec {
   design?: SpecDesign;
   aspect?: string;
   energy?: string;
+  /** 모션 스타일 — 움직임의 성격. standard(기본) · dynamic · bounce · snap · drift */
+  motion?: string;
   font?: string;
   mode?: string;
   decor?: string | string[] | false;

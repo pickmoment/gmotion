@@ -13,7 +13,7 @@ node $G timing   spec.json -o sheet.csv     # 씬별 타임코드 (편집기용)
 node $G build spec.json --subs voice.srt --audio voice.mp3 --captions -o out.html
 node $G check    out.html                   # 산출물 기계 검수
 node $G test                                # 엔진 회귀 검사 (엔진을 고쳤으면 반드시)
-node $G info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|aspects|tokens|chart]
+node $G info     [patterns|themes|skins|fonts|trans|textfx|exitfx|numfx|cam|energy|motion|aspects|tokens|chart]
 node $G pattern  convergence                # 패턴 하나의 필드
 node $G icons    채팅                        # 픽토그램 238종 검색 (한글 지원)
 node $G info     decor|mark|frame|art       # 벡터 세트 102종
@@ -164,6 +164,10 @@ node $G test --update       # 의도한 변경이면 기준값을 갱신한다
 | `?motion=on` | OS 감소 모션 설정을 무시하고 애니메이션 재생 |
 | `?cc=0` | 화면 자막을 끈 채로 시작 (자막 없는 컷을 뽑을 때) |
 | `?raw=1` | 스테이지 스케일을 1로 고정 (원본 픽셀 확인) |
+
+**`?motion=` 은 재생 옵션(감소 모션)이지 스펙의 `motion` 이 아니다.** 스펙의 `motion` 은
+문서의 모션 스타일(`standard` `dynamic` `bounce` `snap` `drift`)이고 빌드 시점에 IR 로
+굳는다 — 산출물을 열 때 쿼리로 바꿀 수 없다.
 
 ## 벡터 세트
 

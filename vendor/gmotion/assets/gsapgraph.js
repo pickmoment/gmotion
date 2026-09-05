@@ -277,6 +277,103 @@ var ENERGY = {
   E3: { label: 'E3 하이에너지 — 크래시 줌·오버슈트·비트 컷', dm: .7, hm: .78, ease: 'expo.out', dist: 1.25, trans: .5, sm: .7, camAmp: .7, shut: 1.35 }
 };
 
+/* ================================================================== *
+ * 모션 스타일 — 움직임의 **성격**. 에너지가 "얼마나 빠른가"라면 이건 "어떻게 움직이는가"다.
+ *
+ * 테마가 색을, 스킨이 재질을, 에너지가 속도를 정하듯 여기서는 궤적과 안착 곡선을 정한다.
+ * 씬마다 고르는 게 아니라 문서 하나에 하나다 — 한 영상 안에서 성격이 바뀌면 손이 여럿으로 보인다.
+ *
+ *   e       역할별 이징. 패턴이 박아 쓴 모션 토큰(TOKENS.e)을 IR 단계에서 통째로 갈아 끼운다.
+ *           비워 두면 지금 값 그대로다. ctx.ei(등장)는 여기 enter 가 이긴다 — 에너지의 이징보다.
+ *   dm sm   지속시간·스태거 배율. 패턴이 ctx.d / ctx.st 로 시각을 쌓으므로 씬 길이도 함께 따라온다
+ *           (여기서 늘려도 어긋나지 않는 이유다 — at 과 dur 이 같은 값에서 나온다).
+ *   dist    이동 거리 배율 (ctx.px)
+ *   pop     등장 스케일. 스케일을 안 쓰는 등장에만 끼워 넣는다. 1 이면 넣지 않는다
+ *   spin    등장 회전(도). 회전을 안 쓰는 등장에만, 부호는 요소마다 번갈아
+ *   skew    속도 왜곡. null 이면 지금대로 E3 에서만
+ *   punch   씬의 전환점에 임팩트를 심는다. E3 는 스타일과 무관하게 항상 심는다
+ *   trans   씬이 transition 을 적지 않았을 때의 기본 전환. 배열이면 씬 순서로 돌려 쓴다
+ *   td      트랜지션 길이 배율 · camAmp 카메라 진폭 배율 · shut 셔터 배율
+ * ================================================================== */
+var MOTIONS = {
+  standard: {
+    label: '스탠다드 — 지금의 기본 움직임 (기본값)',
+    e: null, dm: 1, sm: 1, dist: 1, pop: 1, spin: 0, skew: null, punch: false,
+    trans: null, td: 1, camAmp: 1, shut: 1
+  },
+  dynamic: {
+    label: '다이나믹 — 멀리서 밀려 들어와 오버슈트로 앉는다. 컷마다 임팩트',
+    e: { enter: 'back.out(1.6)', exit: 'power3.in', move: 'power4.inOut',
+         overshoot: 'back.out(2.8)', soft: 'power2.inOut' },
+    dm: .92, sm: .78, dist: 1.6, pop: .86, spin: 2.5, skew: { x: 8, y: 5 }, punch: true,
+    trans: ['pushLeft', 'zoomIn', 'pushUp', 'zoomOut'], td: .85, camAmp: 1.2, shut: 1.3
+  },
+  bounce: {
+    label: '바운스 — 튀어 들어와 탄성으로 자리를 잡는다. 교육·캠페인',
+    e: { enter: 'back.out(2.2)', exit: 'back.in(1.6)', move: 'power2.inOut',
+         overshoot: 'elastic.out(1, 0.45)', soft: 'sine.inOut' },
+    dm: 1.08, sm: .95, dist: 1.25, pop: .72, spin: 0, skew: null, punch: false,
+    trans: ['squish', 'clayPop'], td: 1, camAmp: 1.05, shut: .9
+  },
+  snap: {
+    label: '스냅 — 짧게 끊어 꽂힌다. 이동은 거의 없고 컷이 리듬을 만든다',
+    e: { enter: 'expo.out', exit: 'expo.in', move: 'expo.inOut',
+         overshoot: 'back.out(1.1)', soft: 'power2.inOut' },
+    dm: .78, sm: .55, dist: .6, pop: .94, spin: 0, skew: { x: 5, y: 3 }, punch: true,
+    trans: ['cut', 'cut', 'pushLeft'], td: .6, camAmp: .8, shut: 1.5
+  },
+  drift: {
+    label: '드리프트 — 길게 흘러 들어와 천천히 맺힌다. 다큐·감성',
+    e: { enter: 'power2.out', exit: 'sine.in', move: 'sine.inOut',
+         overshoot: 'power2.out', soft: 'sine.inOut' },
+    dm: 1.2, sm: 1.3, dist: .8, pop: 1.04, spin: 0, skew: null, punch: false,
+    trans: ['fade', 'match', 'curve'], td: 1.2, camAmp: 1.35, shut: .7
+  }
+};
+function motionOf(spec) { return MOTIONS[spec && spec.motion] || MOTIONS.standard; }
+/*
+ * 이징 교체표 — 패턴이 박아 쓴 문자열을 역할로 되짚어 갈아 끼운다.
+ * move 와 draw 는 토큰 값이 같다(power3.inOut) — 둘 다 move 로 간다. 선을 긋는 곡선과
+ * 요소가 움직이는 곡선이 같아야 한 손처럼 보이므로 갈라 둘 이유가 없다.
+ */
+function easeSwap(MO) {
+  if (!MO.e) return null;
+  var m = {};
+  Object.keys(TOKENS.e).forEach(function (role) {
+    if (MO.e[role]) m[TOKENS.e[role]] = MO.e[role];
+  });
+  return Object.keys(m).length ? m : null;
+}
+/**
+ * 컴파일된 씬 IR 에 모션 스타일을 얹는다. 패턴을 하나도 고치지 않고 성격만 바꾸는 자리다.
+ *
+ *  1) 이징 — 역할이 같으면 통째로 갈아 끼운다 (op.ease · v.ease · v2.ease)
+ *  2) 등장 — opacity:0 으로 들어오는 from/split 에만 스케일·회전을 끼워 넣는다.
+ *     이미 스케일이나 회전을 쓰는 등장은 건드리지 않는다(그쪽은 이징 교체로 이미 바뀐다).
+ *     fromTo 는 건드리지 않는다 — 시작값에만 속성을 넣으면 되돌아오지 않고 그대로 남는다.
+ */
+var SCALE_KEYS = ['scale', 'scaleX', 'scaleY'];
+var TURN_KEYS = ['rotation', 'rotate', 'rotationX', 'rotationY', 'skewX', 'skewY'];
+function hasAny(v, keys) {
+  for (var i = 0; i < keys.length; i++) if (v[keys[i]] != null) return true;
+  return false;
+}
+function styleMotion(list, MO) {
+  var swap = easeSwap(MO), pop = num(MO.pop, 1), spin = num(MO.spin, 0), turn = 0;
+  if (!swap && pop === 1 && !spin) return list;
+  list.forEach(function (o) {
+    if (swap) {
+      if (o.ease && swap[o.ease]) o.ease = swap[o.ease];
+      if (o.v && o.v.ease && swap[o.v.ease]) o.v.ease = swap[o.v.ease];
+      if (o.v2 && o.v2.ease && swap[o.v2.ease]) o.v2.ease = swap[o.v2.ease];
+    }
+    if (o.out || (o.k !== 'from' && o.k !== 'split') || !o.v || o.v.opacity !== 0) return;
+    if (pop !== 1 && !hasAny(o.v, SCALE_KEYS)) o.v.scale = pop;
+    if (spin && !hasAny(o.v, TURN_KEYS)) { o.v.rotation = (turn++ % 2 ? -spin : spin); }
+  });
+  return list;
+}
+
 /* 포맷별 타이포 스케일 — 계산식보다 표가 예측 가능하다. 단위 px, 스테이지 좌표계. */
 var TYPE = {
   '16:9': { title: 104, big: 148, sub: 46, body: 33, kicker: 26, small: 24, num: 200 },
@@ -387,11 +484,13 @@ function makeCtx(spec, sc, i) {
   var asp = ASPECTS[spec.aspect] || ASPECTS['16:9'];
   var T = THEMES[spec.theme] || THEMES.midnight;
   var E = ENERGY[spec.energy] || ENERGY.E2;
+  var MO = motionOf(spec);
   var fs = TYPE[spec.aspect] || TYPE['16:9'];
   var sid = 's' + (i + 1);
   var ctx = {
     W: asp.w, H: asp.h, safe: asp.safe, wide: asp.w >= asp.h, aspect: spec.aspect || '16:9',
-    T: T, E: E, energy: spec.energy || 'E2', fs: fs, M: TOKENS, i: i, sid: sid,
+    T: T, E: E, energy: spec.energy || 'E2', MO: MO, motion: spec.motion || 'standard',
+    fs: fs, M: TOKENS, i: i, sid: sid,
     /** 추상 일러스트 — 픽토그램보다 크고 구성적이다. 부분이 스태거로 등장한다.
      *  ART 는 200 박스에 굵기를 값으로 박아 두므로 작게 놓으면 선이 실처럼 얇아진다.
      *  100px 아래로 내려가면 배율만 걸어 올린다 — 굵기 위계(2~16)는 비율 그대로 남는다. */
@@ -407,21 +506,25 @@ function makeCtx(spec, sc, i) {
     cx: asp.w / 2, cy: asp.h / 2,
     /** 씬 스코프 셀렉터 */
     q: function (s) { return '#' + sid + ' ' + s; },
-    /** 지속시간에 에너지 배율을 적용한다. 패턴은 항상 이걸 쓴다. */
-    d: function (name) { return r2((TOKENS.d[name] || num(name, .6)) * E.dm); },
-    st: function (name) { return r2((TOKENS.s[name] || num(name, .08)) * E.sm); },
-    /** 등장 이징 — 에너지가 정한다 */
-    ei: E.ease,
+    /** 지속시간 — 에너지(속도)와 모션 스타일(성격)의 배율을 함께 받는다. 패턴은 항상 이걸 쓴다.
+        여기서 시각도 함께 쌓이므로 씬 길이가 저절로 따라온다. */
+    d: function (name) { return r2((TOKENS.d[name] || num(name, .6)) * E.dm * MO.dm); },
+    st: function (name) { return r2((TOKENS.s[name] || num(name, .08)) * E.sm * MO.sm); },
+    /** 등장 이징 — 모션 스타일이 정하고, 없으면 에너지가 정한다 */
+    ei: (MO.e && MO.e.enter) || E.ease,
+    /** 씬의 전환점에 임팩트를 심는가 — E3 이거나 그렇게 정한 모션 스타일일 때 */
+    punch: (spec.energy || 'E2') === 'E3' || !!MO.punch,
     /**
      * 속도 왜곡 — 빠르게 들어오는 요소를 기울인다. 정지하면 0 으로 풀린다.
-     * E3 에서만 붙는다. 차분한 톤에 스큐를 넣으면 화면이 흔들려 보인다.
+     * 모션 스타일이 정하지 않았으면 E3 에서만 붙는다 — 차분한 톤에 스큐를 넣으면 화면이 흔들려 보인다.
      */
     skew: function (axis) {
+      if (MO.skew) return axis === 'x' ? MO.skew.x : MO.skew.y;
       if ((spec.energy || 'E2') !== 'E3') return 0;
       return axis === 'x' ? 7 : 5;
     },
-    /** 이동 거리에 에너지 배율 */
-    px: function (v) { return Math.round(v * E.dist); },
+    /** 이동 거리 — 에너지와 모션 스타일의 배율 */
+    px: function (v) { return Math.round(v * E.dist * MO.dist); },
     ic: function (n) { return ICO.iconPath(n); },
     used: {}
   };
@@ -1236,7 +1339,7 @@ PATTERNS.heroReveal = {
       tw.from(q('.gg-rule'), t - ctx.d('fast') * .3, { scaleX: 0, duration: ctx.d('normal'), ease: TOKENS.e.move });
       t += ctx.d('fast') * .4;
     }
-    if (ctx.energy === 'E3') tw.fx('impact', r2(t * .55));
+    if (ctx.punch) tw.fx('impact', r2(t * .55));
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, (sc.title || '') + (sc.sub || '')) };
   }
 };
@@ -1291,7 +1394,7 @@ PATTERNS.kineticType = {
           b = r2(Math.max(beat, tr - t + ctx.d('fast')));
         }
         else tw.split(s, t, by, { yPercent: 60, opacity: 0, scale: .86, duration: ctx.d('fast'), ease: ctx.ei }, ctx.st('tight'));
-        if (ctx.energy === 'E3') tw.fx('impact', t);
+        if (ctx.punch) tw.fx('impact', t);
         textLive(tw, ctx, s, l.text, t + ctx.d('fast') * 1.5, { breath: !!l.emphasis, glow: true });
         if (i < L.length - 1) { tw.to(s, t + b, { opacity: 0, scale: 1.1, duration: ctx.d('micro'), ease: TOKENS.e.exit }); }
         t += b;
@@ -1616,7 +1719,7 @@ PATTERNS.beforeAfter = {
       duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
     tw.to(q('.gg-af'), t, { scale: 1.03, y: ctx.px(-8), duration: ctx.d('normal') * .9, ease: TOKENS.e.overshoot });
     tw.to(q('.gg-af .gg-panelTag'), t, { color: 'var(--good)', duration: ctx.d('fast'), ease: TOKENS.e.move });
-    if (ctx.energy === 'E3') tw.fx('impact', t);
+    if (ctx.punch) tw.fx('impact', t);
     t += ctx.d('normal') * .9;
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(A.items) + (A.label || '')) };
   }
@@ -2198,7 +2301,7 @@ PATTERNS.matchCut = {
       tw.fromTo(q('.gg-mcTo'), t + ctx.d('fast') * .8, { y: ctx.px(28), opacity: 0 },
         { y: 0, opacity: 1, duration: ctx.d('normal'), ease: ctx.ei });
     }
-    if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('fast') * .7);
+    if (ctx.punch) tw.fx('impact', t + ctx.d('fast') * .7);
     t += ctx.d('slow');
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, (O.title || '') + (O.sub || '')) };
   }
@@ -2783,7 +2886,7 @@ PATTERNS.featureMatrix = {
       /* 주인공 열의 링은 표가 다 찬 뒤에 감긴다 — 결론은 마지막에 */
       tw.from(q('.gg-fmHi'), t, { scale: .96, opacity: 0, transformOrigin: '50% 50%',
         duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
-      if (ctx.energy === 'E3') tw.fx('impact', t);
+      if (ctx.punch) tw.fx('impact', t);
       t += ctx.d('fast');
     }
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(rows) + itemsText(cols) + (sc.title || '')) };
@@ -2836,7 +2939,7 @@ PATTERNS.chapterCard = {
       'px;font-size:' + numSize + 'px">' + esc(noTxt) + '</div>');
     tw.from(q('.gg-chNo'), t, { scale: .64, opacity: 0, y: ctx.px(22), transformOrigin: '50% 50%',
       duration: ctx.d('normal'), ease: TOKENS.e.overshoot });
-    if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('micro'));
+    if (ctx.punch) tw.fx('impact', t + ctx.d('micro'));
     t += ctx.d('fast') * .75;
     var hd = head(sc, ctx, tw, t, { x: textX, y: headY, w: textW, align: align }, { title: tSize });
     H.push(hd.html);
@@ -2942,7 +3045,7 @@ PATTERNS.rankList = {
       /* 1위의 링은 표가 다 찬 뒤에 감긴다 — 결론은 마지막에 */
       tw.from(q('.gg-rkHi'), t, { scale: .96, opacity: 0, transformOrigin: '50% 50%',
         duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
-      if (ctx.energy === 'E3') tw.fx('impact', t);
+      if (ctx.punch) tw.fx('impact', t);
       t += ctx.d('fast');
     }
     return { html: H.join(''), tw: tw, dur: sceneDur(sc, ctx, t, itemsText(it) + (sc.title || '')) };
@@ -3027,7 +3130,7 @@ PATTERNS.quizReveal = {
         });
         tw.from(q('.gg-qzHi'), t + ctx.d('micro'), { scale: .94, opacity: 0, transformOrigin: '50% 50%',
           duration: ctx.d('fast') * 1.2, ease: TOKENS.e.overshoot });
-        if (ctx.energy === 'E3') tw.fx('impact', t + ctx.d('micro'));
+        if (ctx.punch) tw.fx('impact', t + ctx.d('micro'));
         t += ctx.d('fast') * 1.1;
       }
       if (A) {
@@ -3439,7 +3542,10 @@ function compile(spec, opts) {
   var font = FONTS[spec.font] ? spec.font : THEMES[theme].font;
   /* 스킨도 같은 규칙이다. 문자열이면 등록된 스킨, 객체면 스펙에 인라인된 커스텀 정의 */
   var skin = spec.skin != null && spec.skin !== '' ? spec.skin : (THEMES[theme].skin || 'glass');
-  var s2 = { aspect: aspect, theme: theme, energy: energy, font: font };
+  /* 모션 스타일 — 움직임의 성격. 이름이 틀리면 스탠다드로 떨어지고 validate 가 짚는다 */
+  var motion = MOTIONS[spec.motion] ? spec.motion : 'standard';
+  var MO = MOTIONS[motion];
+  var s2 = { aspect: aspect, theme: theme, energy: energy, font: font, motion: motion };
   var E = ENERGY[energy];
   var T = THEMES[theme];
   var scenes = arr(spec.scenes), out = [], used = {}, at = 0, errors = [], warnings = [];
@@ -3460,12 +3566,17 @@ function compile(spec, opts) {
     var built;
     try { built = P.build(sc, ctx); }
     catch (e) { errors.push('씬 ' + (i + 1) + ' (' + sc.pattern + ') 빌드 실패: ' + e.message); return; }
+    /* 모션 스타일을 IR 에 얹는다 — 패턴이 박아 쓴 이징을 역할째 갈아 끼우고 등장에 성격을 준다.
+       씬 길이(built.dur)를 재기 전에 해야 contentEnd 도 같은 값을 본다. */
+    styleMotion(built.tw.list, MO);
     Object.keys(ctx.used).forEach(function (k) { used[k] = 1; });
 
-    var tr = TRANSITIONS[sc.transition] ? sc.transition : (i === 0 ? 'cut' : 'fade');
+    /* 씬이 적지 않았으면 모션 스타일이 정한다 — 첫 씬은 언제나 컷이다(앞이 없다) */
+    var tr = TRANSITIONS[sc.transition] ? sc.transition
+      : (i === 0 ? 'cut' : (MO.trans ? MO.trans[(i - 1) % MO.trans.length] : 'fade'));
     /* TRN 으로 받는다 — T 로 쓰면 바깥의 테마 T 를 가려서 테마 값이 통째로 사라진다 */
     var TRN = TRANSITIONS[tr];
-    var tdur = r2(TRN.d * E.trans);
+    var tdur = r2(TRN.d * E.trans * MO.td);
     /* 트랜지션은 앞 씬의 끝과 겹친다 — 씬 사이에 빈 화면이 생기면 리듬이 죽는다 */
     var overlap = i === 0 ? 0 : r2(tdur * num(TRN.overlap, .8));
 
@@ -3551,7 +3662,7 @@ function compile(spec, opts) {
    * 앰비언트 카메라를 얹는다 — 씬 전체 길이(hold 포함)를 덮는 트윈 하나.
    * contentEnd 를 이미 재고 난 뒤라 씬별 스크린샷·발표 모드의 정지 지점은 그대로다.
    */
-  var camMul = (typeof spec.camera === 'number' ? spec.camera : 1) * E.camAmp;
+  var camMul = (typeof spec.camera === 'number' ? spec.camera : 1) * E.camAmp * MO.camAmp;
   out.forEach(function (s) {
     var mv = camOf(s.cam, ASPECTS[aspect].w, ASPECTS[aspect].h, camMul);
     if (!mv) return;
@@ -3561,11 +3672,11 @@ function compile(spec, opts) {
   out.forEach(function (s, i) {
     var ex = exits[i];
     if (!ex) return;
-    s.tw = s.tw.concat(exitText(ex.ctx, ex.fx, r2(Math.max(0, s.dur - ex.dur)), ex.chars, s.html));
+    s.tw = s.tw.concat(styleMotion(exitText(ex.ctx, ex.fx, r2(Math.max(0, s.dur - ex.dur)), ex.chars, s.html), MO));
   });
 
   return {
-    aspect: aspect, theme: theme, energy: energy, skin: skin, sceneSkins: sceneSkins,
+    aspect: aspect, theme: theme, energy: energy, motion: motion, skin: skin, sceneSkins: sceneSkins,
     mode: ['autoplay', 'loop', 'step'].indexOf(spec.mode) >= 0 ? spec.mode : 'autoplay',
     title: spec.title || '', message: spec.message || '', font: font,
     scenes: out, total: total, icons: Object.keys(used), errors: errors, warnings: warnings,
@@ -3611,6 +3722,7 @@ function validate(spec, opts) {
   if (spec.aspect && !ASPECTS[spec.aspect]) errors.push('aspect "' + spec.aspect + '" 는 없다 (' + Object.keys(ASPECTS).join(' ') + ').');
   if (spec.theme && !THEMES[spec.theme]) errors.push('theme "' + spec.theme + '" 는 없다 (' + Object.keys(THEMES).join(' ') + ').');
   if (spec.energy && !ENERGY[spec.energy]) errors.push('energy "' + spec.energy + '" 는 없다 (E1 E2 E3).');
+  if (spec.motion && !MOTIONS[spec.motion]) errors.push('motion "' + spec.motion + '" 는 없다 (' + Object.keys(MOTIONS).join(' ') + ').');
   if (spec.font && !FONTS[spec.font]) errors.push('font "' + spec.font + '" 는 없다 (' + Object.keys(FONTS).join(' ') + ').');
   checkSkin(spec.skin, spec.theme, '', errors, warnings);
   /* 스펙에 인라인한 디자인 요소 — 정의가 부실하면 조용히 이상한 화면이 나온다 */
@@ -3952,7 +4064,7 @@ function validate(spec, opts) {
     ok: errors.length === 0, errors: errors, warnings: warnings,
     stats: {
       scenes: c.scenes.length, totalSec: r2(c.total), frames: Math.ceil(c.total * 30),
-      theme: c.theme, aspect: c.aspect, energy: c.energy, mode: c.mode,
+      theme: c.theme, aspect: c.aspect, energy: c.energy, motion: c.motion, mode: c.mode,
       icons: c.icons.length, patterns: Object.keys(patCount).length,
       tweens: c.scenes.reduce(function (a, s) { return a + s.tw.length; }, 0)
     },
@@ -4548,8 +4660,8 @@ function toHTML(spec, opts) {
   var ir = {
     w: A.w, h: A.h, total: c.total, mode: mode, theme: c.theme, energy: c.energy,
     /* 깊이와 셔터는 런타임이 실행할 값이다 — 배경 레이어의 감쇠율과 잔상 세기.
-       에너지 배율은 여기서 곱해 둔다 — 런타임에 에너지 표를 또 두지 않는다 */
-    depth: depthOf(spec), shutter: r2(shutterOf(spec) * ENERGY[c.energy].shut),
+       에너지·모션 스타일 배율은 여기서 곱해 둔다 — 런타임에 표를 또 두지 않는다 */
+    depth: depthOf(spec), shutter: r2(shutterOf(spec) * ENERGY[c.energy].shut * MOTIONS[c.motion].shut),
     reducedMotion: typeof opts.reducedMotion === 'boolean' ? opts.reducedMotion : null,
     present: !!opts.present, title: c.title || '',
     scenes: c.scenes.map(function (s) {
@@ -4808,6 +4920,8 @@ return {
   /** 씬 카메라 7종 — 앱의 씬 폼이 목록을 하드코딩하지 않게 여기서 읽는다 */
   get cams() { var o = {}; Object.keys(CAMS).forEach(function (k) { o[k] = CAMS[k].label; }); return o; },
   get energies() { var o = {}; Object.keys(ENERGY).forEach(function (k) { o[k] = ENERGY[k].label; }); return o; },
+  /** 모션 스타일 — 루트 motion. 앱의 문서 설정과 `gm info motion` 이 읽는다 */
+  get motions() { var o = {}; Object.keys(MOTIONS).forEach(function (k) { o[k] = MOTIONS[k].label; }); return o; },
   get aspects() { var o = {}; Object.keys(ASPECTS).forEach(function (k) { o[k] = ASPECTS[k].w + '×' + ASPECTS[k].h + ' — ' + ASPECTS[k].label; }); return o; },
   tokens: TOKENS,
   /* 디자인 프리미티브(인터페이스)와 스킨(구현부). 앱 스튜디오가 이걸로 목록·편집기를 만든다. */
